@@ -62,14 +62,17 @@ public abstract class ToonUberShaderGUIBase : ShaderGUI
 
     protected static void DrawFoldout(string title, ref bool state, Action contents)
     {
-        state = EditorGUILayout.BeginFoldoutHeaderGroup(state, title);
+        var rect = EditorGUILayout.BeginVertical();
+        state = EditorGUI.Foldout(new Rect(rect.x, rect.y, rect.width, EditorGUIUtility.singleLineHeight), state, title, true, EditorStyles.foldoutHeader);
+        EditorGUILayout.EndVertical();
+        EditorGUILayout.Space(EditorGUIUtility.singleLineHeight);
+
         if (state)
         {
             EditorGUILayout.BeginVertical("box");
             contents.Invoke();
             EditorGUILayout.EndVertical();
         }
-        EditorGUILayout.EndFoldoutHeaderGroup();
         EditorGUILayout.Space(2);
     }
 

@@ -12,17 +12,24 @@ Material:
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
-  - _EFFECT_TIER_LEGENDARY
-  - _LEGENDARY_EFFECT_HOLY_AURA
-  - _OUTLINEMODE_FRESNEL
+  - _DISPLACEMENT_SATURATE_ON
+  - _DISSOLVETYPE_LINEAR
+  - _DISSOLVE_LOCALSPACE_ON
+  - _DISSOLVE_ON
+  - _FAKELIGHT_ON
+  - _OUTLINEMODE_HULL
   - _OUTLINE_SCALE_WITH_DISTANCE
   - _SURFACETYPE_OPAQUE
+  - _VERTEX_DISPLACEMENT_ON
   m_InvalidKeywords:
+  - _EFFECT_TIER_LEGENDARY
   - _EMISSIVE_SIMPLE
   - _IS_ANGELRING_OFF
   - _IS_CLIPPING_OFF
   - _IS_OUTLINE_CLIPPING_NO
+  - _LEGENDARY_EFFECT_COSMIC_RIFT
   - _OUTLINE_NML
+  - _ZWRITE_ON
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
@@ -112,7 +119,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _EffectTex1:
-        m_Texture: {fileID: 2800000, guid: 12a5c621011851942a8e6006a73bb637, type: 3}
+        m_Texture: {fileID: 2800000, guid: d33608f945df38a488624b3a4114458a, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _EmissionMap:
@@ -172,7 +179,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _NoiseTex:
-        m_Texture: {fileID: 2800000, guid: 2a0112a98875dfd488b5d10bdb8a4903, type: 3}
+        m_Texture: {fileID: 2800000, guid: 47479e64f59eb194a85dba6797a9e1a6, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _NormalMap:
@@ -323,7 +330,7 @@ Material:
     - _BlingWorldSpace: 0
     - _BlurLevelMatcap: 0
     - _BlurLevelSGM: 0
-    - _BounceWaveWidth: 0.5
+    - _BounceWaveWidth: 5
     - _Brightness: 0.05
     - _BumpScale: 1
     - _BumpScaleMatcap: 1
@@ -354,10 +361,10 @@ Material:
     - _DisplacementLockObjectScale: 1
     - _DisplacementLockTilingScale: 1
     - _DisplacementMode: 0
-    - _DissolveEdgeWidth: 0.05
-    - _DissolveThreshold: -0.5
-    - _DissolveType: 0
-    - _DistanceFadeEnd: 30
+    - _DissolveEdgeWidth: 0.1
+    - _DissolveThreshold: -10
+    - _DissolveType: 1
+    - _DistanceFadeEnd: 10
     - _DistanceFadeStart: -15
     - _DistortionBlendMode: 0
     - _DistortionBlurBlendMode: 0
@@ -379,24 +386,25 @@ Material:
     - _EMISSIVE: 0
     - _EdgeThickness: 1
     - _EffectTier: 4
+    - _EffectType: 0
     - _EmissionMode: 0
     - _EmissiveColorMode: 1
     - _EmissiveExposureWeight: 1
     - _EmissiveIntensity: 1
     - _EmissiveIntensityUnit: 0
     - _EnableBlendModePreserveSpecularLighting: 1
-    - _EnableDissolve: 0
+    - _EnableDissolve: 1
     - _EnableFogOnTransparent: 1
     - _EnableGeometricSpecularAA: 0
     - _EnableHologramReveal: 0
     - _EnableShatterEffect: 0
-    - _EnableVertexDisplacement: 0
+    - _EnableVertexDisplacement: 1
     - _EnergyConservingSpecularColor: 1
-    - _EpicEffectType: 0
+    - _EpicEffectType: 1
     - _EpicFloat1: 0.1
-    - _EpicFloat2: 100
+    - _EpicFloat2: 10
     - _EpicFloat3: 1
-    - _FakeLightMode: 0
+    - _FakeLightMode: 1
     - _Farthest_Distance: 100
     - _FirstShadeOverridden: 0
     - _FirstShadeVisible: 1
@@ -463,10 +471,10 @@ Material:
     - _Is_UseTweakMatCapOnShadow: 0
     - _Is_ViewCoord_Scroll: 0
     - _Is_ViewShift: 0
-    - _LegendaryEffectType: 1
-    - _LegendaryFloat1: 15
+    - _LegendaryEffectType: 0
+    - _LegendaryFloat1: 0.01
     - _LegendaryFloat2: 100
-    - _LegendaryFloat3: 10
+    - _LegendaryFloat3: 1
     - _LightDirection_MaskOn: 0
     - _LinkDetailsWithBase: 1
     - _MatCap: 0
@@ -476,8 +484,8 @@ Material:
     - _MidtoneThreshold: 0.6
     - _Mode: 0
     - _Nearest_Distance: 0.5
-    - _NoiseScale: 1
-    - _NoiseStrength: 0.1
+    - _NoiseScale: 5
+    - _NoiseStrength: 0.3
     - _NormalMapSpace: 0
     - _NormalScale: 1
     - _OUTLINE: 0
@@ -487,11 +495,11 @@ Material:
     - _Offset_X_Axis_BLD: -0.05
     - _Offset_Y_Axis_BLD: 0.09
     - _Offset_Z: 0
-    - _OutlineMode: 1
+    - _OutlineMode: 2
     - _OutlineOverridden: 0
     - _OutlineScaleWithDistance: 1
     - _OutlineVisible: 1
-    - _OutlineWidth: 0.75
+    - _OutlineWidth: 2
     - _Outline_Width: 4
     - _PPDLodThreshold: 5
     - _PPDMaxSamples: 15
@@ -502,13 +510,14 @@ Material:
     - _PatternFrequency: 10
     - _PatternType: 0
     - _RadialDirection: 1
-    - _RampSmoothness: 0.01
+    - _RampSmoothness: 0.1
     - _RareEffectType: 0
     - _RareFloat1: 1
     - _RareFloat2: 0.05
     - _ReceivesSSR: 1
     - _RefractionModel: 0
-    - _RevealProgress: 0
+    - _RenderMode: 0
+    - _RevealProgress: 10
     - _RimLight: 1
     - _RimLightOverridden: 0
     - _RimLightVisible: 1
@@ -569,7 +578,7 @@ Material:
     - _TexWorldScaleEmissive: 1
     - _Thickness: 1
     - _ThicknessMultiplier: 1
-    - _TimeScale: 1
+    - _TimeScale: 0.2
     - _TranslucencyStrength: 1
     - _TransmissionEnable: 1
     - _TransmissionMask: 1
@@ -598,16 +607,17 @@ Material:
     - _UVSec: 0
     - _Unlit_Intensity: 1
     - _UseEmissiveIntensity: 0
-    - _UseLocalSpace: 0
-    - _UseSaturateDisplacement: 0
+    - _UseLocalSpace: 1
+    - _UseSaturateDisplacement: 1
     - _UseShadowThreshold: 0
     - _UseTimeAnimation: 0
     - _Use_1stAs2nd: 0
     - _Use_BaseAs1st: 1
-    - _VertexDisplacement: 0.1
+    - _VertexDisplacement: 5
     - _WindAmplitude: 0.1
     - _WindFrequency: 2
     - _ZOverDrawMode: 0
+    - _ZTest: 4
     - _ZTestDepthEqualForOpaque: 4
     - _ZTestGBuffer: 4
     - _ZTestModeDistortion: 8
@@ -637,14 +647,14 @@ Material:
     - _CosmicColor1: {r: 0.07843136, g: 0.10915754, b: 0.45490196, a: 1}
     - _CosmicColor2: {r: 0.11052516, g: 0.041384827, b: 0.28301883, a: 1}
     - _DiffusionProfileAsset: {r: 0, g: 0, b: 0, a: 0}
-    - _DissolveDirection: {r: 0, g: 1, b: 0, a: 0}
-    - _DissolveEdgeColor: {r: 1, g: 0.5, b: 0, a: 1}
+    - _DissolveDirection: {r: 0, g: -1, b: 0, a: 0}
+    - _DissolveEdgeColor: {r: 0.106666565, g: 0, b: 4, a: 1}
     - _DoubleSidedConstants: {r: 1, g: 1, b: -1, a: 0}
     - _EmissionColor: {r: 2.6390157, g: 2.6390157, b: 2.6390157, a: 1}
     - _EmissiveColor: {r: 0, g: 0, b: 0, a: 1}
     - _EmissiveColorLDR: {r: 0, g: 0, b: 0, a: 1}
     - _Emissive_Color: {r: 0, g: 0, b: 0, a: 1}
-    - _EpicColor1: {r: 0.7490196, g: 0.17595226, b: 0, a: 1}
+    - _EpicColor1: {r: 1, g: 0.11237669, b: 0, a: 1}
     - _EpicColor2: {r: 95.87451, g: 8.031373, b: 0, a: 1}
     - _FakeLightColor: {r: 1, g: 1, b: 1, a: 1}
     - _FakeLightDirection: {r: 50, g: 5, b: -5, a: 0}
@@ -657,10 +667,10 @@ Material:
     - _HologramEmissionColor: {r: 0, g: 1, b: 1, a: 1}
     - _InvPrimScale: {r: 1, g: 1, b: 0, a: 0}
     - _IridescenceThicknessRemap: {r: 0, g: 1, b: 0, a: 0}
-    - _LegendaryColor1: {r: 2, g: 1.4639692, b: 0, a: 1}
-    - _LegendaryColor2: {r: 1, g: 0.23277296, b: 0, a: 1}
+    - _LegendaryColor1: {r: 2.6701574, g: 0.3853358, b: 0, a: 1}
+    - _LegendaryColor2: {r: 0, g: 0.4051938, b: 1, a: 1}
     - _MatCapColor: {r: 1, g: 1, b: 1, a: 1}
-    - _MidtoneColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+    - _MidtoneColor: {r: 0.4811321, g: 0.4811321, b: 0.4811321, a: 1}
     - _OutlineColor: {r: 0, g: 0, b: 0, a: 1}
     - _OutlineMaskColor: {r: 0, g: 0, b: 0, a: 1}
     - _Outline_Color: {r: 1, g: 1, b: 1, a: 1}

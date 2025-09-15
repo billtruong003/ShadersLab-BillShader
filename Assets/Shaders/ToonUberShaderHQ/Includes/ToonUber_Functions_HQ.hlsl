@@ -133,26 +133,6 @@ float3 CalculateFoliageLighting(float3 normalWS, float3 worldPos, Light mainLigh
     return totalLight;
 }
 
-half3 CalculateGlassLighting(Varyings i, Light mainLight, float3 viewDir, half3 ambient)
-{
-    float2 screenUV = i.screenPos.xy / i.screenPos.w;
-    float2 distortion = i.normalWS.xy * _RefractionStrength;
-    float3 sceneColor = SAMPLE_TEXTURE2D_X_LOD(_CameraOpaqueTexture, sampler_CameraOpaqueTexture, screenUV + distortion, 0).rgb;
-
-    float fresnelDot = 1.0 - saturate(dot(i.normalWS, viewDir));
-    float fresnel = MU_FastPow(fresnelDot, _FresnelPower);
-                
-    float3 reflectDir = reflect(-mainLight.direction, i.normalWS);
-    float spec = MU_FastPow(saturate(dot(viewDir, reflectDir)), _GlassSpecularPower);
-    half3 specularColor = mainLight.color * spec * _GlassSpecularIntensity * mainLight.shadowAttenuation;
-    
-    half3 tintedScene = sceneColor * _GlassColor.rgb;
-    half3 finalColor = lerp(tintedScene, _FresnelColor.rgb, fresnel);
-    finalColor += specularColor + ambient;
-
-    return finalColor;
-}
-
 void ApplyWind(inout float3 positionOS, float4 vertexColor)
 {
     float3 worldPos = TransformObjectToWorld(positionOS);
@@ -169,7 +149,9 @@ float CalculateDissolveValue(float3 position, float2 uv, float perVertexNoise)
 {
     float dissolveValue = 0.0h;
 
-    #if defined(_DISSOLVETYPE_LINEAR)
+    #if defined(_DISSOLVETYPE_NOISE)
+        dissolveValue = SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_NoiseTex, uv * _NoiseScale, 0).r;
+    #elif defined(_DISSOLVETYPE_LINEAR)
         dissolveValue = dot(position, normalize(_DissolveDirection.xyz));
     #elif defined(_DISSOLVETYPE_RADIAL)
         half dist = distance(position, _DissolveDirection.xyz);
@@ -262,55 +244,70 @@ half4 GetHologramPixelData(float3 worldPos)
     return half4(emission, pattern);
 }
 
+half4 CalculateHologramRevealEffect(half4 currentPixel, half perturbedDissolveValue, float3 worldPos, half timeAnimOffset)
+{
+    half progress = _RevealProgress + timeAnimOffset;
+    
+    half hologramReveal = saturate(progress);
+    half materialReveal = saturate(progress - 1.0h);
+    
+    half hologramThreshold = 1.0h - hologramReveal;
+    half materialThreshold = 1.0h - materialReveal;
+    
+    half hologramVisibility = smoothstep(hologramThreshold - _DissolveEdgeWidth, hologramThreshold, perturbedDissolveValue);
+    half materialVisibility = smoothstep(materialThreshold - _DissolveEdgeWidth, materialThreshold, perturbedDissolveValue);
+    
+    half hologramEdgeFactor = hologramVisibility - smoothstep(hologramThreshold, hologramThreshold + 0.001h, perturbedDissolveValue);
+    half materialEdgeFactor = materialVisibility - smoothstep(materialThreshold, materialThreshold + 0.001h, perturbedDissolveValue);
+    
+    half4 hologramPixel = GetHologramPixelData(worldPos);
+    hologramPixel.rgb = lerp(hologramPixel.rgb, _DissolveEdgeColor.rgb, hologramEdgeFactor);
+    
+    currentPixel.rgb = lerp(currentPixel.rgb, _DissolveEdgeColor.rgb, materialEdgeFactor);
+    
+    half4 finalPixel;
+    finalPixel.rgb = lerp(hologramPixel.rgb, currentPixel.rgb, materialVisibility);
+    finalPixel.a = lerp(hologramPixel.a, currentPixel.a, materialVisibility) * hologramVisibility;
+    
+    return finalPixel;
+}
+
+half4 CalculateStandardDissolveEffect(half4 currentPixel, half perturbedDissolveValue, half timeAnimOffset)
+{
+    half threshold = _DissolveThreshold + timeAnimOffset;
+    
+    #if defined(_DISSOLVETYPE_ALPHA_BLEND)
+        half remappedAlpha = 1.0h - saturate((perturbedDissolveValue - threshold) / max(_AlphaFadeRange, 0.001h));
+        currentPixel.a *= remappedAlpha;
+    #else
+        half edgeStart = threshold - _DissolveEdgeWidth;
+        half dissolveAlpha = smoothstep(edgeStart, threshold, perturbedDissolveValue);
+        half edgeColorFactor = dissolveAlpha - smoothstep(threshold, threshold + 0.001h, perturbedDissolveValue);
+        currentPixel.rgb = lerp(currentPixel.rgb, _DissolveEdgeColor.rgb, edgeColorFactor);
+        currentPixel.a *= dissolveAlpha;
+    #endif
+    
+    return currentPixel;
+}
+
 half4 ApplyDissolveFragmentEffect(half4 currentPixel, float baseDissolveValue, float2 uv, float3 worldPos)
 {
     half timeAnimOffset = _UseTimeAnimation > 0.5h ? sin(_Time.y * _TimeScale) * 0.05h : 0.0h;
-    half perturbedDissolveValue;
+    half perturbedDissolveValue = baseDissolveValue;
 
-    #if defined(_DISSOLVETYPE_NOISE)
-        perturbedDissolveValue = SAMPLE_TEXTURE2D(_NoiseTex, sampler_NoiseTex, uv * _NoiseScale).r;
-    #else
+    #if !defined(_DISSOLVETYPE_NOISE)
         half noiseTexSample = SAMPLE_TEXTURE2D(_NoiseTex, sampler_NoiseTex, uv * _NoiseScale).r;
         half pixelPerturbation = (noiseTexSample - 0.5h) * _NoiseStrength;
-        perturbedDissolveValue = baseDissolveValue + pixelPerturbation;
+        perturbedDissolveValue += pixelPerturbation;
     #endif
     
     #if defined(_HOLOGRAM_REVEAL_ON)
-        half progress = _RevealProgress + timeAnimOffset;
-        half hologramProgress = saturate(progress);
-        half hologramThreshold = 1.0h - hologramProgress;
-        half hologramEdgeStart = hologramThreshold - _DissolveEdgeWidth;
-        half hologramAlpha = smoothstep(hologramEdgeStart, hologramThreshold, perturbedDissolveValue);
-        half hologramEdgeFactor = hologramAlpha - smoothstep(hologramThreshold, hologramThreshold + 0.001h, perturbedDissolveValue);
-        half4 hologramPixelData = GetHologramPixelData(worldPos);
-        half3 hologramEmission = hologramPixelData.rgb;
-        half hologramPixelAlpha = hologramPixelData.a;
-        half3 finalHologramColor = lerp(hologramEmission, _DissolveEdgeColor.rgb, hologramEdgeFactor);
-        half materialProgress = saturate(progress - 1.0h);
-        half materialThreshold = 1.0h - materialProgress;
-        half materialEdgeStart = materialThreshold - _DissolveEdgeWidth;
-        half materialAlpha = smoothstep(materialEdgeStart, materialThreshold, perturbedDissolveValue);
-        half materialEdgeFactor = materialAlpha - smoothstep(materialThreshold, materialThreshold + 0.001h, perturbedDissolveValue);
-        half3 finalMaterialColor = lerp(currentPixel.rgb, _DissolveEdgeColor.rgb, materialEdgeFactor);
-        currentPixel.rgb = lerp(finalHologramColor, finalMaterialColor, materialAlpha);
-        half blendedAlpha = lerp(hologramPixelAlpha, currentPixel.a, materialAlpha);
-        currentPixel.a = blendedAlpha * hologramAlpha;
+        return CalculateHologramRevealEffect(currentPixel, perturbedDissolveValue, worldPos, timeAnimOffset);
     #else
-        half threshold = _DissolveThreshold + timeAnimOffset;
-        #if defined(_DISSOLVETYPE_ALPHA_BLEND)
-            half remappedAlpha = 1.0h - saturate((perturbedDissolveValue - threshold) / max(_AlphaFadeRange, 0.001h));
-            currentPixel.a *= remappedAlpha;
-        #else
-            half edgeStart = threshold - _DissolveEdgeWidth;
-            half dissolveAlpha = smoothstep(edgeStart, threshold, perturbedDissolveValue);
-            half edgeColorFactor = dissolveAlpha - smoothstep(threshold, threshold + 0.001h, perturbedDissolveValue);
-            currentPixel.rgb = lerp(currentPixel.rgb, _DissolveEdgeColor.rgb, edgeColorFactor);
-            currentPixel.a *= dissolveAlpha;
-        #endif
+        return CalculateStandardDissolveEffect(currentPixel, perturbedDissolveValue, timeAnimOffset);
     #endif
-
-    return currentPixel;
 }
+
 #endif
 
 #endif

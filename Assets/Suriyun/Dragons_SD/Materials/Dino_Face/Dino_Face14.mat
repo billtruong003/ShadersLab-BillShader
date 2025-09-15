@@ -2,23 +2,52 @@
 %TAG !u! tag:unity3d.com,2011:
 --- !u!21 &2100000
 Material:
-  serializedVersion: 6
+  serializedVersion: 8
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
   m_Name: Dino_Face14
-  m_Shader: {fileID: 10750, guid: 0000000000000000f000000000000000, type: 0}
-  m_ShaderKeywords: _ALPHAPREMULTIPLY_ON
+  m_Shader: {fileID: 4800000, guid: 54a134dc857b568439394eaedabcec3e, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords:
+  - _DISPLACEMENT_SATURATE_ON
+  - _DISSOLVETYPE_LINEAR
+  - _DISSOLVE_LOCALSPACE_ON
+  - _DISSOLVE_ON
+  - _FAKELIGHT_ON
+  - _OUTLINE_SCALE_WITH_DISTANCE
+  - _SURFACETYPE_OPAQUE
+  - _VERTEX_DISPLACEMENT_ON
+  m_InvalidKeywords:
+  - _ALPHAPREMULTIPLY_ON
+  - _ZWRITE_ON
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
-  m_CustomRenderQueue: -1
-  stringTagMap: {}
-  disabledShaderPasses: []
+  m_CustomRenderQueue: 3000
+  stringTagMap:
+    RenderType: Transparent
+  disabledShaderPasses:
+  - Outline
+  m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
+    - _BaseMap:
+        m_Texture: {fileID: 2800000, guid: 8ff6f180e200fe840b4e1c2e73283fcd, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - _BumpMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _CosmicTex1:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _CosmicTex2:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
@@ -34,7 +63,15 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _EffectTex1:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - _EmissionMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _HologramPatternTex:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
@@ -46,6 +83,10 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _NoiseTex:
+        m_Texture: {fileID: 2800000, guid: 47479e64f59eb194a85dba6797a9e1a6, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - _OcclusionMap:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
@@ -54,23 +95,142 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _Ramp:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _StarfieldTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
     m_Floats:
+    - _AlphaClipMode: 1
+    - _AlphaFadeRange: 0.5
+    - _BlingFresnelPower: 2
+    - _BlingIntensity: 2
+    - _BlingScale: 50
+    - _BlingSpeed: 1
+    - _BlingThreshold: 0.95
+    - _BlingWorldSpace: 0
+    - _BounceWaveWidth: 5
+    - _Brightness: 1.3
     - _BumpScale: 1
-    - _Cutoff: 0.5
+    - _CosmicParallaxDepth1: 0.02
+    - _CosmicParallaxDepth2: 0.05
+    - _CosmicScale1: 1
+    - _CosmicScale2: 1.5
+    - _CosmicScrollSpeed1: 0.05
+    - _CosmicScrollSpeed2: 0.02
+    - _CullMode: 2
+    - _Cutoff: 0.05
     - _DetailNormalMapScale: 1
+    - _DissolveEdgeWidth: 0.1
+    - _DissolveThreshold: -10
+    - _DissolveType: 1
+    - _DistanceFadeEnd: 10
+    - _DistanceFadeStart: -100
     - _DstBlend: 10
+    - _EffectType: 0
+    - _EmissionMode: 0
+    - _EnableDissolve: 1
+    - _EnableHologramReveal: 0
+    - _EnableShatterEffect: 0
+    - _EnableVertexDisplacement: 1
+    - _EpicFloat1: 1
+    - _EpicFloat2: 1
+    - _EpicFloat3: 1
+    - _FakeLightMode: 1
+    - _FresnelOutlinePower: 5
+    - _FresnelOutlineSharpness: 2
+    - _FresnelOutlineWidth: 0.1
+    - _GlintScale: 20
+    - _GlintSpeed: 2
+    - _GlintThreshold: 0.95
+    - _GlintToggle: 0
     - _GlossMapScale: 1
     - _Glossiness: 0
     - _GlossyReflections: 1
+    - _HighlightOffset: 0.9
+    - _HologramFlickerSpeed: 20
+    - _HologramPatternScale: 1
+    - _LegendaryFloat1: 1
+    - _LegendaryFloat2: 1
+    - _LegendaryFloat3: 1
+    - _MaxDissolveDistance: 1
     - _Metallic: 0
+    - _MidtoneThreshold: 0.6
     - _Mode: 3
+    - _NoiseScale: 5
+    - _NoiseStrength: 0.3
     - _OcclusionStrength: 1
+    - _Offset: 0.8
+    - _OutlineMode: 0
+    - _OutlineScaleWithDistance: 1
+    - _OutlineWidth: 0
     - _Parallax: 0.02
+    - _PatternFrequency: 10
+    - _PatternType: 0
+    - _RadialDirection: 1
+    - _RampSmoothness: 0.1
+    - _RareFloat1: 1
+    - _RareFloat2: 1
+    - _RenderMode: 2
+    - _RevealProgress: 0
+    - _RimPower: 6
+    - _ShadowThreshold: 0.4
+    - _ShatterLiftSpeed: 1
+    - _ShatterOffsetStrength: 0.5
+    - _ShatterStrength: 1
+    - _ShatterTriggerRange: 0.1
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
-    - _SrcBlend: 1
+    - _SrcBlend: 5
+    - _StarfieldParallaxDepth: 0.08
+    - _StarfieldScale: 2.5
+    - _StarfieldScrollSpeed: 0.01
+    - _SurfaceType: 0
+    - _TimeScale: 1
+    - _TranslucencyStrength: 1
+    - _TriplanarSharpness: 5
     - _UVSec: 0
-    - _ZWrite: 0
+    - _UseLocalSpace: 1
+    - _UseSaturateDisplacement: 1
+    - _UseTimeAnimation: 0
+    - _VertexDisplacement: 5
+    - _WindAmplitude: 0.1
+    - _WindFrequency: 2
+    - _ZTest: 4
+    - _ZWrite: 1
     m_Colors:
+    - _AmbientColor: {r: 0.5, g: 0.5, b: 0.5, a: 0}
+    - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
+    - _BlingColor: {r: 1, g: 1, b: 1, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _CosmicAmbientColor: {r: 0.1, g: 0.1, b: 0.2, a: 1}
+    - _CosmicColor1: {r: 0.2, g: 0.5, b: 1, a: 1}
+    - _CosmicColor2: {r: 1, g: 0.3, b: 0.8, a: 1}
+    - _DissolveDirection: {r: 0, g: -1, b: 0, a: 0}
+    - _DissolveEdgeColor: {r: 0.106666565, g: 0, b: 4, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 0}
+    - _EpicColor1: {r: 1, g: 0.5, b: 0, a: 1}
+    - _EpicColor2: {r: 1, g: 1, b: 0, a: 1}
+    - _FakeLightColor: {r: 1, g: 1, b: 1, a: 1}
+    - _FakeLightDirection: {r: 50, g: 5, b: -5, a: 0}
+    - _FresnelOutlineColor: {r: 0, g: 0, b: 0, a: 1}
+    - _GlintColor: {r: 1, g: 1, b: 0.5, a: 1}
+    - _HiColor: {r: 1, g: 1, b: 1, a: 1}
+    - _HologramEmissionColor: {r: 0, g: 1, b: 1, a: 1}
+    - _LegendaryColor1: {r: 0.5, g: 0, b: 1, a: 1}
+    - _LegendaryColor2: {r: 0, g: 1, b: 1, a: 1}
+    - _MidtoneColor: {r: 0.4811321, g: 0.4811321, b: 0.4811321, a: 1}
+    - _OutlineColor: {r: 0, g: 0, b: 0, a: 0}
+    - _RareColor1: {r: 1, g: 1, b: 1, a: 1}
+    - _RimColor: {r: 1, g: 0.3, b: 0.3, a: 1}
+    - _ShadowTint: {r: 0, g: 0, b: 0, a: 1}
+    - _SpecuColor: {r: 0.8, g: 0.45, b: 0.2, a: 1}
+    - _StarfieldColor: {r: 1, g: 1, b: 0.8, a: 1}
+    - _TranslucencyColor: {r: 0.7, g: 0.9, b: 0.3, a: 1}
+    - _WindDirection: {r: 1, g: 0, b: 0.5, a: 0}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1

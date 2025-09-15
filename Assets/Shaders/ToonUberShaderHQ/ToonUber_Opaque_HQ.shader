@@ -2,8 +2,14 @@ Shader "Bill's Toon/Opaque HQ"
 {
     Properties
     {
-        [HideInInspector] _SurfaceType("Surface Type", Float) = 0
-
+        [Header(Render States)]
+        [Enum(Opaque, 0, Cutout, 1, Transparent, 2)] _RenderMode ("Render Mode", Float) = 0
+        [Enum(UnityEngine.Rendering.BlendMode)] _SrcBlend ("Source Blend", Float) = 5
+        [Enum(UnityEngine.Rendering.BlendMode)] _DstBlend ("Destination Blend", Float) = 10
+        [Toggle] _ZWrite ("ZWrite", Float) = 1
+        [Enum(UnityEngine.Rendering.CompareFunction)] _ZTest("ZTest", Float) = 4
+        [Enum(Off, 0, Front, 1, Back, 2)] _CullMode ("Culling Mode", Float) = 2
+        
         [Header(Base Properties)]
         _BaseMap("Albedo (RGB) Alpha (A)", 2D) = "white" {}
         [HDR] _BaseColor("Base Color", Color) = (1, 1, 1, 1)
@@ -11,7 +17,6 @@ Shader "Bill's Toon/Opaque HQ"
         _BumpScale("Normal Intensity", Range(0.0, 2.0)) = 1.0
 
         [Header(Alpha Clipping)]
-        [Toggle(_ALPHACLIP_ON)] _AlphaClipMode("Enable Alpha Clip", Float) = 0
         _Cutoff("Alpha Cutoff", Range(0.0, 1.0)) = 0.5
         
         [Header(Emission)]
@@ -19,9 +24,6 @@ Shader "Bill's Toon/Opaque HQ"
         [HDR] _EmissionColor("Emission Color", Color) = (0,0,0,1)
         _EmissionMap("Emission Map", 2D) = "black" {}
         
-        [Header(Render States)]
-        [Enum(Off, 0, Front, 1, Back, 2)] _CullMode ("Culling Mode", Float) = 2
-
         [Header(Lighting)]
         [Toggle(_FAKELIGHT_ON)] _FakeLightMode("Enable Fake Light", Float) = 1
         _FakeLightColor("Fake Light Color", Color) = (0.8, 0.8, 0.8, 1)
@@ -81,7 +83,7 @@ Shader "Bill's Toon/Opaque HQ"
         [HDR] _CosmicAmbientColor("Ambient Color", Color) = (0.1, 0.1, 0.2, 1)
 
         [Header(Outline)]
-        [Enum(Off, 0, Fresnel, 1, Hull, 2)] _OutlineMode ("Mode", Float) = 1
+        [Enum(Off, 0, Fresnel, 1, Hull, 2)] _OutlineMode ("Mode", Float) = 0
 
         [Header(Fresnel Outline)]
         [HDR] _FresnelOutlineColor("Color", Color) = (0, 0, 0, 1)
@@ -148,11 +150,8 @@ Shader "Bill's Toon/Opaque HQ"
         _HologramFlickerSpeed ("Hologram Flicker Speed", Range(0, 100)) = 20
         
         [Header(Tiered Overlay Effects)]
-        [Enum(None,0,Standard,1,Rare,2,Epic,3,Legendary,4)] _EffectTier ("Effect Tier", Float) = 0
-        
-        [Enum(Pulsing Glow,0,Sparkles,1)] _RareEffectType ("Rare Effect Type", Float) = 0
-        [Enum(Fire Aura,0,Electric Field,1)] _EpicEffectType ("Epic Effect Type", Float) = 0
-        [Enum(Cosmic Rift,0,Holy Aura,1)] _LegendaryEffectType ("Legendary Effect Type", Float) = 0
+        [Enum(None,0,Rare Pulsing Glow,1,Rare Sparkles,2,Epic Fire Aura,3,Epic Electric Field,4,Legendary Cosmic Rift,5,Legendary Holy Aura,6)] 
+        _EffectType ("Effect Type", Float) = 0
         
         _EffectTex1 ("Effect Texture 1", 2D) = "white" {}
         
@@ -171,17 +170,18 @@ Shader "Bill's Toon/Opaque HQ"
         _LegendaryFloat1 ("Legendary Float 1", Float) = 1
         _LegendaryFloat2 ("Legendary Float 2", Float) = 1
         _LegendaryFloat3 ("Legendary Float 3", Float) = 1
+
+        [HideInInspector] _SurfaceType("Surface Type", Float) = 0
     }
 
     SubShader
     {
-        Tags { "RenderPipeline"="UniversalPipeline" "RenderType"="Transparent" "Queue"="Transparent" }
+        Tags { "RenderPipeline"="UniversalPipeline" "RenderType"="Opaque" "Queue"="Geometry" }
         
         Pass
         {
             Name "Outline"
             Cull Front
-            ZWrite On
 
             HLSLPROGRAM
             #pragma vertex OutlineVert
@@ -203,8 +203,8 @@ Shader "Bill's Toon/Opaque HQ"
             
             struct OutlineVaryings 
             { 
-                float4 positionCS : SV_POSITION; 
-                float2 uv : TEXCOORD0; 
+                float4 positionCS   : SV_POSITION; 
+                float2 uv           : TEXCOORD0; 
                 float dissolveValue : TEXCOORD1;
             };
             
@@ -224,9 +224,8 @@ Shader "Bill's Toon/Opaque HQ"
                     #ifndef _DISSOLVE_LOCALSPACE_ON
                         positionForDissolve = TransformObjectToWorld(positionOS);
                     #endif
-                    float dissolveValue = CalculateDissolveValue(positionForDissolve, input.uv, perVertexNoise);
-                    output.dissolveValue = dissolveValue;
-                    positionOS = ApplyDissolveVertexEffects(positionOS, normalOS, dissolveValue, perVertexNoise);
+                    output.dissolveValue = CalculateDissolveValue(positionForDissolve, input.uv, perVertexNoise);
+                    positionOS = ApplyDissolveVertexEffects(positionOS, normalOS, output.dissolveValue, perVertexNoise);
                 #else
                     output.dissolveValue = 2.0h;
                 #endif
@@ -256,30 +255,19 @@ Shader "Bill's Toon/Opaque HQ"
             
             half4 OutlineFrag(OutlineVaryings input) : SV_Target 
             { 
-                #if defined(_OUTLINEMODE_HULL)
-                    #if defined(_DISSOLVE_ON)
-                        half noiseTexSample = SAMPLE_TEXTURE2D(_NoiseTex, sampler_NoiseTex, input.uv * _NoiseScale).r;
-                        half pixelPerturbation = (noiseTexSample - 0.5h) * _NoiseStrength;
-                        half perturbedDissolveValue = input.dissolveValue + pixelPerturbation;
-                        half timeAnimOffset = _UseTimeAnimation > 0.5h ? sin(_Time.y * _TimeScale) * 0.05h : 0.0h;
-                        half threshold;
+                if (_OutlineMode < 1.5h)
+                {
+                    clip(-1);
+                }
 
-                        #if defined(_HOLOGRAM_REVEAL_ON)
-                            half progress = _RevealProgress + timeAnimOffset;
-                            half hologramProgress = saturate(progress);
-                            threshold = 1.0h - hologramProgress;
-                        #else
-                            threshold = _DissolveThreshold + timeAnimOffset;
-                        #endif
-                        
-                        half dissolveAlpha = step(threshold, perturbedDissolveValue);
-                        clip(dissolveAlpha - 0.5h);
-                    #endif
-                
-                    return _OutlineColor; 
+                half4 finalColor = _OutlineColor;
+
+                #if defined(_DISSOLVE_ON)
+                    finalColor = ApplyDissolveFragmentEffect(finalColor, input.dissolveValue, input.uv, float3(0,0,0));
+                    clip(finalColor.a - 0.5h);
                 #endif
 
-                return half4(0,0,0,0);
+                return finalColor; 
             }
             ENDHLSL
         }
@@ -290,8 +278,9 @@ Shader "Bill's Toon/Opaque HQ"
             Tags { "LightMode"="UniversalForward" }
             
             Cull [_CullMode]
-            ZWrite On
-            Blend SrcAlpha OneMinusSrcAlpha
+            ZWrite [_ZWrite]
+            ZTest [_ZTest]
+            Blend [_SrcBlend] [_DstBlend]
 
             HLSLPROGRAM
             #pragma vertex vert
@@ -313,15 +302,12 @@ Shader "Bill's Toon/Opaque HQ"
             #pragma multi_compile_local _DISSOLVETYPE_NOISE _DISSOLVETYPE_LINEAR _DISSOLVETYPE_RADIAL _DISSOLVETYPE_PATTERN _DISSOLVETYPE_ALPHA_BLEND _DISSOLVETYPE_SHATTER
             #pragma shader_feature_local_fragment _HOLOGRAM_REVEAL_ON
 
-            #pragma shader_feature_local_fragment _EFFECT_TIER_RARE
-            #pragma shader_feature_local_fragment _EFFECT_TIER_EPIC
-            #pragma shader_feature_local_fragment _EFFECT_TIER_LEGENDARY
-            #pragma shader_feature_local_fragment _RARE_EFFECT_PULSING_GLOW
-            #pragma shader_feature_local_fragment _RARE_EFFECT_SPARKLES
-            #pragma shader_feature_local_fragment _EPIC_EFFECT_FIRE_AURA
-            #pragma shader_feature_local_fragment _EPIC_EFFECT_ELECTRIC_FIELD
-            #pragma shader_feature_local_fragment _LEGENDARY_EFFECT_COSMIC_RIFT
-            #pragma shader_feature_local_fragment _LEGENDARY_EFFECT_HOLY_AURA
+            #pragma shader_feature_local_fragment _EFFECT_RARE_PULSING_GLOW
+            #pragma shader_feature_local_fragment _EFFECT_RARE_SPARKLES
+            #pragma shader_feature_local_fragment _EFFECT_EPIC_FIRE_AURA
+            #pragma shader_feature_local_fragment _EFFECT_EPIC_ELECTRIC_FIELD
+            #pragma shader_feature_local_fragment _EFFECT_LEGENDARY_COSMIC_RIFT
+            #pragma shader_feature_local_fragment _EFFECT_LEGENDARY_HOLY_AURA
 
             #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE
             #pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
@@ -338,10 +324,9 @@ Shader "Bill's Toon/Opaque HQ"
                 #if defined(_SURFACETYPE_FOLIAGE)
                     ApplyWind(positionOS, v.color);
                 #endif
-
-                o.perVertexNoise = MU_Hash11(positionOS.x + positionOS.y * 10.0h + positionOS.z * 100.0h);
                 
                 #if defined(_DISSOLVE_ON)
+                    o.perVertexNoise = MU_Hash11(positionOS.x + positionOS.y * 10.0h + positionOS.z * 100.0h);
                     float3 positionForDissolve = positionOS;
                     #ifndef _DISSOLVE_LOCALSPACE_ON
                         positionForDissolve = TransformObjectToWorld(positionOS);
@@ -357,7 +342,6 @@ Shader "Bill's Toon/Opaque HQ"
                 o.normalWS = TransformObjectToWorldNormal(v.normalOS);
                 o.uv = TRANSFORM_TEX(v.uv, _BaseMap);
                 o.color = v.color;
-                o.screenPos = o.positionCS;
                 
                 o.tangentWS = TransformObjectToWorldDir(v.tangentOS.xyz);
                 o.bitangentWS = cross(o.normalWS, o.tangentWS) * v.tangentOS.w;
@@ -393,7 +377,7 @@ Shader "Bill's Toon/Opaque HQ"
                 #elif defined(_SURFACETYPE_FOLIAGE)
                     lighting = CalculateFoliageLighting(normalWS, i.positionWS, mainLight);
                 #elif defined(_SURFACETYPE_BLING)
-                    lighting = CalculateBlingEffect(albedo.rgb, normalWS, i.positionWS, i.uv, mainLight, viewDir, i.screenPos);
+                    lighting = CalculateBlingEffect(albedo.rgb, normalWS, i.positionWS, i.uv, mainLight, viewDir, i.positionCS);
                 #elif defined(_SURFACETYPE_COSMIC)
                     lighting = CalculateCosmicLighting(normalWS, viewDir, i.positionWS, mainLight);
                 #endif
@@ -484,22 +468,8 @@ Shader "Bill's Toon/Opaque HQ"
                 ApplyAlphaClip(i.uv);
                 
                 #if defined(_DISSOLVE_ON)
-                    half noiseTexSample = SAMPLE_TEXTURE2D(_NoiseTex, sampler_NoiseTex, i.uv * _NoiseScale).r;
-                    half pixelPerturbation = (noiseTexSample - 0.5h) * _NoiseStrength;
-                    half perturbedDissolveValue = i.dissolveValue + pixelPerturbation;
-                    half timeAnimOffset = _UseTimeAnimation > 0.5h ? sin(_Time.y * _TimeScale) * 0.05h : 0.0h;
-                    half threshold;
-
-                    #if defined(_HOLOGRAM_REVEAL_ON)
-                        half progress = _RevealProgress + timeAnimOffset;
-                        half hologramProgress = saturate(progress);
-                        threshold = 1.0h - hologramProgress;
-                    #else
-                        threshold = _DissolveThreshold + timeAnimOffset;
-                    #endif
-                    
-                    half dissolveAlpha = step(threshold, perturbedDissolveValue);
-                    clip(dissolveAlpha - 0.5h);
+                    half4 finalPixel = ApplyDissolveFragmentEffect(half4(0,0,0,1), i.dissolveValue, i.uv, float3(0,0,0));
+                    clip(finalPixel.a - 0.5h);
                 #endif
 
                 return 0;

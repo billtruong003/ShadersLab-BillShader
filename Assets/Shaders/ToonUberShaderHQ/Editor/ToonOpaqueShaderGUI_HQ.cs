@@ -1,8 +1,7 @@
 using UnityEngine;
 using UnityEditor;
 using System;
-using System.Collections.Generic;
-using System.Linq;
+using UnityEngine.Rendering;
 
 public class ToonOpaqueShaderGUI_HQ : ToonUberShaderGUIBase
 {
@@ -19,29 +18,34 @@ public class ToonOpaqueShaderGUI_HQ : ToonUberShaderGUIBase
     private static bool showCosmicSettings = true;
 
     private enum OutlineMode { Off, Fresnel, Hull }
+    private enum RenderMode { Opaque, Cutout, Transparent }
 
     #region Property Structs
     private struct BaseProps
     {
         public MaterialProperty surfaceType;
+        public MaterialProperty renderMode, srcBlend, dstBlend, zWrite, zTest, cullMode;
         public MaterialProperty baseMap, baseColor, bumpMap, bumpScale;
-        public MaterialProperty alphaClipMode, cutoff;
+        public MaterialProperty cutoff;
         public MaterialProperty emissionMode, emissionColor, emissionMap;
-        public MaterialProperty cullMode;
 
         public void Find(MaterialProperty[] props)
         {
             surfaceType = FindProperty("_SurfaceType", props);
+            renderMode = FindProperty("_RenderMode", props);
+            srcBlend = FindProperty("_SrcBlend", props);
+            dstBlend = FindProperty("_DstBlend", props);
+            zWrite = FindProperty("_ZWrite", props);
+            zTest = FindProperty("_ZTest", props);
+            cullMode = FindProperty("_CullMode", props);
             baseMap = FindProperty("_BaseMap", props);
             baseColor = FindProperty("_BaseColor", props);
             bumpMap = FindProperty("_BumpMap", props);
             bumpScale = FindProperty("_BumpScale", props);
-            alphaClipMode = FindProperty("_AlphaClipMode", props);
             cutoff = FindProperty("_Cutoff", props);
             emissionMode = FindProperty("_EmissionMode", props);
             emissionColor = FindProperty("_EmissionColor", props);
             emissionMap = FindProperty("_EmissionMap", props);
-            cullMode = FindProperty("_CullMode", props);
         }
     }
 
@@ -219,8 +223,7 @@ public class ToonOpaqueShaderGUI_HQ : ToonUberShaderGUIBase
 
     public struct TieredEffectProps
     {
-        public MaterialProperty effectTier;
-        public MaterialProperty rareEffectType, epicEffectType, legendaryEffectType;
+        public MaterialProperty effectType;
         public MaterialProperty effectTex1;
         public MaterialProperty rareColor1, rareFloat1, rareFloat2;
         public MaterialProperty epicColor1, epicColor2, epicFloat1, epicFloat2, epicFloat3;
@@ -228,10 +231,7 @@ public class ToonOpaqueShaderGUI_HQ : ToonUberShaderGUIBase
 
         public void Find(MaterialProperty[] props)
         {
-            effectTier = FindProperty("_EffectTier", props);
-            rareEffectType = FindProperty("_RareEffectType", props);
-            epicEffectType = FindProperty("_EpicEffectType", props);
-            legendaryEffectType = FindProperty("_LegendaryEffectType", props);
+            effectType = FindProperty("_EffectType", props);
             effectTex1 = FindProperty("_EffectTex1", props);
             rareColor1 = FindProperty("_RareColor1", props);
             rareFloat1 = FindProperty("_RareFloat1", props);
@@ -308,8 +308,8 @@ public class ToonOpaqueShaderGUI_HQ : ToonUberShaderGUIBase
 
     protected override void DrawMainProperties()
     {
-        DrawBaseSettings();
         DrawRenderStates();
+        DrawBaseSettings();
         DrawLightingSettings();
         DrawSurfaceSpecificSettings();
 
@@ -325,12 +325,10 @@ public class ToonOpaqueShaderGUI_HQ : ToonUberShaderGUIBase
             materialEditor.TexturePropertySingleLine(new GUIContent(baseProps.baseMap.displayName), baseProps.baseMap, baseProps.baseColor);
             materialEditor.TexturePropertySingleLine(new GUIContent(baseProps.bumpMap.displayName), baseProps.bumpMap, baseProps.bumpScale);
 
-            materialEditor.ShaderProperty(baseProps.alphaClipMode, baseProps.alphaClipMode.displayName);
-            if (baseProps.alphaClipMode.floatValue > 0)
+            var renderMode = (RenderMode)baseProps.renderMode.floatValue;
+            if (renderMode == RenderMode.Cutout)
             {
-                EditorGUI.indentLevel++;
                 materialEditor.ShaderProperty(baseProps.cutoff, baseProps.cutoff.displayName);
-                EditorGUI.indentLevel--;
             }
 
             materialEditor.ShaderProperty(baseProps.emissionMode, baseProps.emissionMode.displayName);
@@ -348,6 +346,19 @@ public class ToonOpaqueShaderGUI_HQ : ToonUberShaderGUIBase
     {
         DrawFoldout("Render States", ref showRenderStates, () =>
         {
+            materialEditor.ShaderProperty(baseProps.renderMode, baseProps.renderMode.displayName);
+
+            var renderMode = (RenderMode)baseProps.renderMode.floatValue;
+            if (renderMode == RenderMode.Transparent)
+            {
+                EditorGUI.indentLevel++;
+                materialEditor.ShaderProperty(baseProps.srcBlend, baseProps.srcBlend.displayName);
+                materialEditor.ShaderProperty(baseProps.dstBlend, baseProps.dstBlend.displayName);
+                EditorGUI.indentLevel--;
+            }
+
+            materialEditor.ShaderProperty(baseProps.zWrite, baseProps.zWrite.displayName);
+            materialEditor.ShaderProperty(baseProps.zTest, baseProps.zTest.displayName);
             materialEditor.ShaderProperty(baseProps.cullMode, baseProps.cullMode.displayName);
         });
     }
@@ -462,16 +473,19 @@ public class ToonOpaqueShaderGUI_HQ : ToonUberShaderGUIBase
 
         var outline = (OutlineMode)mat.GetFloat("_OutlineMode");
         SetKeywordForMaterial(mat, "_OUTLINEMODE_FRESNEL", outline == OutlineMode.Fresnel);
-        SetKeywordForMaterial(mat, "_OUTLINEMODE_HULL", outline == OutlineMode.Hull);
         SetKeywordForMaterial(mat, "_OUTLINE_SCALE_WITH_DISTANCE", outline == OutlineMode.Hull && mat.GetFloat("_OutlineScaleWithDistance") > 0.5f);
+        SetKeywordForMaterial(mat, "_OUTLINEGLINT_ON", outline == OutlineMode.Fresnel && mat.GetFloat("_GlintToggle") > 0.5f);
+
+        mat.SetShaderPassEnabled("Outline", outline == OutlineMode.Hull);
 
         SetKeywordForMaterial(mat, "_BLING_WORLDSPACE_ON", surface == ToonOpaqueUIDrawer.SurfaceType.Bling && mat.GetFloat("_BlingWorldSpace") > 0.5f);
 
+        var renderMode = (RenderMode)mat.GetFloat("_RenderMode");
+        SetKeywordForMaterial(mat, "_ALPHACLIP_ON", renderMode == RenderMode.Cutout);
+
         ApplyDissolveKeywordsToMaterial(mat);
         ApplyTieredEffectKeywordsToMaterial(mat);
-        UpdateRenderQueueAndTags(mat);
-
-        EditorUtility.SetDirty(mat);
+        UpdateRenderStates(mat);
     }
 
     private void ApplyDissolveKeywordsToMaterial(Material mat)
@@ -513,64 +527,37 @@ public class ToonOpaqueShaderGUI_HQ : ToonUberShaderGUIBase
 
     private void ApplyTieredEffectKeywordsToMaterial(Material mat)
     {
-        var tier = (TieredEffectsDrawer.EffectTier)mat.GetFloat("_EffectTier");
-        SetKeywordForMaterial(mat, "_EFFECT_TIER_RARE", tier == TieredEffectsDrawer.EffectTier.Rare);
-        SetKeywordForMaterial(mat, "_EFFECT_TIER_EPIC", tier == TieredEffectsDrawer.EffectTier.Epic);
-        SetKeywordForMaterial(mat, "_EFFECT_TIER_LEGENDARY", tier == TieredEffectsDrawer.EffectTier.Legendary);
-
-        if (tier == TieredEffectsDrawer.EffectTier.Rare)
-        {
-            var rareType = (TieredEffectsDrawer.RareEffectType)mat.GetFloat("_RareEffectType");
-            SetKeywordForMaterial(mat, "_RARE_EFFECT_PULSING_GLOW", rareType == TieredEffectsDrawer.RareEffectType.PulsingGlow);
-            SetKeywordForMaterial(mat, "_RARE_EFFECT_SPARKLES", rareType == TieredEffectsDrawer.RareEffectType.Sparkles);
-        }
-        else
-        {
-            SetKeywordForMaterial(mat, "_RARE_EFFECT_PULSING_GLOW", false);
-            SetKeywordForMaterial(mat, "_RARE_EFFECT_SPARKLES", false);
-        }
-
-        if (tier == TieredEffectsDrawer.EffectTier.Epic)
-        {
-            var epicType = (TieredEffectsDrawer.EpicEffectType)mat.GetFloat("_EpicEffectType");
-            SetKeywordForMaterial(mat, "_EPIC_EFFECT_FIRE_AURA", epicType == TieredEffectsDrawer.EpicEffectType.FireAura);
-            SetKeywordForMaterial(mat, "_EPIC_EFFECT_ELECTRIC_FIELD", epicType == TieredEffectsDrawer.EpicEffectType.ElectricField);
-        }
-        else
-        {
-            SetKeywordForMaterial(mat, "_EPIC_EFFECT_FIRE_AURA", false);
-            SetKeywordForMaterial(mat, "_EPIC_EFFECT_ELECTRIC_FIELD", false);
-        }
-
-        if (tier == TieredEffectsDrawer.EffectTier.Legendary)
-        {
-            var legendaryType = (TieredEffectsDrawer.LegendaryEffectType)mat.GetFloat("_LegendaryEffectType");
-            SetKeywordForMaterial(mat, "_LEGENDARY_EFFECT_COSMIC_RIFT", legendaryType == TieredEffectsDrawer.LegendaryEffectType.CosmicRift);
-            SetKeywordForMaterial(mat, "_LEGENDARY_EFFECT_HOLY_AURA", legendaryType == TieredEffectsDrawer.LegendaryEffectType.HolyAura);
-        }
-        else
-        {
-            SetKeywordForMaterial(mat, "_LEGENDARY_EFFECT_COSMIC_RIFT", false);
-            SetKeywordForMaterial(mat, "_LEGENDARY_EFFECT_HOLY_AURA", false);
-        }
+        var effectType = (TieredEffectsDrawer.EffectType)mat.GetFloat("_EffectType");
+        SetKeywordForMaterial(mat, "_EFFECT_RARE_PULSING_GLOW", effectType == TieredEffectsDrawer.EffectType.Rare_PulsingGlow);
+        SetKeywordForMaterial(mat, "_EFFECT_RARE_SPARKLES", effectType == TieredEffectsDrawer.EffectType.Rare_Sparkles);
+        SetKeywordForMaterial(mat, "_EFFECT_EPIC_FIRE_AURA", effectType == TieredEffectsDrawer.EffectType.Epic_FireAura);
+        SetKeywordForMaterial(mat, "_EFFECT_EPIC_ELECTRIC_FIELD", effectType == TieredEffectsDrawer.EffectType.Epic_ElectricField);
+        SetKeywordForMaterial(mat, "_EFFECT_LEGENDARY_COSMIC_RIFT", effectType == TieredEffectsDrawer.EffectType.Legendary_CosmicRift);
+        SetKeywordForMaterial(mat, "_EFFECT_LEGENDARY_HOLY_AURA", effectType == TieredEffectsDrawer.EffectType.Legendary_HolyAura);
     }
 
-    private void UpdateRenderQueueAndTags(Material mat)
+    private void UpdateRenderStates(Material mat)
     {
-        bool dissolveOn = mat.GetFloat("_EnableDissolve") > 0.5f;
-        var surface = (ToonOpaqueUIDrawer.SurfaceType)mat.GetFloat("_SurfaceType");
+        var renderMode = (RenderMode)mat.GetFloat("_RenderMode");
 
-        bool isTransparent = dissolveOn || surface == ToonOpaqueUIDrawer.SurfaceType.Cosmic;
-
-        if (isTransparent)
+        switch (renderMode)
         {
-            mat.SetOverrideTag("RenderType", "Transparent");
-            mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
-        }
-        else
-        {
-            mat.SetOverrideTag("RenderType", "Opaque");
-            mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Geometry;
+            case RenderMode.Opaque:
+                mat.SetOverrideTag("RenderType", "Opaque");
+                mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Geometry;
+                mat.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.One);
+                mat.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.Zero);
+                break;
+            case RenderMode.Cutout:
+                mat.SetOverrideTag("RenderType", "TransparentCutout");
+                mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.AlphaTest;
+                mat.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.One);
+                mat.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.Zero);
+                break;
+            case RenderMode.Transparent:
+                mat.SetOverrideTag("RenderType", "Transparent");
+                mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+                break;
         }
     }
 

@@ -1,22 +1,11 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
-using Sirenix.OdinInspector;
 
 [RequireComponent(typeof(Image))]
 public class DraggableUIItem : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
 {
-    [Title("Dependencies")]
-    [Required("A PlacementManager must be assigned.")]
-    [SerializeField] private PlacementManager placementManager;
-
-    [Title("Configuration")]
-    [Required]
-    [InlineEditor(InlineEditorModes.GUIAndHeader, Expanded = false)]
     [SerializeField] private PlaceableObjectDataSO placeableObjectData;
-
-    [Required]
-    [ChildGameObjectsOnly]
     [SerializeField] private UIItemResetButton resetButton;
 
     private Image itemImage;
@@ -25,46 +14,96 @@ public class DraggableUIItem : MonoBehaviour, IBeginDragHandler, IDragHandler, I
     private void Awake()
     {
         itemImage = GetComponent<Image>();
+        if (resetButton != null)
+        {
+            resetButton.gameObject.SetActive(false);
+        }
         ResetToAvailable();
+    }
+
+    private void OnEnable()
+    {
+        PlacementEvents.OnPlacementSucceeded += HandlePlacementSuccess;
+        PlacementEvents.OnPlacementFailed += HandlePlacementFailure;
+        PlacementEvents.OnObjectRemoved += HandleObjectRemoval;
+    }
+
+    private void OnDisable()
+    {
+        PlacementEvents.OnPlacementSucceeded -= HandlePlacementSuccess;
+        PlacementEvents.OnPlacementFailed -= HandlePlacementFailure;
+        PlacementEvents.OnObjectRemoved -= HandleObjectRemoval;
     }
 
     public void OnBeginDrag(PointerEventData eventData)
     {
-        if (isPlaced || placeableObjectData == null || placementManager == null) return;
-
-        placementManager.OnBeginDragItem(placeableObjectData, this);
-        itemImage.raycastTarget = false;
+        if (isPlaced || placeableObjectData == null) return;
+        PlacementEvents.OnRequestPlacement?.Invoke(placeableObjectData, this);
+        SetRaycastTarget(false);
     }
 
     public void OnDrag(PointerEventData eventData) { }
 
     public void OnEndDrag(PointerEventData eventData)
     {
-        if (isPlaced || placementManager == null) return;
-
-        placementManager.OnEndDragItem();
-        itemImage.raycastTarget = true;
+        if (isPlaced) return;
+        PlacementEvents.OnDragEnd?.Invoke();
+        SetRaycastTarget(true);
     }
 
-    public void NotifyPlacementSuccess()
+    private void HandlePlacementSuccess(PlaceableObjectDataSO data, PlaceableObject placedObject)
     {
-        isPlaced = true;
-        SetVisualState(false);
-        resetButton.gameObject.SetActive(true);
+        if (data == placeableObjectData)
+        {
+            isPlaced = true;
+            SetVisualState(false);
+            if (resetButton != null)
+            {
+                resetButton.gameObject.SetActive(true);
+            }
+        }
+    }
+
+    private void HandlePlacementFailure(PlaceableObjectDataSO data)
+    {
+        if (data == placeableObjectData)
+        {
+            ResetToAvailable();
+        }
+    }
+
+    private void HandleObjectRemoval(PlaceableObjectDataSO data)
+    {
+        if (data == placeableObjectData && isPlaced)
+        {
+            ResetToAvailable();
+        }
     }
 
     public void ResetToAvailable()
     {
         isPlaced = false;
         SetVisualState(true);
-        resetButton.gameObject.SetActive(false);
+        if (resetButton != null)
+        {
+            resetButton.gameObject.SetActive(false);
+        }
+    }
+
+    private void SetRaycastTarget(bool isEnabled)
+    {
+        if (itemImage != null)
+        {
+            itemImage.raycastTarget = isEnabled;
+        }
     }
 
     private void SetVisualState(bool isAvailable)
     {
+        if (itemImage == null) return;
         var tempColor = itemImage.color;
         tempColor.a = isAvailable ? 1.0f : 0.4f;
         itemImage.color = tempColor;
-        itemImage.raycastTarget = isAvailable;
+        SetRaycastTarget(isAvailable);
     }
 }

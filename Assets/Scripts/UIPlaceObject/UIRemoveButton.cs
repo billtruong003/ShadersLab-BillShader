@@ -1,14 +1,9 @@
 using UnityEngine;
 using UnityEngine.UI;
-using Sirenix.OdinInspector;
 
 [RequireComponent(typeof(Button))]
 public class UIRemoveButton : MonoBehaviour
 {
-    [Title("Dependencies")]
-    [Required("A PlacementManager must be assigned.")]
-    [SerializeField] private PlacementManager placementManager;
-
     private Button button;
 
     private void Awake()
@@ -19,9 +14,8 @@ public class UIRemoveButton : MonoBehaviour
 
     private void OnRemoveButtonClicked()
     {
-        if (placementManager == null) return;
-
-        placementManager.EnterRemovalMode();
+        // Chỉ phát đi sự kiện, không cần biết ai sẽ xử lý.
+        PlacementEvents.OnEnterRemovalMode?.Invoke();
     }
 
     private void OnDestroy()

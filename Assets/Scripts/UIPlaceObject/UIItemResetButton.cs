@@ -5,14 +5,22 @@ using Sirenix.OdinInspector;
 [RequireComponent(typeof(Button))]
 public class UIItemResetButton : MonoBehaviour
 {
-    [Required("This component needs a reference to its parent DraggableUIItem.")]
+    [Required]
     [SceneObjectsOnly]
-    [SerializeField, HideLabel, Tooltip("Reference to the parent Draggable UI Item this button controls.")]
+    [SerializeField, HideLabel]
     private DraggableUIItem _ownerItem;
+
+    private Button _button;
 
     private void Awake()
     {
-        GetComponent<Button>().onClick.AddListener(OnResetButtonClicked);
+        _button = GetComponent<Button>();
+        _button.onClick.AddListener(OnResetButtonClicked);
+
+        if (_ownerItem == null)
+        {
+            FindOwnerInParent();
+        }
     }
 
     [Button("Auto-Find Owner Item"), PropertyOrder(-1)]
@@ -21,29 +29,16 @@ public class UIItemResetButton : MonoBehaviour
         _ownerItem = GetComponentInParent<DraggableUIItem>();
     }
 
-#if UNITY_EDITOR
-    private void OnValidate()
-    {
-        if (_ownerItem == null)
-        {
-            FindOwnerInParent();
-        }
-    }
-#endif
-
     private void OnResetButtonClicked()
     {
-        if (_ownerItem != null)
-        {
-            _ownerItem.ResetToAvailable();
-        }
+        _ownerItem?.RequestPlacedObjectRemoval();
     }
 
     private void OnDestroy()
     {
-        if (TryGetComponent<Button>(out var button))
+        if (_button != null)
         {
-            button.onClick.RemoveListener(OnResetButtonClicked);
+            _button.onClick.RemoveListener(OnResetButtonClicked);
         }
     }
 }

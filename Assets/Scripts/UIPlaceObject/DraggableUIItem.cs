@@ -9,15 +9,12 @@ public class DraggableUIItem : MonoBehaviour, IBeginDragHandler, IDragHandler, I
     [SerializeField] private UIItemResetButton resetButton;
 
     private Image itemImage;
-    private bool isPlaced = false;
+    private PlaceableObject placedInstance;
+    private bool isPlaced => placedInstance != null;
 
     private void Awake()
     {
         itemImage = GetComponent<Image>();
-        if (resetButton != null)
-        {
-            resetButton.gameObject.SetActive(false);
-        }
         ResetToAvailable();
     }
 
@@ -38,51 +35,62 @@ public class DraggableUIItem : MonoBehaviour, IBeginDragHandler, IDragHandler, I
     public void OnBeginDrag(PointerEventData eventData)
     {
         if (isPlaced || placeableObjectData == null) return;
+
         PlacementEvents.OnRequestPlacement?.Invoke(placeableObjectData, this);
         SetRaycastTarget(false);
     }
 
-    public void OnDrag(PointerEventData eventData) { }
+    public void OnDrag(PointerEventData eventData)
+    {
+        // Intentionally left blank.
+        // Logic is handled by PlacementSystem.
+    }
 
     public void OnEndDrag(PointerEventData eventData)
     {
         if (isPlaced) return;
+
         PlacementEvents.OnDragEnd?.Invoke();
         SetRaycastTarget(true);
     }
 
-    private void HandlePlacementSuccess(PlaceableObjectDataSO data, PlaceableObject placedObject)
+    private void HandlePlacementSuccess(DraggableUIItem sourceItem, PlaceableObject newPlacedObject)
     {
-        if (data == placeableObjectData)
+        if (sourceItem != this) return;
+
+        placedInstance = newPlacedObject;
+        SetVisualState(false);
+        if (resetButton != null)
         {
-            isPlaced = true;
-            SetVisualState(false);
-            if (resetButton != null)
-            {
-                resetButton.gameObject.SetActive(true);
-            }
+            resetButton.gameObject.SetActive(true);
         }
     }
 
-    private void HandlePlacementFailure(PlaceableObjectDataSO data)
+    private void HandlePlacementFailure(DraggableUIItem sourceItem)
     {
-        if (data == placeableObjectData)
+        if (sourceItem != this) return;
+
+        ResetToAvailable();
+    }
+
+    private void HandleObjectRemoval(PlaceableObject removedObject)
+    {
+        if (placedInstance != null && placedInstance == removedObject)
         {
             ResetToAvailable();
         }
     }
 
-    private void HandleObjectRemoval(PlaceableObjectDataSO data)
+    public void RequestPlacedObjectRemoval()
     {
-        if (data == placeableObjectData && isPlaced)
-        {
-            ResetToAvailable();
-        }
+        if (!isPlaced) return;
+
+        PlacementEvents.OnRequestObjectRemoval?.Invoke(placedInstance);
     }
 
     public void ResetToAvailable()
     {
-        isPlaced = false;
+        placedInstance = null;
         SetVisualState(true);
         if (resetButton != null)
         {
@@ -101,6 +109,7 @@ public class DraggableUIItem : MonoBehaviour, IBeginDragHandler, IDragHandler, I
     private void SetVisualState(bool isAvailable)
     {
         if (itemImage == null) return;
+
         var tempColor = itemImage.color;
         tempColor.a = isAvailable ? 1.0f : 0.4f;
         itemImage.color = tempColor;

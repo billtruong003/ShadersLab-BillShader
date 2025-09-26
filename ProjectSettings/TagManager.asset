@@ -4,6 +4,10 @@
 TagManager:
   serializedVersion: 3
   tags:
+  - Stair
+  - WallRun
+  - Climb
+  - Fly
   - LevelBounds
   - FX
   - Enemy
@@ -11,6 +15,8 @@ TagManager:
   - NoMask
   - Grid
   - PlaceableObject
+  - Animal
+  - Water
   layers:
   - Default
   - TransparentFX
@@ -42,7 +48,7 @@ TagManager:
   - 
   - 
   - 
-  - 
+  - Item
   - 
   m_SortingLayers:
   - name: Default

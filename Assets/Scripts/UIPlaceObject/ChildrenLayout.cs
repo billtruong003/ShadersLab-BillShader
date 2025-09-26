@@ -6,8 +6,8 @@ using System.Collections.Generic;
 using UnityEditor;
 #endif
 
-[System.Serializable]
-public enum LayoutShapeChildPlacer
+// Đề xuất 1: Đổi tên enum để ngắn gọn và giải quyết trực tiếp lỗi trong các thuộc tính [ShowIf]
+public enum LayoutShapeChild
 {
     Grid,
     Circle,
@@ -22,131 +22,138 @@ public enum LayoutShapeChildPlacer
 [ExecuteInEditMode]
 public class ChildrenLayout : MonoBehaviour
 {
+    private const float TAU = 2 * Mathf.PI;
+
     [Title("Layout Configuration", bold: true)]
     [EnumToggleButtons]
-    [OnValueChanged("SetDirty")]
-    public LayoutShapeChildPlacer Shape;
+    [OnValueChanged(nameof(SetDirty))]
+    public LayoutShapeChild Shape;
 
     [InfoBox("This component requires child objects to arrange.", InfoMessageType.Warning, "ShowIfNoChildren")]
     private bool ShowIfNoChildren => transform.childCount == 0;
+    private bool HasChildren => transform.childCount > 0;
 
-    // Grid Parameters
-    [BoxGroup("Shape Parameters")]
-    [ShowIf("Shape", LayoutShape.Grid)]
-    [OnValueChanged("SetDirty")]
+    //================================================================================
+    // Shape Parameters
+    //================================================================================
+
+    #region Shape Parameters
+    [BoxGroup("Shape Parameters", ShowLabel = false)]
+    [ShowIf("Shape", LayoutShapeChild.Grid)]
+    [OnValueChanged(nameof(SetDirty))]
     public Vector3Int GridSize = new Vector3Int(5, 5, 5);
 
-    // Circle & Cylinder Parameters
     [BoxGroup("Shape Parameters")]
-    [ShowIf("@this.Shape == LayoutShape.Circle || this.Shape == LayoutShape.Cylinder")]
+    [ShowIf("@this.Shape == LayoutShapeChild.Circle || this.Shape == LayoutShapeChild.Cylinder")]
     [MinValue(0f)]
-    [OnValueChanged("SetDirty")]
+    [OnValueChanged(nameof(SetDirty))]
     public float Radius = 5f;
 
     [BoxGroup("Shape Parameters")]
-    [ShowIf("Shape", LayoutShape.Cylinder)]
+    [ShowIf("Shape", LayoutShapeChild.Cylinder)]
     [MinValue(1)]
-    [OnValueChanged("SetDirty")]
+    [OnValueChanged(nameof(SetDirty))]
     public int Layers = 5;
 
     [BoxGroup("Shape Parameters")]
-    [ShowIf("Shape", LayoutShape.Cylinder)]
-    [OnValueChanged("SetDirty")]
+    [ShowIf("Shape", LayoutShapeChild.Cylinder)]
+    [OnValueChanged(nameof(SetDirty))]
     public float LayerHeight = 1f;
 
-    // Triangle Parameters
     [BoxGroup("Shape Parameters")]
-    [ShowIf("Shape", LayoutShape.Triangle)]
+    [ShowIf("Shape", LayoutShapeChild.Triangle)]
     [MinValue(1)]
-    [OnValueChanged("SetDirty")]
+    [OnValueChanged(nameof(SetDirty))]
     public int TriangleBaseWidth = 7;
 
-    // Pyramid Parameters
     [BoxGroup("Shape Parameters")]
-    [ShowIf("Shape", LayoutShape.Pyramid)]
+    [ShowIf("Shape", LayoutShapeChild.Pyramid)]
     [MinValue(2)]
-    [OnValueChanged("SetDirty")]
+    [OnValueChanged(nameof(SetDirty))]
     public int PyramidBaseSize = 5;
 
     [BoxGroup("Shape Parameters")]
-    [ShowIf("Shape", LayoutShape.Pyramid)]
+    [ShowIf("Shape", LayoutShapeChild.Pyramid)]
     [MinValue(1)]
-    [OnValueChanged("SetDirty")]
+    [OnValueChanged(nameof(SetDirty))]
     public int PyramidHeight = 5;
 
-    // Sphere Parameters
     [BoxGroup("Shape Parameters")]
-    [ShowIf("Shape", LayoutShape.Sphere)]
+    [ShowIf("Shape", LayoutShapeChild.Sphere)]
     [MinValue(1f)]
-    [OnValueChanged("SetDirty")]
+    [OnValueChanged(nameof(SetDirty))]
     public float SphereRadius = 5f;
 
     [BoxGroup("Shape Parameters")]
-    [ShowIf("Shape", LayoutShape.Sphere)]
+    [ShowIf("Shape", LayoutShapeChild.Sphere)]
     [Range(3, 100)]
-    [OnValueChanged("SetDirty")]
+    [OnValueChanged(nameof(SetDirty))]
     public int LatitudeDivisions = 12;
 
     [BoxGroup("Shape Parameters")]
-    [ShowIf("Shape", LayoutShape.Sphere)]
+    [ShowIf("Shape", LayoutShapeChild.Sphere)]
     [Range(3, 100)]
-    [OnValueChanged("SetDirty")]
+    [OnValueChanged(nameof(SetDirty))]
     public int LongitudeDivisions = 24;
 
-    // Spiral Parameters
     [BoxGroup("Shape Parameters")]
-    [ShowIf("Shape", LayoutShape.Spiral)]
-    [OnValueChanged("SetDirty")]
+    [ShowIf("Shape", LayoutShapeChild.Spiral)]
+    [OnValueChanged(nameof(SetDirty))]
     public float StartRadius = 1f;
 
     [BoxGroup("Shape Parameters")]
-    [ShowIf("Shape", LayoutShape.Spiral)]
-    [OnValueChanged("SetDirty")]
+    [ShowIf("Shape", LayoutShapeChild.Spiral)]
+    [OnValueChanged(nameof(SetDirty))]
     public float EndRadius = 10f;
 
     [BoxGroup("Shape Parameters")]
-    [ShowIf("Shape", LayoutShape.Spiral)]
-    [OnValueChanged("SetDirty")]
+    [ShowIf("Shape", LayoutShapeChild.Spiral)]
+    [OnValueChanged(nameof(SetDirty))]
     public float SpiralHeight = 5f;
 
     [BoxGroup("Shape Parameters")]
-    [ShowIf("Shape", LayoutShape.Spiral)]
-    [OnValueChanged("SetDirty")]
+    [ShowIf("Shape", LayoutShapeChild.Spiral)]
+    [OnValueChanged(nameof(SetDirty))]
     public int Rotations = 3;
 
-    // Wave Parameters
     [BoxGroup("Shape Parameters")]
-    [ShowIf("Shape", LayoutShape.Wave)]
-    [OnValueChanged("SetDirty")]
+    [ShowIf("Shape", LayoutShapeChild.Wave)]
+    [OnValueChanged(nameof(SetDirty))]
     public Vector2Int WaveGridSize = new Vector2Int(10, 10);
 
     [BoxGroup("Shape Parameters")]
-    [ShowIf("Shape", LayoutShape.Wave)]
-    [OnValueChanged("SetDirty")]
+    [ShowIf("Shape", LayoutShapeChild.Wave)]
+    [OnValueChanged(nameof(SetDirty))]
     public float Amplitude = 1f;
 
     [BoxGroup("Shape Parameters")]
-    [ShowIf("Shape", LayoutShape.Wave)]
-    [OnValueChanged("SetDirty")]
+    [ShowIf("Shape", LayoutShapeChild.Wave)]
+    [OnValueChanged(nameof(SetDirty))]
     public float Frequency = 0.5f;
 
-    // Common Parameters
     [Title("Shared Parameters")]
     [BoxGroup("Shape Parameters")]
-    [OnValueChanged("SetDirty")]
+    [OnValueChanged(nameof(SetDirty))]
     public Vector3 Spacing = Vector3.one;
+    #endregion
+
+    //================================================================================
+    // Actions
+    //================================================================================
 
     [Title("Actions", Bold = true)]
     [Button(ButtonSizes.Large, Name = "Apply Layout")]
     [GUIColor(0.4f, 0.8f, 1f)]
-    [EnableIf("HasChildren")]
+    [EnableIf(nameof(HasChildren))]
     private void ApplyLayout()
     {
         List<Vector3> targetPositions = CalculateTargetPositions();
         ApplyPositionsToChildren(targetPositions);
     }
 
-    private bool HasChildren => transform.childCount > 0;
+    //================================================================================
+    // Core Logic
+    //================================================================================
 
     private List<Vector3> CalculateTargetPositions()
     {
@@ -155,23 +162,44 @@ public class ChildrenLayout : MonoBehaviour
 
         switch (Shape)
         {
-            case LayoutShapeChildPlacer.Grid: FillGridPositions(positions, childCount); break;
-            case LayoutShapeChildPlacer.Circle: FillCirclePositions(positions, childCount); break;
-            case LayoutShapeChildPlacer.Cylinder: FillCylinderPositions(positions, childCount); break;
-            case LayoutShapeChildPlacer.Triangle: FillTrianglePositions(positions); break;
-            case LayoutShapeChildPlacer.Pyramid: FillPyramidPositions(positions, childCount); break;
-            case LayoutShapeChildPlacer.Sphere: FillSpherePositions(positions); break;
-            case LayoutShapeChildPlacer.Spiral: FillSpiralPositions(positions, childCount); break;
-            case LayoutShapeChildPlacer.Wave: FillWavePositions(positions, childCount); break;
+            case LayoutShapeChild.Grid: FillGridPositions(positions, childCount); break;
+            case LayoutShapeChild.Circle: FillCirclePositions(positions, childCount); break;
+            case LayoutShapeChild.Cylinder: FillCylinderPositions(positions, childCount); break;
+            case LayoutShapeChild.Triangle: FillTrianglePositions(positions); break;
+            case LayoutShapeChild.Pyramid: FillPyramidPositions(positions, childCount); break;
+            case LayoutShapeChild.Sphere: FillSpherePositions(positions); break;
+            case LayoutShapeChild.Spiral: FillSpiralPositions(positions, childCount); break;
+            case LayoutShapeChild.Wave: FillWavePositions(positions, childCount); break;
         }
         return positions;
     }
 
+    private void ApplyPositionsToChildren(List<Vector3> positions)
+    {
+        int childCount = transform.childCount;
+        int positionCount = positions.Count;
+
+        for (int i = 0; i < childCount; i++)
+        {
+            if (i >= positionCount) break;
+
+            Transform child = transform.GetChild(i);
+#if UNITY_EDITOR
+            Undo.RecordObject(child, "Apply Children Layout");
+#endif
+            child.localPosition = positions[i];
+        }
+    }
+
+    //================================================================================
+    // Position Calculation Methods
+    //================================================================================
+
     private void FillGridPositions(List<Vector3> positions, int count)
     {
-        int totalInLayer = GridSize.x * GridSize.z;
-        if (totalInLayer == 0) return;
+        if (GridSize.x <= 0 || GridSize.z <= 0) return;
 
+        int totalInLayer = GridSize.x * GridSize.z;
         Vector3 offset = new Vector3(
             -(GridSize.x - 1) * Spacing.x * 0.5f,
             0,
@@ -180,20 +208,24 @@ public class ChildrenLayout : MonoBehaviour
 
         for (int i = 0; i < count; i++)
         {
-            int y = i / totalInLayer;
-            int x = (i % totalInLayer) % GridSize.x;
-            int z = (i % totalInLayer) / GridSize.x;
+            int layerIndex = i / totalInLayer;
+            int indexInLayer = i % totalInLayer;
+            int x = indexInLayer % GridSize.x;
+            int z = indexInLayer / GridSize.x;
 
-            Vector3 pos = new Vector3(x * Spacing.x, y * Spacing.y, z * Spacing.z) + offset;
+            Vector3 pos = new Vector3(x * Spacing.x, layerIndex * Spacing.y, z * Spacing.z) + offset;
             positions.Add(pos);
         }
     }
 
     private void FillCirclePositions(List<Vector3> positions, int count)
     {
+        if (count == 0) return;
+        float angleStep = TAU / count;
+
         for (int i = 0; i < count; i++)
         {
-            float angle = i * (2 * Mathf.PI / count);
+            float angle = i * angleStep;
             float x = Mathf.Cos(angle) * Radius;
             float z = Mathf.Sin(angle) * Radius;
             positions.Add(new Vector3(x, 0, z));
@@ -202,15 +234,18 @@ public class ChildrenLayout : MonoBehaviour
 
     private void FillCylinderPositions(List<Vector3> positions, int count)
     {
-        if (Layers <= 0) return;
+        if (Layers <= 0 || count == 0) return;
         int objectsPerLayer = Mathf.CeilToInt((float)count / Layers);
+        if (objectsPerLayer == 0) return;
+
+        float angleStep = TAU / objectsPerLayer;
 
         for (int i = 0; i < count; i++)
         {
             int layer = i / objectsPerLayer;
             int indexInLayer = i % objectsPerLayer;
 
-            float angle = indexInLayer * (2 * Mathf.PI / objectsPerLayer);
+            float angle = indexInLayer * angleStep;
             float x = Mathf.Cos(angle) * Radius;
             float z = Mathf.Sin(angle) * Radius;
             float y = layer * LayerHeight;
@@ -220,11 +255,12 @@ public class ChildrenLayout : MonoBehaviour
 
     private void FillTrianglePositions(List<Vector3> positions)
     {
+        int childCount = transform.childCount;
         int placedCount = 0;
-        for (int y = 0; y < TriangleBaseWidth && placedCount < transform.childCount; y++)
+        for (int y = 0; y < TriangleBaseWidth && placedCount < childCount; y++)
         {
             int rowWidth = TriangleBaseWidth - y;
-            for (int x = 0; x < rowWidth && placedCount < transform.childCount; x++)
+            for (int x = 0; x < rowWidth && placedCount < childCount; x++)
             {
                 float xPos = (x - (rowWidth - 1) * 0.5f) * Spacing.x;
                 float zPos = y * Spacing.z;
@@ -257,15 +293,17 @@ public class ChildrenLayout : MonoBehaviour
 
     private void FillSpherePositions(List<Vector3> positions)
     {
+        int childCount = transform.childCount;
         int placedCount = 0;
-        for (int i = 0; i <= LatitudeDivisions && placedCount < transform.childCount; i++)
+        for (int i = 0; i <= LatitudeDivisions && placedCount < childCount; i++)
         {
             float latAngle = Mathf.PI * i / LatitudeDivisions;
             int currentLongDivisions = (i == 0 || i == LatitudeDivisions) ? 1 : LongitudeDivisions;
+            float lonAngleStep = TAU / currentLongDivisions;
 
-            for (int j = 0; j < currentLongDivisions && placedCount < transform.childCount; j++)
+            for (int j = 0; j < currentLongDivisions && placedCount < childCount; j++)
             {
-                float lonAngle = 2 * Mathf.PI * j / currentLongDivisions;
+                float lonAngle = j * lonAngleStep;
                 float x = SphereRadius * Mathf.Sin(latAngle) * Mathf.Cos(lonAngle);
                 float y = SphereRadius * Mathf.Cos(latAngle);
                 float z = SphereRadius * Mathf.Sin(latAngle) * Mathf.Sin(lonAngle);
@@ -277,7 +315,9 @@ public class ChildrenLayout : MonoBehaviour
 
     private void FillSpiralPositions(List<Vector3> positions, int count)
     {
-        float totalAngle = Rotations * 2 * Mathf.PI;
+        if (count == 0) return;
+        float totalAngle = Rotations * TAU;
+
         for (int i = 0; i < count; i++)
         {
             float progress = (count == 1) ? 0 : (float)i / (count - 1);
@@ -292,7 +332,7 @@ public class ChildrenLayout : MonoBehaviour
 
     private void FillWavePositions(List<Vector3> positions, int count)
     {
-        if (WaveGridSize.x == 0) return;
+        if (WaveGridSize.x <= 0) return;
         Vector3 offset = new Vector3(-(WaveGridSize.x - 1) * Spacing.x * 0.5f, 0, -(WaveGridSize.y - 1) * Spacing.z * 0.5f);
 
         for (int i = 0; i < count; i++)
@@ -307,23 +347,9 @@ public class ChildrenLayout : MonoBehaviour
         }
     }
 
-    private void ApplyPositionsToChildren(List<Vector3> positions)
-    {
-        int childCount = transform.childCount;
-        int positionCount = positions.Count;
-
-        for (int i = 0; i < childCount; i++)
-        {
-            if (i < positionCount)
-            {
-                Transform child = transform.GetChild(i);
-#if UNITY_EDITOR
-                Undo.RecordObject(child, "Apply Children Layout");
-#endif
-                child.localPosition = positions[i];
-            }
-        }
-    }
+    //================================================================================
+    // Editor-specific Methods
+    //================================================================================
 
     private void SetDirty()
     {

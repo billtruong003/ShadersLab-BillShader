@@ -25,6 +25,7 @@ Material:
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
+  - _FAKELIGHT_ON
   - _OUTLINE_SCALE_WITH_DISTANCE
   - _SURFACETYPE_OPAQUE
   m_InvalidKeywords:
@@ -214,7 +215,7 @@ Material:
     - _EpicFloat1: 1
     - _EpicFloat2: 1
     - _EpicFloat3: 1
-    - _FakeLightMode: 0
+    - _FakeLightMode: 1
     - _FresnelOutlinePower: 5
     - _FresnelOutlineSharpness: 2
     - _FresnelOutlineToggle: 0
@@ -259,7 +260,7 @@ Material:
     - _PatternType: 0
     - _QueueOffset: 0
     - _RadialDirection: 1
-    - _RampSmoothness: 0.05
+    - _RampSmoothness: 0.01
     - _RareFloat1: 1
     - _RareFloat2: 1
     - _ReceiveShadows: 1
@@ -323,7 +324,7 @@ Material:
     - _EpicColor1: {r: 1, g: 0.5, b: 0, a: 1}
     - _EpicColor2: {r: 1, g: 1, b: 0, a: 1}
     - _FakeLightColor: {r: 1, g: 1, b: 1, a: 1}
-    - _FakeLightDirection: {r: 5, g: 5, b: 5, a: 0}
+    - _FakeLightDirection: {r: -50, g: 50, b: 50, a: 0}
     - _FresnelColor: {r: 0, g: 0.049834676, b: 0.5188679, a: 1}
     - _FresnelOutlineColor: {r: 0, g: 0, b: 0, a: 1}
     - _GlassColor: {r: 0, g: 0.035097625, b: 0.6792453, a: 0.78431374}
@@ -336,12 +337,12 @@ Material:
     - _LegendaryColor1: {r: 0.5, g: 0, b: 1, a: 1}
     - _LegendaryColor2: {r: 0, g: 1, b: 1, a: 1}
     - _MatcapTint: {r: 1, g: 1, b: 1, a: 1}
-    - _MidtoneColor: {r: 0.5660378, g: 0.5660378, b: 0.5660378, a: 1}
+    - _MidtoneColor: {r: 0.6415094, g: 0.6415094, b: 0.6415094, a: 1}
     - _OutlineColor: {r: 0, g: 0, b: 0, a: 1}
     - _RareColor1: {r: 1, g: 1, b: 1, a: 1}
     - _RimColor: {r: 1, g: 0.29999998, b: 0.29999998, a: 1}
     - _ShadowColor: {r: 0.39999998, g: 0.39999998, b: 0.39999998, a: 1}
-    - _ShadowTint: {r: 0.21698111, g: 0.21698111, b: 0.21698111, a: 1}
+    - _ShadowTint: {r: 0, g: 0, b: 0, a: 1}
     - _SkyColor: {r: 0.19999996, g: 0.29999998, b: 0.39999998, a: 1}
     - _SpecColor: {r: 0.2, g: 0.2, b: 0.2, a: 1}
     - _SpecuColor: {r: 0.8, g: 0.45, b: 0.19999996, a: 1}

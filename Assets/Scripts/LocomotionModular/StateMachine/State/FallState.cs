@@ -1,3 +1,5 @@
+// Path: Assets/Scripts/LocomotionModular/StateMachine/State/FallState.cs
+
 namespace ModularTopDown.Locomotion
 {
     public class FallState : LocomotionState
@@ -27,6 +29,7 @@ namespace ModularTopDown.Locomotion
 
             if (locomotion.IsGrounded())
             {
+                RequestFX(CharacterFXProfile.FXType.Land);
                 stateMachine.SwitchState(new GroundedState(stateMachine));
             }
         }

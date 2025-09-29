@@ -1,4 +1,5 @@
-// File: Assets/ModularTopDown/Locomotion/StateMachine/LocomotionStateMachine.cs
+// Path: Assets/Scripts/LocomotionModular/StateMachine/LocomotionStateMachine.cs
+
 using UnityEngine;
 
 namespace ModularTopDown.Locomotion
@@ -8,6 +9,10 @@ namespace ModularTopDown.Locomotion
         [field: Header("Dependencies")]
         [field: SerializeField] public CharacterLocomotion Locomotion { get; private set; }
         [field: SerializeField] public CharacterAnimator Animator { get; private set; }
+
+        [field: Header("Visual Effects")]
+        [field: SerializeField] public AfterImageController AfterImageController { get; private set; }
+        [field: SerializeField] public GameObject SmokeTrailEffect { get; private set; }
 
         [Header("State Parameters")]
         public float jumpHeight = 1.5f;
@@ -29,8 +34,9 @@ namespace ModularTopDown.Locomotion
 
         void Start()
         {
-            Locomotion.ConfigureJumps(canDoubleJump);
+            SmokeTrailEffect?.SetActive(false);
 
+            Locomotion.ConfigureJumps(canDoubleJump);
             SwitchState(new GroundedState(this));
         }
 

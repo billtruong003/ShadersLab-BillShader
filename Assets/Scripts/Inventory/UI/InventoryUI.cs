@@ -1,3 +1,4 @@
+// Path: Assets/Scripts/Inventory/UI/InventoryUI.cs
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -11,9 +12,14 @@ public class InventoryUI : MonoBehaviour
 
     private void Start()
     {
+        // Đảm bảo inventorySystem không null
+        if (inventorySystem == null)
+        {
+            inventorySystem = FindObjectOfType<PlayerInventory>().GetComponent<InventorySystem>();
+        }
+
         InitializeUI();
         inventorySystem.OnInventoryChanged += Redraw;
-        Redraw();
     }
 
     private void OnDestroy()
@@ -35,7 +41,9 @@ public class InventoryUI : MonoBehaviour
         for (int i = 0; i < inventorySystem.InventorySlots.Count; i++)
         {
             GameObject slotInstance = Instantiate(inventorySlotPrefab, slotContainer);
-            slotUIs.Add(slotInstance.GetComponent<InventorySlotUI>());
+            var slotUIComponent = slotInstance.GetComponent<InventorySlotUI>();
+            slotUIComponent.Initialize(inventorySystem, i); // <-- Dòng quan trọng
+            slotUIs.Add(slotUIComponent);
         }
     }
 
@@ -45,7 +53,8 @@ public class InventoryUI : MonoBehaviour
         {
             if (i < inventorySystem.InventorySlots.Count)
             {
-                slotUIs[i].UpdateSlot(inventorySystem.InventorySlots[i]);
+                // UpdateSlot giờ đã được gọi bên trong Initialize và khi event được kích hoạt
+                slotUIs[i].UpdateSlot(inventorySystem.GetSlotAt(i));
             }
             else
             {

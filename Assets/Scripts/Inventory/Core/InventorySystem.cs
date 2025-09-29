@@ -118,4 +118,18 @@ public class InventorySystem : MonoBehaviour
         }
         return quantity;
     }
+
+    public void SwapSlots(int indexA, int indexB)
+    {
+        if (indexA < 0 || indexA >= inventorySlots.Count || indexB < 0 || indexB >= inventorySlots.Count)
+        {
+            return;
+        }
+
+        InventorySlot temp = inventorySlots[indexA];
+        inventorySlots[indexA] = inventorySlots[indexB];
+        inventorySlots[indexB] = temp;
+
+        OnInventoryChanged?.Invoke();
+    }
 }

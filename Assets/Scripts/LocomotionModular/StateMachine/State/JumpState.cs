@@ -1,3 +1,5 @@
+// Path: Assets/Scripts/LocomotionModular/StateMachine/State/JumpState.cs
+
 using UnityEngine;
 
 namespace ModularTopDown.Locomotion
@@ -24,6 +26,7 @@ namespace ModularTopDown.Locomotion
             if (jumpSucceeded)
             {
                 animator.PlayTargetAnimation(wasDoubleJump ? "DoubleJump" : "Jump");
+                RequestFX(CharacterFXProfile.FXType.Jump);
             }
             else
             {

@@ -4,30 +4,28 @@ public class PlayerInventory : MonoBehaviour
 {
     [SerializeField] private InventorySystem inventorySystem;
 
-    // Public API để các hệ thống khác (như QuestSystem) gọi vào
-    public bool AddQuestItem(ItemData item, int quantity)
+    public bool AddItem(ItemData item, int quantity)
     {
-        if (inventorySystem == null)
-        {
-            Debug.LogError("Inventory System is not assigned!");
-            return false;
-        }
-
-        bool success = inventorySystem.AddItem(item, quantity);
-
-        if (success)
-        {
-            Debug.Log($"Successfully added {quantity} of {item.itemName} to inventory.");
-        }
-        else
-        {
-            Debug.LogWarning($"Failed to add {item.itemName} to inventory. It might be full.");
-        }
-
-        return success;
+        if (inventorySystem == null) return false;
+        return inventorySystem.AddItem(item, quantity);
     }
 
-    // Ví dụ sử dụng để test
+    public bool RemoveItem(ItemData item, int quantity)
+    {
+        if (inventorySystem == null) return false;
+        return inventorySystem.RemoveItem(item, quantity);
+    }
+
+    public ItemData GetItemAt(int index)
+    {
+        return inventorySystem.GetItemAt(index);
+    }
+
+    public int GetInventorySize()
+    {
+        return inventorySystem.GetSize();
+    }
+
     [Header("Testing")]
     [SerializeField] private ItemData testItemToAdd;
     [SerializeField] private int testQuantity = 1;
@@ -37,7 +35,7 @@ public class PlayerInventory : MonoBehaviour
     {
         if (testItemToAdd != null)
         {
-            AddQuestItem(testItemToAdd, testQuantity);
+            AddItem(testItemToAdd, testQuantity);
         }
     }
 }

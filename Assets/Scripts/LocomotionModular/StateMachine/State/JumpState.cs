@@ -1,4 +1,3 @@
-// File: Assets/ModularTopDown/Locomotion/StateMachine/States/JumpState.cs
 using UnityEngine;
 
 namespace ModularTopDown.Locomotion

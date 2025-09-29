@@ -1,4 +1,3 @@
-// File: Assets/ModularTopDown/Locomotion/StateMachine/States/GroundedState.cs
 namespace ModularTopDown.Locomotion
 {
     public class GroundedState : LocomotionState

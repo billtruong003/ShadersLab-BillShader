@@ -1,4 +1,3 @@
-// File: Assets/ModularTopDown/Locomotion/Input/PlayerInputHandler.cs
 using UnityEngine;
 
 namespace ModularTopDown.Locomotion

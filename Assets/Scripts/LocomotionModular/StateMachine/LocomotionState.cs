@@ -1,4 +1,3 @@
-// File: Assets/ModularTopDown/Locomotion/StateMachine/LocomotionState.cs
 namespace ModularTopDown.Locomotion
 {
     public abstract class LocomotionState

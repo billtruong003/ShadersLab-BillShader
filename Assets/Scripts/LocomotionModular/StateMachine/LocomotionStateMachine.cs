@@ -15,11 +15,9 @@ namespace ModularTopDown.Locomotion
         public float dashDuration = 0.4f;
         public float dashSpeed = 15f;
 
-        // --- THÊM MỚI: TÙY CHỌN KỸ NĂNG ---
         [Header("Abilities")]
         public bool canDash = true;
         public bool canDoubleJump = true;
-        // --- KẾT THÚC THÊM MỚI ---
 
         public ILocomotionInput Input { get; private set; }
         public LocomotionState CurrentState { get; private set; }

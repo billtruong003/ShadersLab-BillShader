@@ -1,5 +1,3 @@
-// File: Assets/ModularTopDown/Locomotion/Core/CharacterLocomotion.cs
-// PHIÊN BẢN NÂNG CẤP: THÊM DEBUG GIZMOS
 using UnityEngine;
 
 namespace ModularTopDown.Locomotion

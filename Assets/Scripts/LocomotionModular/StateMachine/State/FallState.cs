@@ -1,4 +1,3 @@
-// File: Assets/ModularTopDown/Locomotion/StateMachine/States/FallState.cs
 namespace ModularTopDown.Locomotion
 {
     public class FallState : LocomotionState

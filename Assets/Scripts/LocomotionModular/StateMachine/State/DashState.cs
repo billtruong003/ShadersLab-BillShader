@@ -1,4 +1,3 @@
-// File: Assets/ModularTopDown/Locomotion/StateMachine/States/DashState.cs
 namespace ModularTopDown.Locomotion
 {
     public class DashState : LocomotionState

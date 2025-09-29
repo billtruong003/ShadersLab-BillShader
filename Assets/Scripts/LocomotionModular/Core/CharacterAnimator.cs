@@ -1,4 +1,3 @@
-// File: Assets/ModularTopDown/Locomotion/Core/CharacterAnimator.cs
 using UnityEngine;
 
 namespace ModularTopDown.Locomotion

@@ -1,4 +1,4 @@
-// Path: Assets/Scripts/Combat/Weapons/ActiveSword.cs
+// Path: Assets/Scripts/Combat/ActiveSword.cs
 using UnityEngine;
 using DG.Tweening;
 using System.Linq;
@@ -46,6 +46,8 @@ public class ActiveSword : ActiveWeapon
     [Tooltip("Khoảng cách kiếm phải đạt được trước khi bắt đầu chém.")]
     [SerializeField] private float attackRange = 2f;
 
+    [Header("Impact Effect")]
+    [SerializeField] private GameObject hitImpactVFX; // DÒNG MỚI
 
     [Header("Idle Dynamics")]
     [SerializeField] private Vector3 idleLocalRotation = new Vector3(0, 0, 45);
@@ -184,7 +186,6 @@ public class ActiveSword : ActiveWeapon
         SwitchState(SwordState.Attacking);
     }
 
-    // Hàm này bị bỏ trống vì logic đã được chuyển vào HandleAttackingState
     protected override void PerformAttack() { }
 
     private void HandleAttackingState()
@@ -218,9 +219,7 @@ public class ActiveSword : ActiveWeapon
     private void BeginSwingPhase()
     {
         _attackSubState = AttackSubState.Swinging;
-
         AttackPattern chosenPattern = attackPatterns[Random.Range(0, attackPatterns.Count)];
-
         Vector3 directionToTarget = (_currentTarget.position - transform.position).normalized;
         if (directionToTarget != Vector3.zero)
         {
@@ -250,7 +249,6 @@ public class ActiveSword : ActiveWeapon
         });
     }
 
-
     private void CheckLeashDistance()
     {
         if (idleAnchor != null && Vector3.Distance(transform.position, idleAnchor.position) > maxAttackLeashDistance)
@@ -277,42 +275,30 @@ public class ActiveSword : ActiveWeapon
             Vector3 directionToEnemy = (enemyCollider.transform.position - transform.position).normalized;
             if (Vector3.Angle(transform.forward, directionToEnemy) < attackDamageArc / 2)
             {
-                // ---- ĐÂY LÀ DÒNG THAY ĐỔI QUAN TRỌNG NHẤT ----
-                // Thay vì tìm DummyHealth, giờ chúng ta tìm EnemyHealth
-                if (enemyCollider.GetComponent<EnemyHealth>() != null)
+                bool hitSuccess = false;
+                if (enemyCollider.TryGetComponent<EnemyHealth>(out var enemyHealth))
                 {
-                    enemyCollider.GetComponent<EnemyHealth>()?.TakeDamage(weaponData.baseDamage, transform.position);
+                    enemyHealth.TakeDamage(weaponData.baseDamage, transform.position);
+                    hitSuccess = true;
                 }
-                else
+                else if (enemyCollider.TryGetComponent<DummyHealth>(out var dummyHealth))
                 {
-                    enemyCollider.GetComponent<DummyHealth>()?.TakeDamage(weaponData.baseDamage, transform.position);
+                    dummyHealth.TakeDamage(weaponData.baseDamage, transform.position);
+                    hitSuccess = true;
+                }
+
+                if (hitSuccess && hitImpactVFX != null) // DÒNG MỚI
+                {
+                    ObjectPoolManager.Instance.Spawn(hitImpactVFX, enemyCollider.transform.position, Quaternion.identity);
                 }
             }
         }
     }
+
     private Transform FindNearestEnemy()
     {
         return Physics.OverlapSphere(transform.position, attackSearchRadius, enemyLayer)
             .OrderBy(c => Vector3.SqrMagnitude(transform.position - c.transform.position))
             .FirstOrDefault()?.transform;
     }
-
-#if UNITY_EDITOR
-    private void OnDrawGizmosSelected()
-    {
-        // Vẽ bán kính tìm kiếm kẻ địch
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawWireSphere(transform.position, attackSearchRadius);
-
-        // Vẽ bán kính gây sát thương
-        float effectiveAttackRange = (weaponData != null && weaponData.areaOfEffect > 0) ? weaponData.areaOfEffect : 3.5f;
-        Gizmos.color = Color.red;
-        Gizmos.DrawWireSphere(transform.position, effectiveAttackRange);
-
-        // Vẽ hình quạt của vùng tấn công
-        UnityEditor.Handles.color = new Color(1, 0, 0, 0.2f);
-        Vector3 forwardArc = Quaternion.Euler(0, -attackDamageArc / 2, 0) * transform.forward;
-        UnityEditor.Handles.DrawSolidArc(transform.position, Vector3.up, forwardArc, attackDamageArc, effectiveAttackRange);
-    }
-#endif
 }

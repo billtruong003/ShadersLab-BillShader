@@ -4,6 +4,8 @@ using System.Collections.Generic;
 
 public class PlayerCombat : MonoBehaviour
 {
+    [Tooltip("Điểm neo trung tâm của người chơi, thường là chính transform của Player.")]
+    [SerializeField] private Transform centerAnchor;
     [Tooltip("Danh sách các điểm neo vô hình mà vũ khí sẽ bay theo khi nghỉ.")]
     [SerializeField] private List<Transform> weaponIdleAnchors;
     [SerializeField] private InventorySystem inventorySystem;
@@ -18,8 +20,14 @@ public class PlayerCombat : MonoBehaviour
             Debug.LogError("InventorySystem is not assigned in PlayerCombat.", this);
             return;
         }
+
+        // Tự động gán centerAnchor nếu chưa được gán
+        if (centerAnchor == null)
+        {
+            centerAnchor = this.transform;
+        }
+
         inventorySystem.OnInventoryChanged += UpdateWeapons;
-        // Gọi lần đầu để trang bị vũ khí có sẵn khi bắt đầu game
         UpdateWeapons();
     }
 
@@ -40,42 +48,46 @@ public class PlayerCombat : MonoBehaviour
         UpdateSingleWeapon(ref activeWeapon2, weaponDataSlot2, 1);
     }
 
-    /// <summary>
-    /// Logic trang bị vũ khí đã được làm lại để tránh hủy/tạo không cần thiết.
-    /// </summary>
     private void UpdateSingleWeapon(ref ActiveWeapon currentWeapon, WeaponData newData, int anchorIndex)
     {
         bool weaponIsEquipped = currentWeapon != null;
         bool shouldHaveWeapon = newData != null;
 
-        // Case 1: Đã trang bị vũ khí, và data trong slot vẫn đúng -> Không làm gì cả
         if (weaponIsEquipped && shouldHaveWeapon && currentWeapon.GetWeaponData() == newData)
         {
             return;
         }
 
-        // Case 2: Cần phải có vũ khí (newData không null)
         if (shouldHaveWeapon)
         {
-            // Nếu đang cầm vũ khí cũ, hủy nó đi
             if (weaponIsEquipped)
             {
                 Destroy(currentWeapon.gameObject);
             }
 
-            // Tạo vũ khí mới
             if (newData.weaponPrefab != null)
             {
-                GameObject weaponInstance = Instantiate(newData.weaponPrefab, weaponIdleAnchors[anchorIndex].position, weaponIdleAnchors[anchorIndex].rotation);
+                Transform idleAnchorToUse = (anchorIndex < weaponIdleAnchors.Count) ? weaponIdleAnchors[anchorIndex] : centerAnchor;
+
+                // Đảm bảo anchor tồn tại trước khi làm bất cứ điều gì
+                if (idleAnchorToUse == null)
+                {
+                    Debug.LogError($"CRITICAL ERROR: Anchor for weapon slot {anchorIndex} is NULL. Assign it in the PlayerCombat component!", this);
+                    return;
+                }
+
+                GameObject weaponInstance = Instantiate(newData.weaponPrefab, idleAnchorToUse.position, idleAnchorToUse.rotation);
                 currentWeapon = weaponInstance.GetComponent<ActiveWeapon>();
 
                 if (currentWeapon != null)
                 {
+                    // ---- THAY ĐỔI QUAN TRỌNG NHẤT LÀ Ở ĐÂY ----
+                    // 1. GÁN ANCHOR TRƯỚC
+                    currentWeapon.SetAnchors(idleAnchorToUse, centerAnchor);
+
+                    // 2. KHỞI TẠO SAU
                     currentWeapon.Initialize(newData);
-                    if (anchorIndex < weaponIdleAnchors.Count)
-                    {
-                        currentWeapon.SetIdleTarget(weaponIdleAnchors[anchorIndex]);
-                    }
+                    // ---------------------------------------------
                 }
                 else
                 {
@@ -84,7 +96,6 @@ public class PlayerCombat : MonoBehaviour
                 }
             }
         }
-        // Case 3: Không nên có vũ khí (newData là null), nhưng lại đang cầm một vũ khí
         else if (weaponIsEquipped)
         {
             Destroy(currentWeapon.gameObject);

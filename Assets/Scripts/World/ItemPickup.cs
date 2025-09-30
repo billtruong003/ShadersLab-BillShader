@@ -1,4 +1,3 @@
-// Path: Assets/Scripts/World/ItemPickup.cs
 using UnityEngine;
 
 [RequireComponent(typeof(Collider))]

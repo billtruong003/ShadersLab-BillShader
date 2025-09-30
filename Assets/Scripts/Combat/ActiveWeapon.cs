@@ -5,7 +5,10 @@ public abstract class ActiveWeapon : MonoBehaviour
 {
     protected WeaponData weaponData;
     protected float cooldownTimer;
+
+    // Hai loại điểm neo mà vũ khí có thể sử dụng
     protected Transform idleAnchor;
+    protected Transform centerAnchor;
 
     public virtual void Initialize(WeaponData data)
     {
@@ -13,13 +16,13 @@ public abstract class ActiveWeapon : MonoBehaviour
         cooldownTimer = 0;
     }
 
-    // Cho phép PlayerCombat gán điểm neo
-    public virtual void SetIdleTarget(Transform anchor)
+    // Phương thức mới, rõ ràng hơn để gán các điểm neo
+    public virtual void SetAnchors(Transform idle, Transform center)
     {
-        idleAnchor = anchor;
+        this.idleAnchor = idle;
+        this.centerAnchor = center;
     }
 
-    // Để PlayerCombat kiểm tra vũ khí hiện tại
     public WeaponData GetWeaponData()
     {
         return weaponData;

@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bbfcaee68b9054df6ae8c9340e7ed2e3, type: 3}
+  m_Name: WPN_NewWeapon 1
+  m_EditorClassIdentifier: 
+  itemName: Dagger
+  description: Item Description
+  icon: {fileID: 21300000, guid: c64bdef67ac808548890051084ba5fc7, type: 3}
+  maxStackSize: 1
+  attackBonus: 15
+  defenseBonus: 0
+  type: 2
+  element: 0
+  weaponPrefab: {fileID: 6095685012958407526, guid: a12ad5f9d250d4300a121f9b006cf7d8,
+    type: 3}
+  baseDamage: 15
+  cooldown: 0.5
+  areaOfEffect: 1

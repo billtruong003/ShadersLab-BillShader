@@ -21,7 +21,6 @@ public class PlayerCombat : MonoBehaviour
             return;
         }
 
-        // Tự động gán centerAnchor nếu chưa được gán
         if (centerAnchor == null)
         {
             centerAnchor = this.transform;
@@ -69,25 +68,24 @@ public class PlayerCombat : MonoBehaviour
             {
                 Transform idleAnchorToUse = (anchorIndex < weaponIdleAnchors.Count) ? weaponIdleAnchors[anchorIndex] : centerAnchor;
 
-                // Đảm bảo anchor tồn tại trước khi làm bất cứ điều gì
                 if (idleAnchorToUse == null)
                 {
                     Debug.LogError($"CRITICAL ERROR: Anchor for weapon slot {anchorIndex} is NULL. Assign it in the PlayerCombat component!", this);
                     return;
                 }
 
-                GameObject weaponInstance = Instantiate(newData.weaponPrefab, idleAnchorToUse.position, idleAnchorToUse.rotation);
+                // --- THAY ĐỔI QUAN TRỌNG NHẤT ---
+                // Luôn tạo vũ khí với vòng xoay mặc định (không xoay) để đảm bảo tính nhất quán.
+                // Các vũ khí cần xoay (như ActiveSword) sẽ tự cập nhật vòng xoay của chúng trong Update().
+                GameObject weaponInstance = Instantiate(newData.weaponPrefab, idleAnchorToUse.position, Quaternion.identity);
+                // ---------------------------------
+
                 currentWeapon = weaponInstance.GetComponent<ActiveWeapon>();
 
                 if (currentWeapon != null)
                 {
-                    // ---- THAY ĐỔI QUAN TRỌNG NHẤT LÀ Ở ĐÂY ----
-                    // 1. GÁN ANCHOR TRƯỚC
                     currentWeapon.SetAnchors(idleAnchorToUse, centerAnchor);
-
-                    // 2. KHỞI TẠO SAU
                     currentWeapon.Initialize(newData);
-                    // ---------------------------------------------
                 }
                 else
                 {

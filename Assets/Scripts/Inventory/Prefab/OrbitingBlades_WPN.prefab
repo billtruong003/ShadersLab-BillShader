@@ -46,14 +46,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   bladePrefab: {fileID: 6855895684582977356, guid: 9a97a3c7c1b8240e9b1fdf166f48e326,
     type: 3}
-  orbitSpeed: 180
+  orbitSpeed: 360
   orbitRadius: 0.5
   orbitAxis: {x: 0, y: 1, z: 0}
   bladeRotationOffset: {x: 90, y: 0, z: 0}
   enemyLayer:
     serializedVersion: 2
     m_Bits: 8192
-  damageCooldownPerTarget: 0.5
+  damageCooldownPerTarget: 0.2
   hitVFX: {fileID: 108496, guid: 9acec412cf3cb0b4ea6bd5b99ee797bc, type: 3}
   numberOfBlades: 3
   scaleMultiplier: 1

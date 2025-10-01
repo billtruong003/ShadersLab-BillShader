@@ -2,12 +2,25 @@
 using UnityEngine;
 using System;
 
+public class DamageEventArgs : EventArgs
+{
+    public float DamageAmount { get; set; }
+    public bool IsBlocked { get; set; }
+
+    public DamageEventArgs(float damage)
+    {
+        DamageAmount = damage;
+        IsBlocked = false;
+    }
+}
+
 public class PlayerHealth : MonoBehaviour
 {
     [SerializeField] private float maxHealth = 100f;
     [SerializeField] private BillProgress healthBar;
 
     public event Action OnDeath;
+    public event EventHandler<DamageEventArgs> OnBeforeDamageTaken;
 
     private float currentHealth;
     public bool IsDead => currentHealth <= 0;
@@ -22,7 +35,16 @@ public class PlayerHealth : MonoBehaviour
     {
         if (IsDead) return;
 
-        currentHealth -= amount;
+        var damageArgs = new DamageEventArgs(amount);
+        OnBeforeDamageTaken?.Invoke(this, damageArgs);
+
+        if (damageArgs.IsBlocked)
+        {
+            return;
+        }
+
+        float finalDamage = damageArgs.DamageAmount;
+        currentHealth -= finalDamage;
         currentHealth = Mathf.Clamp(currentHealth, 0, maxHealth);
         UpdateHealthBar();
 
@@ -49,8 +71,6 @@ public class PlayerHealth : MonoBehaviour
     private void Die()
     {
         OnDeath?.Invoke();
-        // Tạm thời chỉ disable GameObject
-        // Trong tương lai sẽ gọi GameManager để xử lý màn hình thua cuộc
         Debug.Log("Player has died.");
         gameObject.SetActive(false);
     }

@@ -1,14 +1,22 @@
-
 // Path: Assets/Scripts/Combat/DaggerProjectile.cs
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody))]
+[RequireComponent(typeof(Collider))]
 public class DaggerProjectile : MonoBehaviour, IPoolableObject
 {
     [Header("Movement")]
     [SerializeField] private float lifetime = 3f;
     [Tooltip("Tốc độ xoay của dao để bám theo mục tiêu. Càng cao, đường cong càng gắt.")]
-    [SerializeField] private float turnSpeed = 15f;
+    [SerializeField] private float turnSpeed = 25f;
+
+    // --- PHẦN MỚI ---
+    [Header("Self-Rotation Visuals (While Orbiting)")]
+    [Tooltip("Trục tự xoay của dao khi đang lơ lửng. Vector3.forward tạo hiệu ứng 'mũi khoan'.")]
+    [SerializeField] private Vector3 selfSpinAxis = Vector3.forward;
+    [Tooltip("Tốc độ dao tự xoay.")]
+    [SerializeField] private float selfSpinSpeed = 720f;
+    // --- KẾT THÚC PHẦN MỚI ---
 
     [Header("Effects")]
     [SerializeField] private GameObject impactVFX;
@@ -17,45 +25,72 @@ public class DaggerProjectile : MonoBehaviour, IPoolableObject
     private float _speed;
     private Transform _target;
     private Rigidbody _rigidbody;
+    private Collider _collider;
     private float _spawnTime;
+    private bool _isLaunched;
     private DissolveOnImpact _dissolveEffect;
 
     private void Awake()
     {
         _rigidbody = GetComponent<Rigidbody>();
+        _collider = GetComponent<Collider>();
         _dissolveEffect = GetComponent<DissolveOnImpact>();
     }
 
-    public void Initialize(float damage, Transform target, float speed)
+    public void Launch(float damage, Transform target, float speed)
     {
         _damage = damage;
         _target = target;
         _speed = speed;
+        _spawnTime = Time.time;
+        _isLaunched = true;
+
+        _rigidbody.isKinematic = false;
+        _rigidbody.collisionDetectionMode = CollisionDetectionMode.Continuous;
+        _collider.enabled = true;
+
+        Vector3 initialDirection = (target != null)
+            ? (target.position - transform.position).normalized
+            : transform.forward;
+
+        _rigidbody.linearVelocity = initialDirection * _speed;
+        transform.rotation = Quaternion.LookRotation(initialDirection);
     }
 
-    public void OnObjectSpawn()
+    public void DeactivatePhysicsForOrbit()
     {
-        _spawnTime = Time.time;
-        // Đặt vận tốc ban đầu hướng về mục tiêu
-        if (_target != null)
-        {
-            Vector3 initialDirection = (_target.position - transform.position).normalized;
-            _rigidbody.linearVelocity = initialDirection * _speed;
-        }
+        _rigidbody.isKinematic = true;
+        _rigidbody.collisionDetectionMode = CollisionDetectionMode.Discrete;
+        _collider.enabled = false;
+        _isLaunched = false;
     }
+
+    // --- PHƯƠNG THỨC MỚI ---
+    // Được gọi bởi Controller mỗi frame khi dao đang ở trạng thái chuẩn bị
+    public void UpdateOrbitingVisuals()
+    {
+        // Xoay quanh trục cục bộ (local axis) của chính con dao
+        transform.Rotate(selfSpinAxis, selfSpinSpeed * Time.deltaTime, Space.Self);
+    }
+    // --- KẾT THÚC PHƯƠNG THỨC MỚI ---
+
+    public void OnObjectSpawn() { }
 
     public void OnObjectReturn()
     {
         _rigidbody.linearVelocity = Vector3.zero;
         _rigidbody.angularVelocity = Vector3.zero;
         _target = null;
+        _isLaunched = false;
     }
 
     private void FixedUpdate()
     {
+        if (!_isLaunched) return;
+
         if (Time.time > _spawnTime + lifetime)
         {
-            ProcessHit(transform.position); // Vẫn kích hoạt hiệu ứng tan biến khi hết hạn
+            ProcessHit(transform.position);
             return;
         }
 
@@ -63,17 +98,17 @@ public class DaggerProjectile : MonoBehaviour, IPoolableObject
         {
             Vector3 directionToTarget = (_target.position - transform.position).normalized;
             Quaternion targetRotation = Quaternion.LookRotation(directionToTarget);
-
-            // Dùng Slerp để xoay hướng di chuyển một cách mượt mà
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, turnSpeed * Time.fixedDeltaTime);
         }
 
-        // Luôn di chuyển về phía trước theo hướng hiện tại
         _rigidbody.linearVelocity = transform.forward * _speed;
     }
 
+    // (Các hàm OnTriggerEnter và ProcessHit giữ nguyên như cũ, không cần thay đổi)
     private void OnTriggerEnter(Collider other)
     {
+        if (!_isLaunched) return;
+
         bool hitSuccess = false;
         Vector3 hitPosition = other.ClosestPoint(transform.position);
 
@@ -100,6 +135,9 @@ public class DaggerProjectile : MonoBehaviour, IPoolableObject
 
     private void ProcessHit(Vector3 hitPosition)
     {
+        _isLaunched = false;
+        _rigidbody.linearVelocity = Vector3.zero;
+
         if (impactVFX != null)
         {
             ObjectPoolManager.Instance.Spawn(impactVFX, hitPosition, Quaternion.identity);
@@ -107,8 +145,6 @@ public class DaggerProjectile : MonoBehaviour, IPoolableObject
 
         if (_dissolveEffect != null)
         {
-            // Vô hiệu hóa mục tiêu để coroutine tan biến không bị gián đoạn bởi logic FixedUpdate
-            _target = null;
             _dissolveEffect.TriggerDissolve();
         }
         else

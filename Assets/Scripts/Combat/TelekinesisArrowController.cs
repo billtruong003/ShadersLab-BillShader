@@ -1,12 +1,18 @@
 // Path: Assets/Scripts/Combat/Weapons/TelekinesisArrowController.cs
 using UnityEngine;
+using System.Linq;
 
 public class TelekinesisArrowController : ActiveWeapon
 {
     [Header("Arrow Control")]
     [SerializeField] private GameObject arrowPrefab;
 
-    // Biến static để đảm bảo chỉ có MỘT mũi tên tồn tại trong toàn bộ game
+    [Header("Tactical Analysis")]
+    [Tooltip("Số lượng kẻ địch tối thiểu để kích hoạt chế độ xuyên phá (Pierce).")]
+    [SerializeField] private int pierceActivationThreshold = 3;
+    [SerializeField] private float enemyScanRadius = 25f;
+    [SerializeField] private LayerMask enemyLayer;
+
     private static TelekinesisArrow _activeArrowInstance;
 
     public override void Initialize(WeaponData data)
@@ -15,18 +21,12 @@ public class TelekinesisArrowController : ActiveWeapon
         ClaimOrSpawnArrow();
     }
 
-    // Quan trọng: Xóa hàm OnDestroy() cũ để controller không phá hủy mũi tên nữa
-
     protected override void Update()
     {
         base.Update();
-        // Cập nhật lại anchor cho mũi tên mỗi frame, phòng trường hợp nó đổi chủ
-        if (_activeArrowInstance != null)
-        {
-            _activeArrowInstance.UpdateOrbitCenter(idleAnchor);
-        }
+        EnsureArrowOwnership();
 
-        if (IsReady() && _activeArrowInstance != null && _activeArrowInstance.IsIdle())
+        if (CanAttack())
         {
             Attack();
         }
@@ -34,26 +34,50 @@ public class TelekinesisArrowController : ActiveWeapon
 
     protected override void PerformAttack()
     {
-        _activeArrowInstance.StartAttackSequence(weaponData.baseDamage);
+        TelekinesisArrow.AttackPattern chosenPattern = ChooseAttackPattern();
+        _activeArrowInstance.StartAttackSequence(weaponData.baseDamage, chosenPattern);
+    }
+
+    private void EnsureArrowOwnership()
+    {
+        if (_activeArrowInstance != null)
+        {
+            _activeArrowInstance.UpdateOrbitCenter(idleAnchor);
+        }
+    }
+
+    private bool CanAttack()
+    {
+        return _activeArrowInstance != null && _activeArrowInstance.IsIdle();
+    }
+
+    private TelekinesisArrow.AttackPattern ChooseAttackPattern()
+    {
+        int enemiesInRadius = Physics.OverlapSphere(transform.position, enemyScanRadius, enemyLayer).Length;
+
+        if (enemiesInRadius >= pierceActivationThreshold)
+        {
+            return TelekinesisArrow.AttackPattern.Pierce;
+        }
+
+        return TelekinesisArrow.AttackPattern.Pinpoint;
     }
 
     private void ClaimOrSpawnArrow()
     {
-        if (_activeArrowInstance == null)
-        {
-            GameObject arrowInstance = Instantiate(arrowPrefab, idleAnchor.position, idleAnchor.rotation);
-            _activeArrowInstance = arrowInstance.GetComponent<TelekinesisArrow>();
+        if (_activeArrowInstance != null) return;
 
-            if (_activeArrowInstance != null)
-            {
-                // Lần đầu tiên, khởi tạo với anchor hiện tại
-                _activeArrowInstance.Initialize(idleAnchor);
-            }
-            else
-            {
-                Debug.LogError("Arrow prefab is missing the TelekinesisArrow script!");
-                Destroy(arrowInstance);
-            }
+        GameObject arrowInstance = Instantiate(arrowPrefab, idleAnchor.position, idleAnchor.rotation);
+        _activeArrowInstance = arrowInstance.GetComponent<TelekinesisArrow>();
+
+        if (_activeArrowInstance != null)
+        {
+            _activeArrowInstance.Initialize(idleAnchor);
+        }
+        else
+        {
+            Debug.LogError("Arrow prefab is missing the TelekinesisArrow script!");
+            Destroy(arrowInstance);
         }
     }
 }

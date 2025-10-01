@@ -1,118 +1,197 @@
 // Path: Assets/Scripts/Combat/Weapons/ElementalOrbController.cs
 using UnityEngine;
 using System.Linq;
+using System.Collections.Generic;
 
 public class ElementalOrbController : ActiveWeapon
 {
     private enum OrbState { Idle, Attacking, Returning }
 
-    [Header("Orb Visuals")]
+    [Header("Core Visuals")]
     [SerializeField] private Transform orbVisual;
 
-    [Header("Attack Logic")]
-    [SerializeField] private float searchRadius = 30f;
-    [SerializeField] private float explosionRadius = 4f;
+    [Header("Chain Attack Logic")]
+    [Tooltip("Số mục tiêu tối đa quả cầu sẽ tấn công trong một chuỗi.")]
+    [SerializeField] private int maxTargetsInChain = 3;
+    [Tooltip("Tốc độ bay của quả cầu khi tấn công.")]
     [SerializeField] private float travelSpeed = 40f;
-    [SerializeField] private LayerMask enemyLayer;
+    [Tooltip("Bán kính tìm kiếm mục tiêu ban đầu.")]
+    [SerializeField] private float initialSearchRadius = 30f;
+    [Tooltip("Bán kính tìm kiếm các mục tiêu tiếp theo trong chuỗi.")]
+    [SerializeField] private float bounceSearchRadius = 15f;
 
-    [Header("Effects")]
+    [Header("Detonation")]
+    [SerializeField] private float explosionRadius = 4f;
+    [SerializeField] private LayerMask enemyLayer;
     [SerializeField] private GameObject explosionVFX;
 
-    [Header("Idle Dynamics (Built-in)")]
+    [Header("Idle Dynamics ('Sentient Eye')")]
+    [Tooltip("Tốc độ quả cầu xoay để nhìn theo mục tiêu khi ở trạng thái nghỉ.")]
+    [SerializeField] private float idleLookSlerpSpeed = 3f;
+    [Tooltip("Tần suất (giây) quả cầu tìm một mục tiêu mới để 'nhìn'.")]
+    [SerializeField] private float idleLookRecalculateTime = 1.5f;
     [SerializeField] private float idleSpinSpeed = 90f;
     [SerializeField] private Vector3 idleSpinAxis = Vector3.up;
     [SerializeField] private float idleHoverAmplitude = 0.15f;
     [SerializeField] private float idleHoverSpeed = 2f;
 
     private OrbState _currentState = OrbState.Idle;
-    private Vector3 _attackTargetPosition;
-    private float _randomTimeOffset; // Để các Orb không lơ lửng đồng bộ
+    private readonly List<Transform> _attackTargets = new List<Transform>();
+    private int _currentTargetIndex;
+
+    private Transform _idleLookTarget;
+    private float _idleLookTimer;
+    private float _randomTimeOffset;
 
     public override void Initialize(WeaponData data)
     {
         base.Initialize(data);
-        // Gán một offset ngẫu nhiên để hiệu ứng trông tự nhiên hơn nếu có nhiều orb
         _randomTimeOffset = Random.Range(0f, 10f);
+        SwitchState(OrbState.Idle);
     }
 
     protected override void Update()
     {
         base.Update();
-        HandleStateTransitions();
+
+        switch (_currentState)
+        {
+            case OrbState.Idle:
+                HandleIdleState();
+                break;
+            case OrbState.Attacking:
+                HandleAttackingState();
+                break;
+            case OrbState.Returning:
+                HandleReturningState();
+                break;
+        }
     }
 
     private void LateUpdate()
     {
-        // Luôn đi theo Anchor
         if (idleAnchor == null) return;
         transform.position = idleAnchor.position;
 
-        // Chỉ áp dụng hiệu ứng idle khi ở đúng trạng thái
         if (_currentState == OrbState.Idle)
         {
             ApplyIdleVisuals();
         }
     }
 
-    private void HandleStateTransitions()
-    {
-        if (IsReady() && _currentState == OrbState.Idle)
-        {
-            Attack();
-        }
-
-        if (_currentState == OrbState.Attacking)
-        {
-            orbVisual.position = Vector3.MoveTowards(orbVisual.position, _attackTargetPosition, travelSpeed * Time.deltaTime);
-            if (Vector3.Distance(orbVisual.position, _attackTargetPosition) < 0.1f)
-            {
-                Detonate(_attackTargetPosition);
-                SwitchState(OrbState.Returning);
-            }
-        }
-        else if (_currentState == OrbState.Returning)
-        {
-            orbVisual.position = Vector3.MoveTowards(orbVisual.position, transform.position, travelSpeed * 1.5f * Time.deltaTime);
-            if (Vector3.Distance(orbVisual.position, transform.position) < 0.2f)
-            {
-                SwitchState(OrbState.Idle);
-            }
-        }
-    }
-
     private void SwitchState(OrbState newState)
     {
         if (_currentState == newState) return;
-
         _currentState = newState;
 
         if (_currentState == OrbState.Idle)
         {
-            // Gắn lại Orb vào controller để nó đi theo người chơi
             orbVisual.SetParent(transform);
+            orbVisual.localPosition = Vector3.zero;
+        }
+    }
+
+    private void HandleIdleState()
+    {
+        if (IsReady())
+        {
+            Attack();
+        }
+
+        _idleLookTimer -= Time.deltaTime;
+        if (_idleLookTimer <= 0)
+        {
+            FindNewLookTarget();
+            _idleLookTimer = idleLookRecalculateTime;
+        }
+    }
+
+    private void HandleAttackingState()
+    {
+        Transform currentTarget = GetCurrentTarget();
+        if (IsTargetInvalid(currentTarget))
+        {
+            AdvanceToNextTarget();
+            return;
+        }
+
+        Vector3 targetPosition = currentTarget.position;
+        orbVisual.position = Vector3.MoveTowards(orbVisual.position, targetPosition, travelSpeed * Time.deltaTime);
+
+        if (Vector3.Distance(orbVisual.position, targetPosition) < 0.2f)
+        {
+            Detonate(targetPosition);
+            AdvanceToNextTarget();
+        }
+    }
+
+    private void HandleReturningState()
+    {
+        orbVisual.position = Vector3.MoveTowards(orbVisual.position, transform.position, travelSpeed * 1.5f * Time.deltaTime);
+        if (Vector3.Distance(orbVisual.position, transform.position) < 0.2f)
+        {
+            SwitchState(OrbState.Idle);
         }
     }
 
     private void ApplyIdleVisuals()
     {
-        // Tính toán vị trí lơ lửng (bobbing)
-        float hoverY = Mathf.Sin((Time.time + _randomTimeOffset) * idleHoverSpeed) * idleHoverAmplitude;
+        float time = Time.time + _randomTimeOffset;
+        float hoverY = Mathf.Sin(time * idleHoverSpeed) * idleHoverAmplitude;
         orbVisual.localPosition = new Vector3(0, hoverY, 0);
 
-        // Áp dụng hiệu ứng xoay
         orbVisual.Rotate(idleSpinAxis, idleSpinSpeed * Time.deltaTime, Space.Self);
+
+        if (!IsTargetInvalid(_idleLookTarget))
+        {
+            Vector3 directionToLook = _idleLookTarget.position - orbVisual.position;
+            Quaternion targetRotation = Quaternion.LookRotation(directionToLook);
+            orbVisual.rotation = Quaternion.Slerp(orbVisual.rotation, targetRotation, Time.deltaTime * idleLookSlerpSpeed);
+        }
     }
 
     protected override void PerformAttack()
     {
-        Transform target = FindRandomEnemy();
-        if (target == null) return;
+        FindChainTargets();
 
-        _attackTargetPosition = target.position;
+        if (_attackTargets.Count > 0)
+        {
+            _currentTargetIndex = 0;
+            orbVisual.SetParent(null, true);
+            SwitchState(OrbState.Attacking);
+        }
+    }
 
-        // Tách Orb ra khỏi sự kiểm soát của controller để nó bay tự do
-        orbVisual.SetParent(null, true);
-        SwitchState(OrbState.Attacking);
+    private void FindChainTargets()
+    {
+        _attackTargets.Clear();
+        var alreadyChosen = new HashSet<Transform>();
+
+        Transform firstTarget = FindNearestEnemy(transform.position, initialSearchRadius, alreadyChosen);
+        if (firstTarget == null) return;
+
+        _attackTargets.Add(firstTarget);
+        alreadyChosen.Add(firstTarget);
+
+        Transform lastTarget = firstTarget;
+        for (int i = 1; i < maxTargetsInChain; i++)
+        {
+            Transform nextTarget = FindNearestEnemy(lastTarget.position, bounceSearchRadius, alreadyChosen);
+            if (nextTarget == null) break;
+
+            _attackTargets.Add(nextTarget);
+            alreadyChosen.Add(nextTarget);
+            lastTarget = nextTarget;
+        }
+    }
+
+    private void AdvanceToNextTarget()
+    {
+        _currentTargetIndex++;
+        if (_currentTargetIndex >= _attackTargets.Count)
+        {
+            SwitchState(OrbState.Returning);
+        }
     }
 
     private void Detonate(Vector3 explosionCenter)
@@ -136,10 +215,38 @@ public class ElementalOrbController : ActiveWeapon
         }
     }
 
-    private Transform FindRandomEnemy()
+    private void FindNewLookTarget()
     {
-        Collider[] potentialTargets = Physics.OverlapSphere(transform.position, searchRadius, enemyLayer);
-        if (potentialTargets.Length == 0) return null;
-        return potentialTargets[Random.Range(0, potentialTargets.Length)].transform;
+        Collider[] potentialTargets = Physics.OverlapSphere(transform.position, initialSearchRadius, enemyLayer);
+        if (potentialTargets.Length > 0)
+        {
+            _idleLookTarget = potentialTargets[Random.Range(0, potentialTargets.Length)].transform;
+        }
+        else
+        {
+            _idleLookTarget = null;
+        }
+    }
+
+    private Transform FindNearestEnemy(Vector3 origin, float radius, HashSet<Transform> exclusions)
+    {
+        return Physics.OverlapSphere(origin, radius, enemyLayer)
+            .Where(c => !exclusions.Contains(c.transform))
+            .OrderBy(c => Vector3.SqrMagnitude(origin - c.transform.position))
+            .FirstOrDefault()?.transform;
+    }
+
+    private Transform GetCurrentTarget()
+    {
+        if (_currentTargetIndex < _attackTargets.Count)
+        {
+            return _attackTargets[_currentTargetIndex];
+        }
+        return null;
+    }
+
+    private bool IsTargetInvalid(Transform target)
+    {
+        return target == null || !target.gameObject.activeInHierarchy;
     }
 }

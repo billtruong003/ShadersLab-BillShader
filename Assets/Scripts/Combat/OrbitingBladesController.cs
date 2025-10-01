@@ -1,4 +1,4 @@
-// Path: Assets/Scripts/Combat/Weapons/OrbitingBladesController.cs
+// Path: Assets/Scripts/Combat/OrbitingBladesController.cs
 using UnityEngine;
 using System.Collections.Generic;
 
@@ -16,9 +16,9 @@ public class OrbitingBladesController : ActiveWeapon
     [SerializeField] private LayerMask enemyLayer;
     [SerializeField] private float damageCooldownPerTarget = 0.5f;
 
-    [Header("Effects")] // Header mới
+    [Header("Effects")]
     [Tooltip("Prefab hiệu ứng hình ảnh sẽ được tạo ra khi lưỡi kiếm trúng kẻ địch.")]
-    [SerializeField] private GameObject hitVFX; // DÒNG MỚI
+    [SerializeField] private GameObject hitVFX;
 
     [Header("Upgrade Path")]
     [SerializeField] private int numberOfBlades = 1;
@@ -89,7 +89,6 @@ public class OrbitingBladesController : ActiveWeapon
 
     protected override void PerformAttack() { }
 
-    // THAY ĐỔI: Nhận thêm "bladeTransform"
     private void OnBladeHit(Transform bladeTransform, Collider other)
     {
         if (((1 << other.gameObject.layer) & enemyLayer) == 0) return;
@@ -111,14 +110,10 @@ public class OrbitingBladesController : ActiveWeapon
             hitSuccess = true;
         }
 
-        // --- LOGIC TẠO VFX MỚI ---
         if (hitSuccess && hitVFX != null)
         {
-            // Tìm điểm va chạm gần nhất trên bề mặt của kẻ địch
             Vector3 spawnPosition = other.ClosestPoint(bladeTransform.position);
-            // Tạo một hướng ngẫu nhiên cho hiệu ứng thêm phần sống động
             Quaternion spawnRotation = Quaternion.LookRotation(Random.onUnitSphere);
-
             ObjectPoolManager.Instance.Spawn(hitVFX, spawnPosition, spawnRotation);
         }
     }
@@ -127,10 +122,18 @@ public class OrbitingBladesController : ActiveWeapon
     {
         while (_blades.Count < numberOfBlades)
         {
-            GameObject newBlade = Instantiate(bladePrefab, transform);
-            BladeTrigger trigger = newBlade.AddComponent<BladeTrigger>();
+            GameObject newBladeInstance = Instantiate(bladePrefab, transform);
+            Transform newBladeTransform = newBladeInstance.transform;
+
+            // --- PHẦN SỬA LỖI & TỐI ƯU QUAN TRỌNG NHẤT ---
+            newBladeTransform.localPosition = Vector3.zero;
+            newBladeTransform.localRotation = Quaternion.identity;
+            newBladeTransform.localScale = Vector3.one * scaleMultiplier;
+            // ---------------------------------------------
+
+            BladeTrigger trigger = newBladeInstance.AddComponent<BladeTrigger>();
             trigger.OnBladeTriggerEnter += OnBladeHit;
-            _blades.Add(newBlade.transform);
+            _blades.Add(newBladeTransform);
         }
 
         while (_blades.Count > numberOfBlades)
@@ -140,6 +143,7 @@ public class OrbitingBladesController : ActiveWeapon
             Destroy(bladeToRemove.gameObject);
         }
 
+        // Cập nhật lại kích thước cho các lưỡi kiếm cũ nếu scaleMultiplier thay đổi
         foreach (var blade in _blades)
         {
             blade.localScale = Vector3.one * scaleMultiplier;
@@ -161,6 +165,7 @@ public class OrbitingBladesController : ActiveWeapon
     }
 }
 
+// Lớp BladeTrigger không có thay đổi
 public class BladeTrigger : MonoBehaviour
 {
     public System.Action<Transform, Collider> OnBladeTriggerEnter;

@@ -2,7 +2,7 @@
 using UnityEngine;
 
 public enum ElementType { None, Fire, Ice, Lightning, Earth, Light, Void }
-public enum WeaponType { Sword, Axe, Dagger, Shield, Staff, Book, Orb, Arrow }
+public enum WeaponType { Sword, Axe, Dagger, Aegis, Staff, Book, Orb, Arrow }
 
 [CreateAssetMenu(fileName = "WPN_NewWeapon", menuName = "Elemental Echoes/Items/Weapon")]
 public class WeaponData : EquipmentItemData

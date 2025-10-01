@@ -14570,10 +14570,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8f8880a05a0cc413899878d74ad4d891, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  launchDuration: 0.4
   initialSpeed: 18
-  turnSpeed: 12
+  launchCurveIntensity: 8
+  homingTurnSpeed: 20
   lifetime: 4
   impactVFX: {fileID: 130848, guid: d16221e794fe16e4e8994a7f8c770561, type: 3}
+  startScale: {x: 0.5, y: 0.5, z: 0.5}
+  endScale: {x: 5, y: 5, z: 5}
+  spawnPunchScale: 0.3
+  spawnPunchDuration: 0.2
 --- !u!135 &794302104575863157
 SphereCollider:
   m_ObjectHideFlags: 0

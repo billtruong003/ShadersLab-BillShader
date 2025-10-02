@@ -1,15 +1,18 @@
+// Path: Assets/Scripts/Inventory/Items/EquipmentItemData.cs
 using UnityEngine;
+using System.Collections.Generic;
 
-[CreateAssetMenu(fileName = "New Equipment", menuName = "Inventory/Item/Equipment")]
+[CreateAssetMenu(fileName = "New Equipment", menuName = "Elemental Echoes/Items/Equipment")]
 public class EquipmentItemData : ItemData
 {
-    public float attackBonus;
-    public float defenseBonus;
+    [Header("Equipment Details")]
+    public EquipmentSlotType slotType;
+    public List<StatModifier> modifiers; // Sử dụng lại struct StatModifier từ UpgradeData
 
     public override void Use(GameObject user)
     {
-        Debug.Log($"Equipped {itemName}. ATK+{attackBonus}, DEF+{defenseBonus} on {user.name}.");
-        // Giả lập logic trang bị. Trong dự án thực tế, bạn sẽ gọi đến một component EquipmentManager trên user.
-        // user.GetComponent<EquipmentManager>()?.Equip(this);
+        // Logic sử dụng sẽ được quản lý bởi EquipmentSystem thông qua việc double-click trên UI
+        Debug.Log($"Attempting to equip {itemName} via Use() method.");
+        user.GetComponent<EquipmentSystem>()?.Equip(this);
     }
 }

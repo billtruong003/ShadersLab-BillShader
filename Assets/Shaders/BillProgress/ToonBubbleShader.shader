@@ -32,6 +32,7 @@ Shader "CleanCode/ToonTransparentBubble"
             Blend SrcAlpha OneMinusSrcAlpha
             Cull Back
             ZWrite On
+            Ztest LEqual
 
             HLSLPROGRAM
             #pragma vertex vert
@@ -42,25 +43,25 @@ Shader "CleanCode/ToonTransparentBubble"
 
             struct Attributes
             {
-                float4 positionOS   : POSITION;
-                float3 normalOS     : NORMAL;
+                float4 positionOS : POSITION;
+                float3 normalOS : NORMAL;
             };
 
             struct Varyings
             {
-                float4 clipPos      : SV_POSITION;
-                float3 worldPos     : TEXCOORD0;
-                float3 worldNormal  : TEXCOORD1;
+                float4 clipPos : SV_POSITION;
+                float3 worldPos : TEXCOORD0;
+                float3 worldNormal : TEXCOORD1;
             };
 
             CBUFFER_START(UnityPerMaterial)
-                half4 _BaseColor;
-                half _Alpha;
-                half _ToonThreshold;
-                half4 _SpecularColor;
-                half _Smoothness;
-                half4 _RimColor;
-                half _RimPower;
+            half4 _BaseColor;
+            half _Alpha;
+            half _ToonThreshold;
+            half4 _SpecularColor;
+            half _Smoothness;
+            half4 _RimColor;
+            half _RimPower;
             CBUFFER_END
 
             Varyings vert(Attributes input)
@@ -78,7 +79,7 @@ Shader "CleanCode/ToonTransparentBubble"
                 float3 viewDir = normalize(_WorldSpaceCameraPos.xyz - input.worldPos.xyz);
 
                 Light mainLight = GetMainLight();
-                
+
                 half NdotL = saturate(dot(normalDir, mainLight.direction));
                 half toonLightFactor = step(_ToonThreshold, NdotL);
                 half3 toonLighting = toonLightFactor * mainLight.color;

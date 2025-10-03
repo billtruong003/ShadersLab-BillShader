@@ -37,6 +37,7 @@ public class BillProgress : MonoBehaviour
     {
         if (propertyBlock == null)
         {
+            // Re-initialize in case of domain reload in editor
             Initialize();
         }
 

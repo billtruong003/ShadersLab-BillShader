@@ -1,4 +1,3 @@
-// Path: Assets/Scripts/UI/EquipmentPanelUI.cs
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,12 +5,14 @@ using System.Linq;
 public class EquipmentPanelUI : MonoBehaviour
 {
     [SerializeField] private Transform slotsContainer;
-    [SerializeField] private EquipmentSystem equipmentSystem;
 
     private List<EquipmentSlotUI> equipmentSlots;
+    private EquipmentSystem equipmentSystem;
 
     private void Start()
     {
+        equipmentSystem = GameDataManager.Instance.EquipmentSystem;
+
         equipmentSlots = slotsContainer.GetComponentsInChildren<EquipmentSlotUI>().ToList();
         foreach (var slot in equipmentSlots)
         {

@@ -4,16 +4,16 @@ using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using TMPro;
 
-public class InventorySlotUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler, IDropHandler
+public class InventorySlotUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler, IDropHandler, IPointerClickHandler
 {
     [SerializeField] private Image itemIcon;
     [SerializeField] private TextMeshProUGUI quantityText;
-    [SerializeField] private InventorySystem inventorySystem; // Cần tham chiếu đến InventorySystem
 
     public int slotIndex { get; private set; }
+    private InventorySystem inventorySystem;
 
     private Transform mainCanvasTransform;
-    private static GameObject draggedIcon; // Dùng static để chỉ có 1 icon được kéo trên toàn bộ UI
+    private static GameObject draggedIcon;
 
     private void Awake()
     {
@@ -29,23 +29,33 @@ public class InventorySlotUI : MonoBehaviour, IBeginDragHandler, IDragHandler, I
 
     public void UpdateSlot(InventorySlot slot)
     {
-        if (slot != null && slot.itemData != null)
+        bool hasItem = slot != null && slot.itemData != null;
+        itemIcon.gameObject.SetActive(hasItem);
+
+        if (hasItem)
         {
             itemIcon.sprite = slot.itemData.icon;
             itemIcon.color = Color.white;
             quantityText.text = slot.quantity > 1 ? slot.quantity.ToString() : "";
         }
-        else
-        {
-            ClearSlot();
-        }
     }
 
     public void ClearSlot()
     {
+        itemIcon.gameObject.SetActive(false);
         itemIcon.sprite = null;
-        itemIcon.color = Color.clear;
         quantityText.text = "";
+    }
+
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        if (eventData.button != PointerEventData.InputButton.Left) return;
+
+        var slot = inventorySystem.GetSlotAt(slotIndex);
+        if (slot != null && slot.itemData != null)
+        {
+            InventoryUIManager.Instance.ShowPopup(slot, slotIndex);
+        }
     }
 
     public void OnBeginDrag(PointerEventData eventData)
@@ -53,16 +63,14 @@ public class InventorySlotUI : MonoBehaviour, IBeginDragHandler, IDragHandler, I
         var slot = inventorySystem.GetSlotAt(slotIndex);
         if (slot == null || slot.itemData == null) return;
 
-        // Tạo một icon tạm để kéo
         draggedIcon = new GameObject("DraggedIcon");
         draggedIcon.transform.SetParent(mainCanvasTransform, false);
-        draggedIcon.transform.SetAsLastSibling(); // Đảm bảo nó render trên cùng
+        draggedIcon.transform.SetAsLastSibling();
         var image = draggedIcon.AddComponent<Image>();
         image.sprite = itemIcon.sprite;
-        image.raycastTarget = false; // Để không cản trở sự kiện Drop
+        image.raycastTarget = false;
         image.SetNativeSize();
 
-        // Làm mờ icon ở slot gốc
         itemIcon.color = new Color(1, 1, 1, 0.5f);
     }
 
@@ -70,7 +78,7 @@ public class InventorySlotUI : MonoBehaviour, IBeginDragHandler, IDragHandler, I
     {
         if (draggedIcon != null)
         {
-            draggedIcon.transform.position = Input.mousePosition;
+            draggedIcon.transform.position = eventData.position;
         }
     }
 
@@ -81,7 +89,6 @@ public class InventorySlotUI : MonoBehaviour, IBeginDragHandler, IDragHandler, I
             Destroy(draggedIcon);
             draggedIcon = null;
         }
-        // Khôi phục lại màu sắc icon nếu không có sự kiện drop hợp lệ
         UpdateSlot(inventorySystem.GetSlotAt(slotIndex));
     }
 

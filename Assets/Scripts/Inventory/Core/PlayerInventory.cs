@@ -2,40 +2,30 @@ using UnityEngine;
 
 public class PlayerInventory : MonoBehaviour
 {
-    [SerializeField] private InventorySystem inventorySystem;
+    private InventorySystem inventorySystem => GameDataManager.Instance.InventorySystem;
 
     public bool AddItem(ItemData item, int quantity)
     {
-        if (inventorySystem == null) return false;
-        return inventorySystem.AddItem(item, quantity);
+        return inventorySystem?.AddItem(item, quantity) ?? false;
     }
 
     public bool RemoveItem(ItemData item, int quantity)
     {
-        if (inventorySystem == null) return false;
-        return inventorySystem.RemoveItem(item, quantity);
+        return inventorySystem?.RemoveItem(item, quantity) ?? false;
+    }
+
+    public bool RemoveItemAt(int index, int quantity)
+    {
+        return inventorySystem?.RemoveItemAt(index, quantity) ?? false;
     }
 
     public ItemData GetItemAt(int index)
     {
-        return inventorySystem.GetItemAt(index);
+        return inventorySystem?.GetItemAt(index);
     }
 
     public int GetInventorySize()
     {
-        return inventorySystem.GetSize();
-    }
-
-    [Header("Testing")]
-    [SerializeField] private ItemData testItemToAdd;
-    [SerializeField] private int testQuantity = 1;
-
-    [ContextMenu("Test Add Item")]
-    private void TestAddItem()
-    {
-        if (testItemToAdd != null)
-        {
-            AddItem(testItemToAdd, testQuantity);
-        }
+        return inventorySystem?.GetSize() ?? 0;
     }
 }

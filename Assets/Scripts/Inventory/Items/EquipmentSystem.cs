@@ -1,9 +1,8 @@
-// Path: Assets/Scripts/Player/EquipmentSystem.cs
-using UnityEngine;
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 
-public class EquipmentSystem : MonoBehaviour
+public class EquipmentSystem
 {
     public event Action<EquipmentSlotType> OnEquipmentChanged;
     public event Action<CosmeticSlotType> OnCosmeticChanged;
@@ -11,13 +10,13 @@ public class EquipmentSystem : MonoBehaviour
     private readonly Dictionary<EquipmentSlotType, EquipmentItemData> equippedItems = new Dictionary<EquipmentSlotType, EquipmentItemData>();
     private readonly Dictionary<CosmeticSlotType, CosmeticItemData> equippedCosmetics = new Dictionary<CosmeticSlotType, CosmeticItemData>();
 
-    private PlayerStats playerStats;
-    private InventorySystem inventorySystem;
+    private readonly PlayerStats playerStats;
+    private readonly InventorySystem inventorySystem;
 
-    private void Awake()
+    public EquipmentSystem(InventorySystem invSystem, PlayerStats pStats)
     {
-        playerStats = GetComponent<PlayerStats>();
-        inventorySystem = GetComponent<InventorySystem>();
+        inventorySystem = invSystem;
+        playerStats = pStats;
     }
 
     public EquipmentItemData GetEquippedItem(EquipmentSlotType slotType)
@@ -43,14 +42,10 @@ public class EquipmentSystem : MonoBehaviour
 
     public bool Unequip(EquipmentSlotType slotType)
     {
-        if (!equippedItems.TryGetValue(slotType, out var itemToUnequip))
-        {
-            return false;
-        }
+        if (!equippedItems.TryGetValue(slotType, out var itemToUnequip)) return false;
 
         if (!inventorySystem.AddItem(itemToUnequip, 1))
         {
-            Debug.LogWarning($"Could not unequip {itemToUnequip.itemName}: Inventory is full.");
             return false;
         }
 
@@ -76,8 +71,7 @@ public class EquipmentSystem : MonoBehaviour
         }
     }
 
-    // Tương tự, bạn có thể thêm logic cho Equip/Unequip Cosmetic
-    // Ví dụ: public void EquipCosmetic(CosmeticItemData cosmetic)...
+    // Cosmetic logic remains the same conceptually
     public bool EquipCosmetic(CosmeticItemData cosmetic)
     {
         if (cosmetic == null) return false;
@@ -94,16 +88,9 @@ public class EquipmentSystem : MonoBehaviour
 
     public bool UnequipCosmetic(CosmeticSlotType slotType)
     {
-        if (!equippedCosmetics.TryGetValue(slotType, out var cosmeticToUnequip))
-        {
-            return false;
-        }
+        if (!equippedCosmetics.TryGetValue(slotType, out var cosmeticToUnequip)) return false;
 
-        if (!inventorySystem.AddItem(cosmeticToUnequip, 1))
-        {
-            Debug.LogWarning($"Could not unequip cosmetic {cosmeticToUnequip.itemName}: Inventory is full.");
-            return false;
-        }
+        if (!inventorySystem.AddItem(cosmeticToUnequip, 1)) return false;
 
         equippedCosmetics.Remove(slotType);
         OnCosmeticChanged?.Invoke(slotType);

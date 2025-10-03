@@ -25,15 +25,15 @@ Material:
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
+  - _DISPLACEMENT_SATURATE_ON
+  - _DISSOLVETYPE_LINEAR
+  - _DISSOLVE_LOCALSPACE_ON
+  - _DISSOLVE_ON
   - _OUTLINE_SCALE_WITH_DISTANCE
   - _SURFACETYPE_OPAQUE
+  - _VERTEX_DISPLACEMENT_ON
   m_InvalidKeywords:
-  - _ADDITIONAL_LIGHTS_ON
-  - _ALPHAPREMULTIPLY_ON
-  - _RIM_LIGHT_ON
-  - _SPECULAR_ON
-  - _SURFACETYPE_TRANSPARENT
-  - _SURFACE_TYPE_TRANSPARENT
+  - _USETIMEANIMATION_ON
   - _ZWRITE_ON
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
@@ -83,23 +83,23 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _EmissionMap:
-        m_Texture: {fileID: 2800000, guid: 3d3c8d1fcc657e44c96058c253fd778f, type: 3}
+        m_Texture: {fileID: 2800000, guid: e8b9ab60b2bbe694f9cbf954cd2e9267, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _HatchingMap:
-        m_Texture: {fileID: 0}
+        m_Texture: {fileID: 2800000, guid: 9622a8e20fa09de4ea7635bcb303645e, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _HologramPatternTex:
-        m_Texture: {fileID: 0}
+        m_Texture: {fileID: 2800000, guid: 618dd44c87a7bf747a8a98b073be061f, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MainTex:
-        m_Texture: {fileID: 2800000, guid: 3d3c8d1fcc657e44c96058c253fd778f, type: 3}
+        m_Texture: {fileID: 2800000, guid: e8b9ab60b2bbe694f9cbf954cd2e9267, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MatcapMap:
-        m_Texture: {fileID: 0}
+        m_Texture: {fileID: 2800000, guid: f4760acbc2c214212a664adabc785224, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MatcapTexture:
@@ -111,7 +111,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _NoiseTex:
-        m_Texture: {fileID: 0}
+        m_Texture: {fileID: 2800000, guid: f5a21983127e9ed4e95ec0d15bb391f8, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _OcclusionMap:
@@ -156,9 +156,9 @@ Material:
     - _AdditionalLightInfluence: 1
     - _AlphaClip: 0
     - _AlphaClipMode: 0
-    - _AlphaFadeRange: 0.5
+    - _AlphaFadeRange: 1
     - _AlphaToMask: 0
-    - _AmbientGradientPower: 1
+    - _AmbientGradientPower: 5
     - _Blend: 0
     - _BlendModePreserveSpecular: 1
     - _BlingFresnelPower: 2
@@ -167,9 +167,9 @@ Material:
     - _BlingSpeed: 1
     - _BlingThreshold: 0.95
     - _BlingWorldSpace: 0
-    - _BounceWaveWidth: 0.5
+    - _BounceWaveWidth: 2
     - _Brightness: 1.3
-    - _BumpScale: 1
+    - _BumpScale: 0.906
     - _ClearCoatMask: 0
     - _ClearCoatSmoothness: 0
     - _CosmicParallaxDepth1: 0.02
@@ -183,72 +183,72 @@ Material:
     - _Cutoff: 0.5
     - _DetailAlbedoMapScale: 1
     - _DetailNormalMapScale: 1
-    - _DissolveEdgeWidth: 0.2
+    - _DissolveEdgeWidth: 0.05
     - _DissolveRadius: 1
-    - _DissolveThreshold: -0.5
+    - _DissolveThreshold: -10
     - _DissolveToggle: 0
-    - _DissolveType: 0
-    - _DistanceFadeEnd: 30
-    - _DistanceFadeStart: -30
+    - _DissolveType: 1
+    - _DistanceFadeEnd: 15
+    - _DistanceFadeStart: -45
     - _DitheringThreshold: 0.5
     - _DitheringToggle: 0
     - _DstBlend: 10
-    - _DstBlendAlpha: 10
+    - _DstBlendAlpha: 0
     - _EdgeReflectivity: 0.294
     - _EffectType: 0
     - _EmissionMode: 0
     - _EnableAdditionalLights: 1
-    - _EnableDissolve: 0
-    - _EnableEmission: 0
-    - _EnableGradientAmbient: 0
+    - _EnableDissolve: 1
+    - _EnableEmission: 1
+    - _EnableGradientAmbient: 1
     - _EnableHatching: 0
     - _EnableHologramReveal: 0
     - _EnableMatcap: 0
     - _EnableNormalMap: 0
     - _EnableRampTexture: 0
-    - _EnableRimLight: 1
+    - _EnableRimLight: 0
     - _EnableShatterEffect: 0
     - _EnableSpecular: 1
-    - _EnableVertexDisplacement: 0
+    - _EnableVertexDisplacement: 1
     - _EnvironmentReflections: 1
     - _EpicFloat1: 1
     - _EpicFloat2: 1
     - _EpicFloat3: 1
     - _FakeLightMode: 0
-    - _FresnelOutlinePower: 5
-    - _FresnelOutlineSharpness: 2
+    - _FresnelOutlinePower: 100
+    - _FresnelOutlineSharpness: 10
     - _FresnelOutlineToggle: 0
-    - _FresnelOutlineWidth: 0.1
-    - _FresnelPower: 1
-    - _GlassSpecularIntensity: 0.75
-    - _GlassSpecularPower: 8.4
+    - _FresnelOutlineWidth: 1
+    - _FresnelPower: 5
+    - _GlassSpecularIntensity: 1
+    - _GlassSpecularPower: 20
     - _GlassSpecularSize: 0.189
     - _GlassSpecularSmoothness: 0.0853
-    - _GlintScale: 20
-    - _GlintSpeed: 2
-    - _GlintThreshold: 0.95
+    - _GlintScale: 50
+    - _GlintSpeed: -10
+    - _GlintThreshold: 0.5
     - _GlintToggle: 0
     - _GlossMapScale: 1
-    - _Glossiness: 0.5
+    - _Glossiness: 0
     - _GlossyReflections: 1
-    - _HatchingTiling: 1
+    - _HatchingTiling: 300
     - _HatchingVisibility: 1
     - _HighlightOffset: 0.9
-    - _HighlightThreshold: 0.8
+    - _HighlightThreshold: 0.718
     - _HologramFlickerSpeed: 20
     - _HologramPatternScale: 1
     - _LegendaryFloat1: 1
     - _LegendaryFloat2: 1
     - _LegendaryFloat3: 1
     - _MatcapBlendMode: 0
-    - _MatcapIntensity: 0.74
+    - _MatcapIntensity: 0.6
     - _MatcapMode: 0
     - _MaxDissolveDistance: 1
-    - _Metallic: 0.6
+    - _Metallic: 0
     - _MidtoneThreshold: 0.8
-    - _Mode: 3
-    - _NoiseScale: 1
-    - _NoiseStrength: 0.1
+    - _Mode: 0
+    - _NoiseScale: 25
+    - _NoiseStrength: 0.2
     - _OcclusionStrength: 1
     - _Offset: 0.8
     - _OutlineMode: 0
@@ -258,46 +258,46 @@ Material:
     - _PatternFrequency: 10
     - _PatternType: 0
     - _QueueOffset: 0
-    - _RadialDirection: 1
+    - _RadialDirection: -1
     - _RampSmoothness: 0.01
     - _RareFloat1: 1
     - _RareFloat2: 1
     - _ReceiveShadows: 1
-    - _RefractionStrength: 0.1
+    - _RefractionStrength: 0.01
     - _RenderMode: 2
-    - _RevealProgress: 0
-    - _RimPower: 6
-    - _RimThreshold: 0.5
+    - _RevealProgress: 10
+    - _RimPower: 10
+    - _RimThreshold: 1
     - _ShadowThreshold: 0.4
-    - _ShadowTintInfluence: 0.2
+    - _ShadowTintInfluence: 0.659
     - _ShatterLiftSpeed: 1
-    - _ShatterOffsetStrength: 0.5
-    - _ShatterStrength: 1
-    - _ShatterTriggerRange: 0.1
-    - _Smoothness: 0.5
+    - _ShatterOffsetStrength: 0.04
+    - _ShatterStrength: 0
+    - _ShatterTriggerRange: 1
+    - _Smoothness: 0
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
-    - _SpecularSmoothness: 0.02
-    - _SpecularThreshold: 0.95
+    - _SpecularSmoothness: 0.001
+    - _SpecularThreshold: 0.263
     - _SrcBlend: 5
     - _SrcBlendAlpha: 1
     - _StarfieldParallaxDepth: 0.08
     - _StarfieldScale: 2.5
     - _StarfieldScrollSpeed: 0.01
-    - _Surface: 1
+    - _Surface: 0
     - _SurfaceType: 0
     - _TimeScale: 1
-    - _ToonRampOffset: 0.5
-    - _ToonRampSmoothness: 0.05
+    - _ToonRampOffset: 0.311
+    - _ToonRampSmoothness: 0
     - _TranslucencyStrength: 1
     - _Transparency: 0.107
     - _TriplanarSharpness: 5
     - _UVSec: 0
     - _UseFakeLight: 0
-    - _UseLocalSpace: 0
-    - _UseSaturateDisplacement: 0
-    - _UseTimeAnimation: 0
-    - _VertexDisplacement: 0.1
+    - _UseLocalSpace: 1
+    - _UseSaturateDisplacement: 1
+    - _UseTimeAnimation: 1
+    - _VertexDisplacement: 5
     - _WindAmplitude: 0.1
     - _WindFrequency: 2
     - _WindNoiseScale: 5
@@ -308,41 +308,41 @@ Material:
     - _ZWrite: 1
     m_Colors:
     - _AmbientColor: {r: 1, g: 1, b: 1, a: 0}
-    - _BaseColor: {r: 0.2783019, g: 0.60660356, b: 1, a: 0.4745098}
+    - _BaseColor: {r: 0.07843137, g: 0.33740658, b: 1, a: 0.6117647}
     - _BlingColor: {r: 1, g: 1, b: 1, a: 1}
-    - _Color: {r: 0.8, g: 0.8, b: 0.8, a: 0.49397588}
+    - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _CosmicAmbientColor: {r: 0.1, g: 0.1, b: 0.2, a: 1}
     - _CosmicColor1: {r: 0.2, g: 0.5, b: 1, a: 1}
     - _CosmicColor2: {r: 1, g: 0.3, b: 0.8, a: 1}
-    - _CustomShadowColor: {r: 0, g: 0, b: 0, a: 1}
+    - _CustomShadowColor: {r: 1, g: 1, b: 1, a: 1}
     - _DissolveCenter: {r: 0, g: 0, b: 0, a: 0}
-    - _DissolveDirection: {r: 0, g: 1, b: 0, a: 0}
-    - _DissolveEdgeColor: {r: 1, g: 0.5, b: 0, a: 1}
+    - _DissolveDirection: {r: 1, g: 0, b: 0, a: 0}
+    - _DissolveEdgeColor: {r: 23.96863, g: 0, b: 0, a: 1}
     - _EdgeColor: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0.5377358, g: 0.5377358, b: 0.5377358, a: 1}
     - _EpicColor1: {r: 1, g: 0.5, b: 0, a: 1}
     - _EpicColor2: {r: 1, g: 1, b: 0, a: 1}
     - _FakeLightColor: {r: 1, g: 1, b: 1, a: 1}
     - _FakeLightDirection: {r: -50, g: 50, b: 50, a: 0}
-    - _FresnelColor: {r: 0, g: 0.049834676, b: 0.5188679, a: 1}
-    - _FresnelOutlineColor: {r: 0, g: 0, b: 0, a: 1}
-    - _GlassColor: {r: 0, g: 0.035097625, b: 0.6792453, a: 0.78431374}
+    - _FresnelColor: {r: 1, g: 1, b: 1, a: 1}
+    - _FresnelOutlineColor: {r: 2.9960787, g: 0.616572, b: 0, a: 1}
+    - _GlassColor: {r: 0.8, g: 0.9, b: 1, a: 0.5}
     - _GlassSpecularColor: {r: 1, g: 1, b: 1, a: 1}
-    - _GlintColor: {r: 1, g: 1, b: 0.5, a: 1}
-    - _GroundColor: {r: 0.09999997, g: 0.09999997, b: 0.09999997, a: 1}
+    - _GlintColor: {r: 0.7490197, g: 0.16194686, b: 0, a: 1}
+    - _GroundColor: {r: 0, g: 0, b: 0, a: 1}
     - _HiColor: {r: 1, g: 1, b: 1, a: 1}
     - _HighlightColor: {r: 1, g: 1, b: 1, a: 1}
     - _HologramEmissionColor: {r: 0, g: 1, b: 1, a: 1}
     - _LegendaryColor1: {r: 0.5, g: 0, b: 1, a: 1}
     - _LegendaryColor2: {r: 0, g: 1, b: 1, a: 1}
-    - _MatcapTint: {r: 1, g: 1, b: 1, a: 1}
+    - _MatcapTint: {r: 0.3098488, g: 0.18178178, b: 0.4056604, a: 1}
     - _MidtoneColor: {r: 0.6792453, g: 0.6792453, b: 0.6792453, a: 1}
-    - _OutlineColor: {r: 0, g: 0, b: 0, a: 1}
+    - _OutlineColor: {r: 0.5566038, g: 0.36140022, b: 0.25992346, a: 1}
     - _RareColor1: {r: 1, g: 1, b: 1, a: 1}
-    - _RimColor: {r: 1, g: 0.29999998, b: 0.29999998, a: 1}
-    - _ShadowColor: {r: 0.39999998, g: 0.39999998, b: 0.39999998, a: 1}
+    - _RimColor: {r: 1, g: 1, b: 1, a: 1}
+    - _ShadowColor: {r: 0.16981131, g: 0.16981131, b: 0.16981131, a: 1}
     - _ShadowTint: {r: 0.4433962, g: 0.4433962, b: 0.4433962, a: 1}
-    - _SkyColor: {r: 0.19999996, g: 0.29999998, b: 0.39999998, a: 1}
+    - _SkyColor: {r: 0, g: 0, b: 0, a: 1}
     - _SpecColor: {r: 0.2, g: 0.2, b: 0.2, a: 1}
     - _SpecuColor: {r: 0.8, g: 0.45, b: 0.19999996, a: 1}
     - _SpecularColor: {r: 1, g: 1, b: 1, a: 1}

@@ -1,9 +1,9 @@
-// Path: Assets/Scripts/UI/EquipmentSlotUI.cs
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 using TMPro;
 
-public class EquipmentSlotUI : MonoBehaviour
+public class EquipmentSlotUI : MonoBehaviour, IDropHandler
 {
     [SerializeField] private Image iconImage;
     [SerializeField] private Sprite defaultIcon;
@@ -46,5 +46,23 @@ public class EquipmentSlotUI : MonoBehaviour
     private void OnSlotClicked()
     {
         equipmentSystem?.Unequip(slotType);
+    }
+
+    public void OnDrop(PointerEventData eventData)
+    {
+        var sourceSlotUI = eventData.pointerDrag.GetComponent<InventorySlotUI>();
+        if (sourceSlotUI == null) return;
+
+        var inventorySystem = GameDataManager.Instance.InventorySystem;
+        ItemData itemToDrop = inventorySystem.GetItemAt(sourceSlotUI.slotIndex);
+
+        if (itemToDrop is EquipmentItemData equipmentItem && equipmentItem.slotType == this.slotType)
+        {
+            bool equipped = equipmentSystem.Equip(equipmentItem);
+            if (equipped)
+            {
+                inventorySystem.RemoveItemAt(sourceSlotUI.slotIndex, 1);
+            }
+        }
     }
 }

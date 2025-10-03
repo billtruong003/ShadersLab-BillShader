@@ -12,6 +12,13 @@ public class InventorySlot
         quantity = amount;
     }
 
+    // Copy constructor
+    public InventorySlot(InventorySlot source)
+    {
+        itemData = source.itemData;
+        quantity = source.quantity;
+    }
+
     public InventorySlot()
     {
         ClearSlot();
@@ -23,22 +30,21 @@ public class InventorySlot
         quantity = 0;
     }
 
+    public void UpdateSlot(InventorySlot source)
+    {
+        itemData = source.itemData;
+        quantity = source.quantity;
+    }
+
     public void AssignItem(ItemData source, int amount)
     {
-        if (itemData == source)
-        {
-            AddToStack(amount);
-        }
-        else
-        {
-            itemData = source;
-            quantity = amount;
-        }
+        itemData = source;
+        quantity = amount;
     }
 
     public int GetRoomInStack()
     {
-        if (itemData == null) return 0;
+        if (itemData == null) return itemData.maxStackSize;
         return itemData.maxStackSize - quantity;
     }
 

@@ -3,24 +3,20 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
 
-public class InventorySystem : MonoBehaviour
+// Lớp này không kế thừa từ MonoBehaviour nữa.
+// Đây là một lớp C# thuần túy để quản lý logic dữ liệu.
+public class InventorySystem
 {
-    [SerializeField] private int inventorySize = 20;
-
-    private List<InventorySlot> inventorySlots;
+    private readonly List<InventorySlot> inventorySlots;
     public IReadOnlyList<InventorySlot> InventorySlots => inventorySlots;
 
     public event Action OnInventoryChanged;
 
-    private void Awake()
+    // Đây chính là constructor mà GameDataManager đang tìm kiếm.
+    public InventorySystem(int size)
     {
-        InitializeInventory();
-    }
-
-    private void InitializeInventory()
-    {
-        inventorySlots = new List<InventorySlot>(inventorySize);
-        for (int i = 0; i < inventorySize; i++)
+        inventorySlots = new List<InventorySlot>(size);
+        for (int i = 0; i < size; i++)
         {
             inventorySlots.Add(new InventorySlot());
         }
@@ -40,10 +36,22 @@ public class InventorySystem : MonoBehaviour
         bool success = quantityLeftToAdd == 0;
         if (success)
         {
-            OnInventoryChanged?.Invoke();
+            InvokeChangeEvent();
         }
 
         return success;
+    }
+
+    public bool RemoveItemAt(int index, int quantity)
+    {
+        if (!IsIndexValid(index) || quantity <= 0) return false;
+
+        InventorySlot slot = inventorySlots[index];
+        if (slot.itemData == null || slot.quantity < quantity) return false;
+
+        slot.RemoveFromStack(quantity);
+        InvokeChangeEvent();
+        return true;
     }
 
     public bool RemoveItem(ItemData item, int quantity)
@@ -63,14 +71,18 @@ public class InventorySystem : MonoBehaviour
             }
         }
 
-        OnInventoryChanged?.Invoke();
+        InvokeChangeEvent();
         return true;
     }
 
     public InventorySlot GetSlotAt(int index)
     {
-        if (index < 0 || index >= inventorySlots.Count) return null;
-        return inventorySlots[index];
+        return IsIndexValid(index) ? inventorySlots[index] : null;
+    }
+
+    public ItemData GetItemAt(int index)
+    {
+        return GetSlotAt(index)?.itemData;
     }
 
     public bool HasItem(ItemData item, int quantity = 1)
@@ -79,20 +91,48 @@ public class InventorySystem : MonoBehaviour
         return count >= quantity;
     }
 
-    public ItemData GetItemAt(int index)
+    public int GetSize() => inventorySlots.Count;
+
+    public void SwapSlots(int indexA, int indexB)
     {
-        if (index < 0 || index >= inventorySlots.Count) return null;
-        return inventorySlots[index].itemData;
+        if (!IsIndexValid(indexA) || !IsIndexValid(indexB)) return;
+
+        InventorySlot temp = new InventorySlot(inventorySlots[indexA]);
+        inventorySlots[indexA].UpdateSlot(inventorySlots[indexB]);
+        inventorySlots[indexB].UpdateSlot(temp);
+
+        InvokeChangeEvent();
     }
 
-    public int GetSize() => inventorySize;
+    public void Sort()
+    {
+        var sortedSlots = inventorySlots
+            .Where(s => s.itemData != null)
+            .OrderBy(s => s.itemData.itemName)
+            .ThenByDescending(s => s.quantity)
+            .ToList();
+
+        var emptySlots = inventorySlots
+            .Where(s => s.itemData == null)
+            .ToList();
+
+        inventorySlots.Clear();
+        inventorySlots.AddRange(sortedSlots);
+        inventorySlots.AddRange(emptySlots);
+
+        InvokeChangeEvent();
+    }
+
+    private bool IsIndexValid(int index)
+    {
+        return index >= 0 && index < inventorySlots.Count;
+    }
 
     private int AddToExistingStacks(ItemData item, int quantity)
     {
-        for (int i = 0; i < inventorySlots.Count; i++)
+        foreach (var slot in inventorySlots)
         {
             if (quantity <= 0) break;
-            InventorySlot slot = inventorySlots[i];
             if (slot.itemData == item && slot.GetRoomInStack() > 0)
             {
                 int amountToAdd = Mathf.Min(quantity, slot.GetRoomInStack());
@@ -105,10 +145,9 @@ public class InventorySystem : MonoBehaviour
 
     private int AddToNewStacks(ItemData item, int quantity)
     {
-        for (int i = 0; i < inventorySlots.Count; i++)
+        foreach (var slot in inventorySlots)
         {
             if (quantity <= 0) break;
-            InventorySlot slot = inventorySlots[i];
             if (slot.itemData == null)
             {
                 int amountToAdd = Mathf.Min(quantity, item.maxStackSize);
@@ -119,17 +158,8 @@ public class InventorySystem : MonoBehaviour
         return quantity;
     }
 
-    public void SwapSlots(int indexA, int indexB)
+    private void InvokeChangeEvent()
     {
-        if (indexA < 0 || indexA >= inventorySlots.Count || indexB < 0 || indexB >= inventorySlots.Count)
-        {
-            return;
-        }
-
-        InventorySlot temp = inventorySlots[indexA];
-        inventorySlots[indexA] = inventorySlots[indexB];
-        inventorySlots[indexB] = temp;
-
         OnInventoryChanged?.Invoke();
     }
 }

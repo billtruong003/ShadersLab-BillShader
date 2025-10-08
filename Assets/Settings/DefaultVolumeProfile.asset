@@ -465,6 +465,7 @@ MonoBehaviour:
   - {fileID: -6288072647309666549}
   - {fileID: 7518938298396184218}
   - {fileID: -1410297666881709256}
+  - {fileID: 6953920795863738461}
 --- !u!114 &853819529557874667
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -866,6 +867,118 @@ MonoBehaviour:
   m_Name: VolumeComponentSupportedOnAnySRP
   m_EditorClassIdentifier: Unity.RenderPipelines.Core.Editor.Tests:UnityEngine.Rendering.Tests:VolumeComponentEditorSupportedOnTests/VolumeComponentSupportedOnAnySRP
   active: 1
+--- !u!114 &6953920795863738461
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 38ff8a6a4fb344f190dd7688680e31a3, type: 3}
+  m_Name: AmbientOcclusionMasterComponent
+  m_EditorClassIdentifier: 
+  active: 1
+  Mode:
+    m_OverrideState: 1
+    m_Value: 0
+  SsaoIntensity:
+    m_OverrideState: 1
+    m_Value: 3
+  SsaoRadius:
+    m_OverrideState: 1
+    m_Value: 0.1
+  SsaoFalloff:
+    m_OverrideState: 1
+    m_Value: 100
+  SsaoSamplesCount:
+    m_OverrideState: 1
+    m_Value: 1
+  HdaoIntensity:
+    m_OverrideState: 1
+    m_Value: 0.6
+  HdaoNormalIntensity:
+    m_OverrideState: 1
+    m_Value: 0.1
+  HdaoRejectRadius:
+    m_OverrideState: 1
+    m_Value: 2
+  HdaoAcceptRadius:
+    m_OverrideState: 1
+    m_Value: 0.003
+  HdaoFalloff:
+    m_OverrideState: 1
+    m_Value: 100
+  HdaoSamples:
+    m_OverrideState: 1
+    m_Value: 0
+  HbaoIntensity:
+    m_OverrideState: 1
+    m_Value: 3
+  HbaoRadius:
+    m_OverrideState: 1
+    m_Value: 0.3
+  HbaoMaxRadiusInPixels:
+    m_OverrideState: 1
+    m_Value: 40
+  HbaoAngleBias:
+    m_OverrideState: 1
+    m_Value: 0.1
+  HbaoFalloff:
+    m_OverrideState: 1
+    m_Value: 100
+  HbaoDirections:
+    m_OverrideState: 1
+    m_Value: 2
+  HbaoSamples:
+    m_OverrideState: 1
+    m_Value: 4
+  GtaoIntensity:
+    m_OverrideState: 1
+    m_Value: 3
+  GtaoRadius:
+    m_OverrideState: 1
+    m_Value: 0.3
+  GtaoMaxRadiusInPixels:
+    m_OverrideState: 1
+    m_Value: 40
+  GtaoFalloff:
+    m_OverrideState: 1
+    m_Value: 100
+  GtaoDirections:
+    m_OverrideState: 1
+    m_Value: 2
+  GtaoSamples:
+    m_OverrideState: 1
+    m_Value: 4
+  DirectLightingStrength:
+    m_OverrideState: 1
+    m_Value: 0.25
+  NoiseType:
+    m_OverrideState: 1
+    m_Value: 2
+  BlurMode:
+    m_OverrideState: 1
+    m_Value: 0
+  DebugMode:
+    m_OverrideState: 1
+    m_Value: 0
+  RenderPath:
+    m_OverrideState: 1
+    m_Value: 0
+  AfterOpaque:
+    m_OverrideState: 1
+    m_Value: 1
+  Downsample:
+    m_OverrideState: 1
+    m_Value: 0
+  Source:
+    m_OverrideState: 1
+    m_Value: 0
+  NormalsQuality:
+    m_OverrideState: 1
+    m_Value: 1
 --- !u!114 &7173750748008157695
 MonoBehaviour:
   m_ObjectHideFlags: 3

@@ -1,0 +1,62 @@
+/* Container styles */
+VisualElement {
+    background-color: #1e1e1e;
+    padding: 10px;
+}
+
+/* ListView styles */
+ListView#scene-list {
+    background-color: #2f2f2f;
+    border-width: 1px;
+    border-color: #555;
+}
+
+/* List item styles */
+.list-item-container {
+    flex-direction: row;
+    align-items: center;
+    padding: 5px;
+    background-color: #3c3c3c;
+    margin-bottom: 2px;
+}
+
+.list-item-container:hover {
+    background-color: #4f4f4f;
+}
+
+Image#list-item-icon {
+    width: 20px;
+    height: 20px;
+    margin-right: 5px;
+}
+
+Label#list-item-label {
+    color: white;
+    font-size: 12px;
+}
+
+/* Dropdown and TextField styles */
+DropdownField#mode-dropdown {
+    margin-bottom: 10px;
+}
+
+TextField#search-field {
+    margin-bottom: 10px;
+}
+
+/* Button styles */
+Button {
+    background-color: #4f4f4f;
+    color: white;
+    padding: 5px;
+    margin-right: 5px;
+}
+
+Button:hover {
+    background-color: #6f6f6f;
+}
+
+Button:disabled {
+    background-color: #3c3c3c;
+    color: #888;
+}

@@ -1,0 +1,63 @@
+<!-- Save as: SceneSwitcherTool.uxml -->
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+    <!-- The C# script adds "wide-layout" or "narrow-layout" here. We start with "wide-layout" as the default. -->
+    <ui:VisualElement name="main-container" class="main-container wide-layout">
+
+        <!-- LEFT COLUMN: Scene List -->
+        <ui:VisualElement class="column box left-column">
+            
+            <ui:VisualElement class="top-controls">
+                <ui:VisualElement class="search-container">
+                    <ui:Image name="search-icon" class="search-icon" />
+                    <ui:TextField name="search-field" placeholder-text="Search scenes..." />
+                </ui:VisualElement>
+                <ui:DropdownField name="mode-dropdown" label="Mode" />
+            </ui:VisualElement>
+            
+            <ui:VisualElement name="list-container" class="list-container">
+                <ui:ListView name="scene-list" class="scene-list-view" />
+                <ui:VisualElement name="empty-list-hint" class="empty-list-hint-container">
+                    <ui:Label text="Drag scenes here to add them to your bookmarks." class="drag-hint-label"/>
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+        </ui:VisualElement>
+
+        <!-- RIGHT COLUMN: Buttons -->
+        <ui:VisualElement class="column box right-column">
+            <ui:ScrollView mode="Vertical" class="button-scroll-view">
+                <ui:Label text="Scene Options" class="header-label" />
+                
+                <ui:Button name="load-button">
+                    <ui:Image name="load-icon" class="button-icon" />
+                    <ui:Label text="Load Scene" />
+                </ui:Button>
+                <ui:Button name="additive-button">
+                    <ui:Image name="additive-icon" class="button-icon" />
+                    <ui:Label text="Load Additive" />
+                </ui:Button>
+                <ui:Button name="ping-in-folder-button">
+                    <ui:Image name="ping-icon" class="button-icon" />
+                    <ui:Label text="Ping in Folder" />
+                </ui:Button>
+                
+                <ui:VisualElement style="height: 20px;" />
+                
+                <ui:Label text="Bookmark Edit" class="header-label" />
+                <ui:Button name="add-current-bookmark-button">
+                    <ui:Image name="add-current-icon" class="button-icon" />
+                    <ui:Label text="Add Current Scene" />
+                </ui:Button>
+                <ui:Button name="remove-bookmark-button">
+                    <ui:Image name="remove-selected-icon" class="button-icon" />
+                    <ui:Label text="Remove Selected" />
+                </ui:Button>
+                <ui:Button name="remove-all-bookmarks-button">
+                    <ui:Image name="remove-all-icon" class="button-icon" />
+                    <ui:Label text="Remove All Bookmarks" />
+                </ui:Button>
+            </ui:ScrollView>
+        </ui:VisualElement>
+
+    </ui:VisualElement>
+</ui:UXML>

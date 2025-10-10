@@ -26,7 +26,10 @@ Shader "Unlit/ProductionReadyHealthBar"
     }
     SubShader
     {
-        Tags { "Queue"="Transparent" "RenderType"="Transparent" "IgnoreProjector"="True" "PreviewType"="Plane" }
+        Tags
+        {
+            "Queue" = "Transparent" "RenderType" = "Transparent" "IgnoreProjector" = "True" "PreviewType" = "Plane"
+        }
 
         Pass
         {
@@ -53,7 +56,7 @@ Shader "Unlit/ProductionReadyHealthBar"
             };
 
             sampler2D _NoiseTex;
-            
+
             half _FillAmount;
             float _BorderThickness;
             float _CornerRadius;
@@ -96,20 +99,20 @@ Shader "Unlit/ProductionReadyHealthBar"
                 float2 positionFromCenter = pixelCoord - halfSize;
 
                 float antialias = 1.0;
-                
+
                 float outerSDF = get_rounded_rect_sdf(positionFromCenter, halfSize, _CornerRadius);
                 float shapeMask = 1.0 - smoothstep(-antialias, antialias, outerSDF);
                 clip(shapeMask - 0.01);
 
                 float innerRadius = max(0.0, _CornerRadius - _BorderThickness);
-                float2 innerHalfSize = max(float2(0,0), halfSize - _BorderThickness);
+                float2 innerHalfSize = max(float2(0, 0), halfSize - _BorderThickness);
                 float innerSDF = get_rounded_rect_sdf(positionFromCenter, innerHalfSize, innerRadius);
                 float contentMask = 1.0 - smoothstep(-antialias, antialias, innerSDF);
 
                 float waveOffset1 = get_wave_offset(i.uv, _WaveSpeed1, _WaveFrequency1, _WaveAmplitude1);
                 float waveOffset2 = get_wave_offset(i.uv, _WaveSpeed2, _WaveFrequency2, _WaveAmplitude2);
                 float totalWaveOffset = waveOffset1 + waveOffset2;
-                
+
                 // --- THE FIX IS HERE ---
                 // This line acts as an on/off switch. If _FillAmount is near zero, this evaluates
                 // to 0, completely disabling the waves. Otherwise, it's 1.
@@ -117,7 +120,7 @@ Shader "Unlit/ProductionReadyHealthBar"
                 // --- END OF FIX ---
 
                 float surfaceY = _FillAmount + totalWaveOffset;
-                
+
                 fixed4 contentColor = _BackgroundColor;
                 if (i.uv.y < surfaceY)
                 {

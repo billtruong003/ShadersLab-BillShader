@@ -42,14 +42,12 @@ public class LevelLoader : SerializedMonoBehaviour
 
     private bool TryToAcquireLevelData()
     {
-        // Ưu tiên level được truyền từ Main Menu qua GameDataPersistence
         if (GameDataPersistence.Instance != null && GameDataPersistence.Instance.LevelToLoad != null)
         {
             levelToLoad = GameDataPersistence.Instance.LevelToLoad;
         }
         else
         {
-            // Nếu không, sử dụng level gán sẵn trong Inspector để test
             levelToLoad = fallbackLevelData;
         }
 
@@ -68,6 +66,7 @@ public class LevelLoader : SerializedMonoBehaviour
     private void GenerateLevelFromGridData()
     {
         ClearExistingLevel();
+        int collectibleCount = 0;
 
         foreach (GridCell cell in levelToLoad.cells)
         {
@@ -83,8 +82,14 @@ public class LevelLoader : SerializedMonoBehaviour
             if (objectPrefabDictionary.TryGetValue(cell.objectType, out GameObject prefabToSpawn) && prefabToSpawn != null)
             {
                 Instantiate(prefabToSpawn, spawnPosition, Quaternion.identity, levelRoot);
+                if (cell.objectType == ObjectType.Collectible)
+                {
+                    collectibleCount++;
+                }
             }
         }
+
+        CollectibleManager.Instance?.InitializeLevelProgress(collectibleCount);
     }
 
     private Vector3 CalculateCenteredWorldPosition(Vector2Int gridPos)

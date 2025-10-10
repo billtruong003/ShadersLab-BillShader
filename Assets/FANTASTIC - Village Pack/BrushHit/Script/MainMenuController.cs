@@ -5,14 +5,13 @@ using TMPro;
 using Sirenix.OdinInspector;
 using System.Collections.Generic;
 
-[HideMonoScript]
 public class MainMenuController : SerializedMonoBehaviour
 {
-    private const int LEVELS_PER_PAGE = 25;
+    private const int LEVELS_PER_PAGE = 20;
 
     [Title("Cấu hình Dữ liệu")]
     [Required][SerializeField] private LevelDatabase levelDatabase;
-    [Required][SerializeField] private string gameSceneName = "GameScene";
+    [Required][SerializeField] private string gameSceneName = "BrushHit";
 
     [Title("UI Panels")]
     [Required][SerializeField] private GameObject mainPanel;
@@ -48,13 +47,12 @@ public class MainMenuController : SerializedMonoBehaviour
     private void InitializeListeners()
     {
         playButton.onClick.AddListener(ShowLevelSelectPanel);
+        settingsButton.onClick.AddListener(OnSettingsButtonClicked);
+        shopButton.onClick.AddListener(OnShopButtonClicked);
+
         backButton.onClick.AddListener(ShowMainPanel);
         nextPageButton.onClick.AddListener(ShowNextPage);
         previousPageButton.onClick.AddListener(ShowPreviousPage);
-
-        // Tạm thời vô hiệu hóa các nút chưa có chức năng
-        settingsButton.onClick.AddListener(() => Debug.Log("Settings Button Clicked"));
-        shopButton.onClick.AddListener(() => Debug.Log("Shop Button Clicked"));
     }
 
     private void PopulateLevelPages()
@@ -91,11 +89,14 @@ public class MainMenuController : SerializedMonoBehaviour
         }
     }
 
-    private void ShowInitialState()
+    private void OnSettingsButtonClicked()
     {
-        currentPageIndex = 0;
-        ShowPage(currentPageIndex);
-        ShowMainPanel();
+        Debug.Log("Open Settings Panel... (Chưa được cài đặt)");
+    }
+
+    private void OnShopButtonClicked()
+    {
+        Debug.Log("Open Shop Panel... (Chưa được cài đặt)");
     }
 
     private void OnLevelSelected(LevelData selectedLevel)
@@ -108,6 +109,13 @@ public class MainMenuController : SerializedMonoBehaviour
 
         GameDataPersistence.Instance.SetLevelToLoad(selectedLevel);
         SceneManager.LoadScene(gameSceneName);
+    }
+
+    private void ShowInitialState()
+    {
+        currentPageIndex = 0;
+        ShowPage(currentPageIndex);
+        ShowMainPanel();
     }
 
     private void ShowPage(int pageIndex)

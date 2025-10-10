@@ -1,11 +1,15 @@
 using Sirenix.OdinInspector;
 using System.Collections.Generic;
 using UnityEngine;
+using System;
 
 [HideMonoScript]
 public class CollectibleManager : SerializedMonoBehaviour
 {
     public static CollectibleManager Instance { get; private set; }
+
+    public static event Action<int, int> OnCollectibleInitialized;
+    public static event Action<int, int> OnCollectibleCollected;
 
     [Title("Thiết lập Rendering")]
     [Required][SerializeField] private Material sharedCollectibleMaterial;
@@ -26,6 +30,9 @@ public class CollectibleManager : SerializedMonoBehaviour
     private float lastCullingTime;
     private int nextUniqueID = 0;
 
+    private int totalCollectiblesInLevel = 0;
+    private int collectiblesGathered = 0;
+
     public Material SharedMaterial => sharedCollectibleMaterial;
     public Color DefaultColor => defaultColor;
     public Color CollectedColor => collectedColor;
@@ -37,6 +44,24 @@ public class CollectibleManager : SerializedMonoBehaviour
         if (Instance != null && Instance != this) Destroy(gameObject);
         else Instance = this;
         mainCamera = Camera.main;
+    }
+
+    public void InitializeLevelProgress(int totalCount)
+    {
+        totalCollectiblesInLevel = totalCount;
+        collectiblesGathered = 0;
+        OnCollectibleInitialized?.Invoke(collectiblesGathered, totalCollectiblesInLevel);
+    }
+
+    public void NotifyItemCollected()
+    {
+        collectiblesGathered++;
+        OnCollectibleCollected?.Invoke(collectiblesGathered, totalCollectiblesInLevel);
+
+        if (collectiblesGathered >= totalCollectiblesInLevel)
+        {
+            BrushHit.GameManager.Instance?.TriggerLevelComplete();
+        }
     }
 
     private void Update()

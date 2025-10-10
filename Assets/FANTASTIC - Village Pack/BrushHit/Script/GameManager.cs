@@ -1,6 +1,6 @@
 using Sirenix.OdinInspector;
 using UnityEngine;
-using UnityEngine.SceneManagement;
+
 namespace BrushHit
 {
     public enum GameState
@@ -18,11 +18,6 @@ namespace BrushHit
 
         [ShowInInspector, ReadOnly]
         public GameState CurrentState { get; private set; }
-
-        // Kéo các UI Panel tương ứng vào đây (ví dụ: Panel màn hình thua, thắng)
-        [Title("UI Panels")]
-        [SerializeField] private GameObject gameOverPanel;
-        [SerializeField] private GameObject levelCompletePanel;
 
         private void Awake()
         {
@@ -45,10 +40,6 @@ namespace BrushHit
         {
             CurrentState = GameState.Playing;
             Time.timeScale = 1f;
-
-            // Ẩn tất cả các panel khi bắt đầu
-            if (gameOverPanel != null) gameOverPanel.SetActive(false);
-            if (levelCompletePanel != null) levelCompletePanel.SetActive(false);
         }
 
         public void TriggerGameOver()
@@ -56,10 +47,8 @@ namespace BrushHit
             if (CurrentState != GameState.Playing) return;
 
             CurrentState = GameState.GameOver;
-            Time.timeScale = 0f; // Dừng game
-            if (gameOverPanel != null) gameOverPanel.SetActive(true);
-
-            // Gọi AudioManager để phát âm thanh thua
+            Time.timeScale = 0f;
+            GameUIManager.Instance?.ShowGameOverPanel();
             AudioManager.Instance?.PlaySound("GameOver");
         }
 
@@ -69,15 +58,8 @@ namespace BrushHit
 
             CurrentState = GameState.LevelComplete;
             Time.timeScale = 0f;
-            if (levelCompletePanel != null) levelCompletePanel.SetActive(true);
-
+            GameUIManager.Instance?.ShowLevelCompletePanel();
             AudioManager.Instance?.PlaySound("LevelComplete");
-        }
-
-        public void RestartLevel()
-        {
-            Time.timeScale = 1f;
-            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
         }
     }
 }

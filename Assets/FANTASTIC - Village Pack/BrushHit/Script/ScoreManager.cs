@@ -1,19 +1,13 @@
 using Sirenix.OdinInspector;
-using TMPro;
 using UnityEngine;
+using System;
 
 public class ScoreManager : SerializedMonoBehaviour
 {
     public static ScoreManager Instance { get; private set; }
+    public static event Action<int> OnScoreChanged;
 
-    [Title("Tham chiếu Giao diện")]
-    [Required("Cần tham chiếu đến TextMeshPro để hiển thị điểm.")]
-    [SerializeField]
-    private TextMeshProUGUI scoreText;
-
-    [Title("Thông tin Điểm")]
-    [ShowInInspector]
-    [ReadOnly]
+    [ShowInInspector, ReadOnly]
     public int CurrentScore { get; private set; }
 
     private void Awake()
@@ -31,7 +25,7 @@ public class ScoreManager : SerializedMonoBehaviour
     private void Start()
     {
         CurrentScore = 0;
-        UpdateScoreUI();
+        OnScoreChanged?.Invoke(CurrentScore);
     }
 
     public void AddScore(int amount)
@@ -39,14 +33,6 @@ public class ScoreManager : SerializedMonoBehaviour
         if (amount <= 0) return;
 
         CurrentScore += amount;
-        UpdateScoreUI();
-    }
-
-    private void UpdateScoreUI()
-    {
-        if (scoreText != null)
-        {
-            scoreText.text = $"Score: {CurrentScore}";
-        }
+        OnScoreChanged?.Invoke(CurrentScore);
     }
 }

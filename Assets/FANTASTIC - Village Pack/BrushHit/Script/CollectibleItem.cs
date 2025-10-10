@@ -1,4 +1,3 @@
-// File: Assets/FANTASTIC - Village Pack/BrushHit/Script/CollectibleItem.cs
 using Sirenix.OdinInspector;
 using UnityEngine;
 
@@ -19,7 +18,6 @@ public class CollectibleItem : SerializedMonoBehaviour
     private static readonly int InteractionColorID = Shader.PropertyToID("_InteractionColor");
     private static readonly int InteractionProgressID = Shader.PropertyToID("_InteractionProgress");
     private static readonly int UniqueIDShaderID = Shader.PropertyToID("_UniqueID");
-    // ID của OcclusionAlpha đã được xóa
 
     private void Awake()
     {
@@ -57,7 +55,6 @@ public class CollectibleItem : SerializedMonoBehaviour
         propertyBlock.SetColor(InteractionColorID, CollectibleManager.Instance.CollectedColor);
         propertyBlock.SetFloat(InteractionProgressID, 0f);
         propertyBlock.SetFloat(UniqueIDShaderID, (float)uniqueID);
-        // Không còn set OcclusionAlpha
         meshRenderer.SetPropertyBlock(propertyBlock);
     }
 
@@ -76,6 +73,7 @@ public class CollectibleItem : SerializedMonoBehaviour
     {
         hasBeenCollected = true;
         ScoreManager.Instance?.AddScore(pointValue);
+        CollectibleManager.Instance?.NotifyItemCollected();
         SpawnCollectionEffects();
         AnimateVisualChange();
     }

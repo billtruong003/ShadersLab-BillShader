@@ -63,10 +63,11 @@ public class LevelLoader : SerializedMonoBehaviour
         objectPrefabDictionary = objectMappings.ToDictionary(mapping => mapping.type, mapping => mapping.prefab);
     }
 
+    // --- PHẦN CODE ĐÃ ĐƯỢC NÂNG CẤP TOÀN DIỆN ---
     private void GenerateLevelFromGridData()
     {
         ClearExistingLevel();
-        int collectibleCount = 0;
+        int totalCollectibleCount = 0; // Đổi tên biến để rõ ràng hơn
 
         foreach (GridCell cell in levelToLoad.cells)
         {
@@ -81,16 +82,23 @@ public class LevelLoader : SerializedMonoBehaviour
 
             if (objectPrefabDictionary.TryGetValue(cell.objectType, out GameObject prefabToSpawn) && prefabToSpawn != null)
             {
-                Instantiate(prefabToSpawn, spawnPosition, Quaternion.identity, levelRoot);
+                // Logic đếm số lượng item chính xác
                 if (cell.objectType == ObjectType.Collectible)
                 {
-                    collectibleCount++;
+                    // Đếm tất cả component CollectibleItem trong prefab và các con của nó
+                    // Tham số 'true' để đảm bảo đếm cả những object con đang bị tắt (inactive)
+                    int itemsInThisPrefab = prefabToSpawn.GetComponentsInChildren<CollectibleItem>(true).Length;
+                    totalCollectibleCount += itemsInThisPrefab;
                 }
+
+                Instantiate(prefabToSpawn, spawnPosition, Quaternion.identity, levelRoot);
             }
         }
 
-        CollectibleManager.Instance?.InitializeLevelProgress(collectibleCount);
+        // Khởi tạo tiến trình level với tổng số lượng item đã được đếm chính xác
+        CollectibleManager.Instance?.InitializeLevelProgress(totalCollectibleCount);
     }
+    // --- KẾT THÚC PHẦN NÂNG CẤP ---
 
     private Vector3 CalculateCenteredWorldPosition(Vector2Int gridPos)
     {

@@ -47,7 +47,7 @@ namespace BrushHit
             if (CurrentState != GameState.Playing) return;
 
             CurrentState = GameState.GameOver;
-            Time.timeScale = 0f;
+            // Time.timeScale = 0f;
             GameUIManager.Instance?.ShowGameOverPanel();
             AudioManager.Instance?.PlaySound("GameOver");
         }
@@ -57,7 +57,7 @@ namespace BrushHit
             if (CurrentState != GameState.Playing) return;
 
             CurrentState = GameState.LevelComplete;
-            Time.timeScale = 0f;
+            // Time.timeScale = 0f;
             GameUIManager.Instance?.ShowLevelCompletePanel();
             AudioManager.Instance?.PlaySound("LevelComplete");
         }

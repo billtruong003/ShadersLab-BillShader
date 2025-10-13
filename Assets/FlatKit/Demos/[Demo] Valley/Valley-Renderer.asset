@@ -32,26 +32,26 @@ MonoBehaviour:
     tonemapperOperator: 10
     exposure: 0
     colorFilter: {r: 1, g: 1, b: 1, a: 1}
-    temperature: 0
+    temperature: -0.29
     tint: 0
-    vibrance: 0
+    vibrance: 1
     vibranceBalance: {x: 1, y: 1, z: 1}
-    contrastMidpoint: 0.18
+    contrastMidpoint: -3.92
     lift: {r: 1, g: 1, b: 1, a: 1}
     liftBright: 1
     midtones: {r: 1, g: 1, b: 1, a: 1}
-    midtonesBright: 1
+    midtonesBright: 0.85
     gain: {r: 1, g: 1, b: 1, a: 1}
-    gainBright: 1
+    gainBright: 2
     whiteLevel: 1
     linearWhite: 1.5
     linearColor: 1.5
     cutOff: 0.025
     brightness: 0
-    contrast: 1.12
-    gamma: 1
+    contrast: 1.15
+    gamma: 0.95
     hue: 0
-    saturation: 1
+    saturation: 0.9
     blackPoint: 0
     whitePoint: 1
     toeStrength: 0
@@ -61,7 +61,7 @@ MonoBehaviour:
     blueChannelMixer: {x: 0, y: 0, z: 1}
     highlightTint: {r: 1, g: 1, b: 1, a: 1}
     shadowTint: {r: 1, g: 1, b: 1, a: 1}
-    splitBalance: 0
+    splitBalance: -1
     redsAdjustment: {x: 0, y: 0, z: 0, w: 0}
     yellowsAdjustment: {x: 0, y: 0, z: 0, w: 0}
     greensAdjustment: {x: 0, y: 0, z: 0, w: 0}
@@ -71,16 +71,16 @@ MonoBehaviour:
     whitesAdjustment: {x: 0, y: 0, z: 0, w: 0}
     neutralsAdjustment: {x: 0, y: 0, z: 0, w: 0}
     blacksAdjustment: {x: 0, y: 0, z: 0, w: 0}
-    advancedVibrance: 0
-    vibranceSaturation: 1
+    advancedVibrance: 1
+    vibranceSaturation: 0
     vibranceProtect: 0
     vibranceColorBalance: {x: 1, y: 1, z: 1}
-    vibranceSkinTone: 0
+    vibranceSkinTone: 0.5
     vibranceSky: 0
     vibranceFoliage: 0
     vibranceWarmth: 0
     vibranceCoolness: 0
-    affectSceneView: 0
+    affectSceneView: 1
     whenToInsert: 550
 --- !u!114 &-1344586528338988631
 MonoBehaviour:
@@ -128,7 +128,7 @@ MonoBehaviour:
   - {fileID: -2489931044198432990}
   m_RendererFeatureMap: a9319428ad1157edf936e54cd1cc95b522bf5553e8fc71dd
   m_UseNativeRenderPass: 0
-  xrSystemData: {fileID: 11400000, guid: 60e1133243b97e347b653163a8c01b64, type: 2}
+  xrSystemData: {fileID: 0}
   postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
   m_AssetVersion: 2
   m_OpaqueLayerMask:
@@ -145,7 +145,7 @@ MonoBehaviour:
     failOperation: 0
     zFailOperation: 0
   m_ShadowTransparentReceive: 1
-  m_RenderingMode: 2
+  m_RenderingMode: 0
   m_DepthPrimingMode: 0
   m_CopyDepthMode: 0
   m_DepthAttachmentFormat: 0

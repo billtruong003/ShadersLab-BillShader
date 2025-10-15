@@ -9,12 +9,23 @@ public static class ToonOpaqueUIDrawer
 
     public static void DrawToonSettings(MaterialEditor editor, ToonOpaqueShaderGUI_HQ.ToonShadingProps props)
     {
-        EditorGUILayout.HelpBox("Controls a three-step lighting ramp: Shadow -> Mid-tone -> Highlight.", MessageType.Info);
+        EditorGUILayout.LabelField("Main Light", EditorStyles.boldLabel);
+        EditorGUILayout.HelpBox("Controls a three-step lighting ramp: Shadow -> Mid-tone -> Highlight for the main directional light.", MessageType.Info);
         editor.ShaderProperty(props.shadowTint, props.shadowTint.displayName);
         editor.ShaderProperty(props.midtoneColor, props.midtoneColor.displayName);
         editor.ShaderProperty(props.shadowThreshold, props.shadowThreshold.displayName);
         editor.ShaderProperty(props.midtoneThreshold, props.midtoneThreshold.displayName);
         editor.ShaderProperty(props.rampSmoothness, props.rampSmoothness.displayName);
+
+        EditorGUILayout.Space();
+
+        EditorGUILayout.LabelField("Additional Lights (Point/Spot)", EditorStyles.boldLabel);
+        EditorGUILayout.HelpBox("Separate controls for additional lights to prevent oversaturation and achieve a better toon look.", MessageType.Info);
+        editor.ShaderProperty(props.addLightShadowTint, props.addLightShadowTint.displayName);
+        editor.ShaderProperty(props.addLightMidtoneColor, props.addLightMidtoneColor.displayName);
+        editor.ShaderProperty(props.addLightShadowThreshold, props.addLightShadowThreshold.displayName);
+        editor.ShaderProperty(props.addLightMidtoneThreshold, props.addLightMidtoneThreshold.displayName);
+        editor.ShaderProperty(props.addLightRampSmoothness, props.addLightRampSmoothness.displayName);
     }
 
     public static void DrawMetallicSettings(MaterialEditor editor, ToonOpaqueShaderGUI_HQ.MetallicProps props)

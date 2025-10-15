@@ -44,6 +44,17 @@ float3 ApplyThreeStepToonRamp(float NdotL, float3 lightColor)
     return finalColor;
 }
 
+float3 ApplyAdditionalLightToonRamp(float NdotL, float3 lightColor)
+{
+    half shadowRamp = smoothstep(_AddLightShadowThreshold - _AddLightRampSmoothness, _AddLightShadowThreshold + _AddLightRampSmoothness, NdotL);
+    half3 colorAfterShadow = lerp(_AddLightShadowTint.rgb, _AddLightMidtoneColor.rgb, shadowRamp);
+
+    half midtoneRamp = smoothstep(_AddLightMidtoneThreshold - _AddLightRampSmoothness, _AddLightMidtoneThreshold + _AddLightRampSmoothness, NdotL);
+    half3 finalColor = lerp(colorAfterShadow, lightColor, midtoneRamp);
+
+    return finalColor;
+}
+
 float3 CalculateToonLighting(float3 normalWS, float3 worldPos, Light mainLight)
 {
     float NdotL = dot(normalWS, mainLight.direction) * 0.5 + 0.5;
@@ -56,7 +67,7 @@ float3 CalculateToonLighting(float3 normalWS, float3 worldPos, Light mainLight)
         {
             Light additionalLight = GetAdditionalLight(i, worldPos);
             float addNdotL = dot(normalWS, additionalLight.direction) * 0.5 + 0.5;
-            additionalLightContribution += ApplyThreeStepToonRamp(addNdotL, additionalLight.color) * additionalLight.distanceAttenuation * additionalLight.shadowAttenuation;
+            additionalLightContribution += ApplyAdditionalLightToonRamp(addNdotL, additionalLight.color) * additionalLight.distanceAttenuation * additionalLight.shadowAttenuation;
         }
     #endif
 

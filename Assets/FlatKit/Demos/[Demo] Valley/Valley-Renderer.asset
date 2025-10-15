@@ -26,7 +26,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7b76a5db6251bd74fb78ad4c7b95c46c, type: 3}
   m_Name: Tonemapper
   m_EditorClassIdentifier: 
-  m_Active: 1
+  m_Active: 0
   settings:
     intensity: 1
     tonemapperOperator: 10
@@ -47,11 +47,11 @@ MonoBehaviour:
     linearWhite: 1.5
     linearColor: 1.5
     cutOff: 0.025
-    brightness: 0
+    brightness: 0.02
     contrast: 1.15
-    gamma: 0.95
+    gamma: 0.99
     hue: 0
-    saturation: 0.9
+    saturation: 1
     blackPoint: 0
     whitePoint: 1
     toeStrength: 0
@@ -73,9 +73,9 @@ MonoBehaviour:
     blacksAdjustment: {x: 0, y: 0, z: 0, w: 0}
     advancedVibrance: 1
     vibranceSaturation: 0
-    vibranceProtect: 0
+    vibranceProtect: 1
     vibranceColorBalance: {x: 1, y: 1, z: 1}
-    vibranceSkinTone: 0.5
+    vibranceSkinTone: 1
     vibranceSky: 0
     vibranceFoliage: 0
     vibranceWarmth: 0
@@ -126,11 +126,15 @@ MonoBehaviour:
   - {fileID: -1344586528338988631}
   - {fileID: -5362154582004386055}
   - {fileID: -2489931044198432990}
-  m_RendererFeatureMap: a9319428ad1157edf936e54cd1cc95b522bf5553e8fc71dd
+  - {fileID: 5071927720331820261}
+  m_RendererFeatureMap: a9319428ad1157edf936e54cd1cc95b522bf5553e8fc71dde5bcd5b0631b6346
   m_UseNativeRenderPass: 0
   xrSystemData: {fileID: 0}
   postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
-  m_AssetVersion: 2
+  m_AssetVersion: 3
+  m_PrepassLayerMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
   m_OpaqueLayerMask:
     serializedVersion: 2
     m_Bits: 4294967295
@@ -152,3 +156,54 @@ MonoBehaviour:
   m_DepthTextureFormat: 0
   m_AccurateGbufferNormals: 0
   m_IntermediateTextureMode: 1
+--- !u!114 &5071927720331820261
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7cbabd8e2cb2e4f8a930752453adf79a, type: 3}
+  m_Name: Beautify
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::Beautify.Universal.BeautifyRendererFeature
+  m_Active: 1
+  shader: {fileID: 4800000, guid: 55d70ca4ea7504a38b66170bbe587b2f, type: 3}
+  renderPassEvent: 500
+  ignorePostProcessingOption: 0
+  clearXRColorBuffer: 0
+  cameraLayerMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  stripBeautifyTonemappingACES: 0
+  stripBeautifyTonemappingACESFitted: 0
+  stripBeautifyTonemappingAGX: 0
+  stripBeautifySharpen: 0
+  stripBeautifySharpenExclusionMask: 1
+  stripBeautifyDithering: 0
+  stripBeautifyEdgeAA: 0
+  stripBeautifyLUT: 0
+  stripBeautifyLUT3D: 1
+  stripBeautifyColorTweaks: 0
+  stripBeautifyBloom: 0
+  stripBeautifyLensDirt: 0
+  stripBeautifyChromaticAberration: 0
+  stripBeautifyDoF: 0
+  stripBeautifyDoFTransparentSupport: 1
+  stripBeautifyEyeAdaptation: 1
+  stripBeautifyPurkinje: 1
+  stripBeautifyVignetting: 0
+  stripBeautifyVignettingMask: 1
+  stripBeautifyOutline: 0
+  stripBeautifyNightVision: 1
+  stripBeautifyThermalVision: 1
+  stripBeautifyFrame: 1
+  stripBeautifyFilmGrain: 1
+  stripUnityFilmGrain: 0
+  stripUnityDithering: 0
+  stripUnityTonemapping: 0
+  stripUnityBloom: 0
+  stripUnityChromaticAberration: 0
+  stripUnityDistortion: 0
+  stripUnityDebugVariants: 0

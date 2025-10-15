@@ -37,6 +37,13 @@ Shader "Bill's Toon/Opaque HQ"
         _RampSmoothness("Ramp Smoothness", Range(0.001, 0.5)) = 0.05
         _AmbientColor("Ambient Color", Color) = (0.5, 0.5, 0.5, 0)
 
+        [Header(Additional Lights Toon Shading)]
+        _AddLightShadowTint("Shadow Tint (Additional)", Color) = (0.2, 0.2, 0.3, 1.0)
+        _AddLightMidtoneColor("Mid-tone Color (Additional)", Color) = (0.7, 0.7, 0.7, 1.0)
+        _AddLightShadowThreshold("Shadow Threshold (Additional)", Range(0, 1)) = 0.1
+        _AddLightMidtoneThreshold("Mid-tone Threshold (Additional)", Range(0, 1)) = 0.6
+        _AddLightRampSmoothness("Ramp Smoothness (Additional)", Range(0.001, 0.5)) = 0.1
+
         [Header(Stylized Metal)]
         _Ramp("Toon Ramp (RGB)", 2D) = "white" {}
         _Brightness("Specular Brightness", Range(0, 2)) = 1.3

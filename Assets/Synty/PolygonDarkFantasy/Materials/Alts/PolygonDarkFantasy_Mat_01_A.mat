@@ -26,6 +26,7 @@ Material:
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
   - _FAKELIGHT_ON
+  - _OUTLINE_SCALE_WITH_DISTANCE
   - _SURFACETYPE_OPAQUE
   m_InvalidKeywords:
   - _EMISSION
@@ -41,6 +42,7 @@ Material:
     RenderType: Opaque
   disabledShaderPasses:
   - MOTIONVECTORS
+  - Outline
   m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
@@ -131,6 +133,9 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
+    - _AddLightMidtoneThreshold: 0.94
+    - _AddLightRampSmoothness: 0.196
+    - _AddLightShadowThreshold: 0.283
     - _AddPrecomputedVelocity: 0
     - _AlphaClip: 0
     - _AlphaFadeRange: 0.5
@@ -162,8 +167,8 @@ Material:
     - _DissolveEdgeWidth: 0.05
     - _DissolveThreshold: -0.5
     - _DissolveType: 0
-    - _DistanceFadeEnd: 45
-    - _DistanceFadeStart: -45
+    - _DistanceFadeEnd: 25
+    - _DistanceFadeStart: -100
     - _DstBlend: 0
     - _DstBlendAlpha: 0
     - _EffectType: 0
@@ -195,28 +200,28 @@ Material:
     - _LegendaryFloat3: 1
     - _MaxDissolveDistance: 1
     - _Metallic: 0
-    - _MidtoneThreshold: 0.8
+    - _MidtoneThreshold: 1
     - _Mode: 0
     - _NoiseScale: 1
     - _NoiseStrength: 0.1
     - _OcclusionStrength: 1
     - _Offset: 0.8
-    - _OutlineMode: 2
-    - _OutlineScaleWithDistance: 0
-    - _OutlineWidth: 2
+    - _OutlineMode: 0
+    - _OutlineScaleWithDistance: 1
+    - _OutlineWidth: 1
     - _Parallax: 0.02
     - _PatternFrequency: 10
     - _PatternType: 0
     - _QueueOffset: 0
     - _RadialDirection: 1
-    - _RampSmoothness: 0.1
+    - _RampSmoothness: 0.202
     - _RareFloat1: 1
     - _RareFloat2: 1
     - _ReceiveShadows: 1
     - _RenderMode: 0
     - _RevealProgress: 0
     - _RimPower: 6
-    - _ShadowThreshold: 0.4
+    - _ShadowThreshold: 1
     - _ShatterLiftSpeed: 1
     - _ShatterOffsetStrength: 0.5
     - _ShatterStrength: 1
@@ -246,7 +251,9 @@ Material:
     - _ZTest: 4
     - _ZWrite: 1
     m_Colors:
-    - _AmbientColor: {r: 0.12482201, g: 0.19847497, b: 0.31132078, a: 1}
+    - _AddLightMidtoneColor: {r: 1, g: 1, b: 1, a: 1}
+    - _AddLightShadowTint: {r: 0.034264863, g: 0.034264863, b: 0.20754719, a: 1}
+    - _AmbientColor: {r: 1, g: 1, b: 1, a: 0}
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _BlingColor: {r: 1, g: 1, b: 1, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
@@ -270,7 +277,7 @@ Material:
     - _OutlineColor: {r: 0, g: 0, b: 0, a: 1}
     - _RareColor1: {r: 1, g: 1, b: 1, a: 1}
     - _RimColor: {r: 1, g: 0.3, b: 0.3, a: 1}
-    - _ShadowTint: {r: 0.18934675, g: 0.18934675, b: 0.3490566, a: 1}
+    - _ShadowTint: {r: 0.122641504, g: 0.122641504, b: 0.122641504, a: 1}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
     - _SpecuColor: {r: 0.8, g: 0.45, b: 0.2, a: 1}
     - _StarfieldColor: {r: 1, g: 1, b: 0.8, a: 1}

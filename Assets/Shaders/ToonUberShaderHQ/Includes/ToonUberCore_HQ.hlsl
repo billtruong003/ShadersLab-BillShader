@@ -43,6 +43,12 @@ float  _MidtoneThreshold;
 float  _RampSmoothness;
 float4 _AmbientColor;
 
+float4 _AddLightShadowTint;
+float4 _AddLightMidtoneColor;
+float  _AddLightShadowThreshold;
+float  _AddLightMidtoneThreshold;
+float  _AddLightRampSmoothness;
+
 float  _Brightness;
 float  _Offset;
 float  _HighlightOffset;

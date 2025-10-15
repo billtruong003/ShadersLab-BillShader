@@ -66,6 +66,8 @@ public class ToonOpaqueShaderGUI_HQ : ToonUberShaderGUIBase
     public struct ToonShadingProps
     {
         public MaterialProperty shadowTint, midtoneColor, shadowThreshold, midtoneThreshold, rampSmoothness;
+        public MaterialProperty addLightShadowTint, addLightMidtoneColor, addLightShadowThreshold, addLightMidtoneThreshold, addLightRampSmoothness;
+
         public void Find(MaterialProperty[] props)
         {
             shadowTint = FindProperty("_ShadowTint", props);
@@ -73,6 +75,12 @@ public class ToonOpaqueShaderGUI_HQ : ToonUberShaderGUIBase
             shadowThreshold = FindProperty("_ShadowThreshold", props);
             midtoneThreshold = FindProperty("_MidtoneThreshold", props);
             rampSmoothness = FindProperty("_RampSmoothness", props);
+
+            addLightShadowTint = FindProperty("_AddLightShadowTint", props);
+            addLightMidtoneColor = FindProperty("_AddLightMidtoneColor", props);
+            addLightShadowThreshold = FindProperty("_AddLightShadowThreshold", props);
+            addLightMidtoneThreshold = FindProperty("_AddLightMidtoneThreshold", props);
+            addLightRampSmoothness = FindProperty("_AddLightRampSmoothness", props);
         }
     }
 

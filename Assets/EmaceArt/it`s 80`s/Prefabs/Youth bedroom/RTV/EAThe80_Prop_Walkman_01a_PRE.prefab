@@ -1,0 +1,411 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &1060463664914665090
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1006066266437064823}
+  - component: {fileID: 7185956468195750673}
+  - component: {fileID: 2191558637933555103}
+  - component: {fileID: 1170870635}
+  m_Layer: 0
+  m_Name: EAThe80_Prop_Walkman_HeadPhones_01a
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1006066266437064823
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1060463664914665090}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 2117824876473562337}
+  m_RootOrder: 1
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!33 &7185956468195750673
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1060463664914665090}
+  m_Mesh: {fileID: 7887763263831294250, guid: 888b60a789a13d942a4f3a190ff331f4, type: 3}
+--- !u!23 &2191558637933555103
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1060463664914665090}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: c04f37cf5a52a9942a20d54fba639f59, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+--- !u!64 &1170870635
+MeshCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1060463664914665090}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 0
+  m_Enabled: 1
+  serializedVersion: 4
+  m_Convex: 1
+  m_CookingOptions: 30
+  m_Mesh: {fileID: 7887763263831294250, guid: 888b60a789a13d942a4f3a190ff331f4, type: 3}
+--- !u!1 &1598731884588789339
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2117824876473562337}
+  m_Layer: 0
+  m_Name: EAThe80_Prop_Walkman_01a_PRE
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2117824876473562337
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1598731884588789339}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children:
+  - {fileID: 4919219186668294724}
+  - {fileID: 1006066266437064823}
+  - {fileID: 5034232756184674265}
+  - {fileID: 3690613389042809961}
+  m_Father: {fileID: 0}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &2795813377085232997
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5034232756184674265}
+  - component: {fileID: 7140881945863244250}
+  - component: {fileID: 1870326683059393260}
+  - component: {fileID: 1170870634}
+  m_Layer: 0
+  m_Name: EAThe80_Prop_Walkman_Socket_01a.001
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5034232756184674265
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2795813377085232997}
+  m_LocalRotation: {x: -0.000000014901161, y: -0.000000014901161, z: 0.6477286, w: 0.76187116}
+  m_LocalPosition: {x: -0.065, y: 0.0345, z: -0.0296}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 2117824876473562337}
+  m_RootOrder: 2
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 80.741005}
+--- !u!33 &7140881945863244250
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2795813377085232997}
+  m_Mesh: {fileID: -7661780276004750839, guid: 888b60a789a13d942a4f3a190ff331f4, type: 3}
+--- !u!23 &1870326683059393260
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2795813377085232997}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: c04f37cf5a52a9942a20d54fba639f59, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+--- !u!65 &1170870634
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2795813377085232997}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Size: {x: 0.10290148, y: 0.006097329, z: 0.16678286}
+  m_Center: {x: 0.051450174, y: -0.0010295991, z: -0.0068659782}
+--- !u!1 &4088231123020485785
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4919219186668294724}
+  - component: {fileID: 8044635395175126776}
+  - component: {fileID: 8520480850022256373}
+  - component: {fileID: 1170870636}
+  m_Layer: 0
+  m_Name: EAThe80_Prop_Walkman_01a
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4919219186668294724
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4088231123020485785}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 2117824876473562337}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!33 &8044635395175126776
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4088231123020485785}
+  m_Mesh: {fileID: -3740251192193567301, guid: 888b60a789a13d942a4f3a190ff331f4, type: 3}
+--- !u!23 &8520480850022256373
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4088231123020485785}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: c04f37cf5a52a9942a20d54fba639f59, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+--- !u!65 &1170870636
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4088231123020485785}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Size: {x: 0.15991291, y: 0.03877412, z: 0.21924296}
+  m_Center: {x: 0.008782543, y: 0.019386956, z: -0.012815259}
+--- !u!65 &1170870633
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6369313167901093756}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Size: {x: 0.13972081, y: 0.019814743, z: 0.08935585}
+  m_Center: {x: -0.0000009537063, y: -0.000014396396, z: 0.000538852}
+--- !u!1001 &1940699579521110626
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    m_TransformParent: {fileID: 2117824876473562337}
+    m_Modifications:
+    - target: {fileID: 2491297646184576177, guid: e98a83b9fb00e5245a94a040c1f5778a,
+        type: 3}
+      propertyPath: m_Name
+      value: EAThe80_Prop_RTV_Casette_Blue_01a_PRE (1)
+      objectReference: {fileID: 0}
+    - target: {fileID: 3015457569816276491, guid: e98a83b9fb00e5245a94a040c1f5778a,
+        type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0.0212
+      objectReference: {fileID: 0}
+    - target: {fileID: 3015457569816276491, guid: e98a83b9fb00e5245a94a040c1f5778a,
+        type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.0438
+      objectReference: {fileID: 0}
+    - target: {fileID: 3015457569816276491, guid: e98a83b9fb00e5245a94a040c1f5778a,
+        type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -0.0179
+      objectReference: {fileID: 0}
+    - target: {fileID: 3015457569816276491, guid: e98a83b9fb00e5245a94a040c1f5778a,
+        type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0.08680464
+      objectReference: {fileID: 0}
+    - target: {fileID: 3015457569816276491, guid: e98a83b9fb00e5245a94a040c1f5778a,
+        type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.895674
+      objectReference: {fileID: 0}
+    - target: {fileID: 3015457569816276491, guid: e98a83b9fb00e5245a94a040c1f5778a,
+        type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0.009543564
+      objectReference: {fileID: 0}
+    - target: {fileID: 3015457569816276491, guid: e98a83b9fb00e5245a94a040c1f5778a,
+        type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.43605268
+      objectReference: {fileID: 0}
+    - target: {fileID: 3015457569816276491, guid: e98a83b9fb00e5245a94a040c1f5778a,
+        type: 3}
+      propertyPath: m_RootOrder
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 3015457569816276491, guid: e98a83b9fb00e5245a94a040c1f5778a,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: -5.3250003
+      objectReference: {fileID: 0}
+    - target: {fileID: 3015457569816276491, guid: e98a83b9fb00e5245a94a040c1f5778a,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 128.47801
+      objectReference: {fileID: 0}
+    - target: {fileID: 3015457569816276491, guid: e98a83b9fb00e5245a94a040c1f5778a,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: -8.5
+      objectReference: {fileID: 0}
+    m_RemovedComponents:
+    - {fileID: 8263204371706497989, guid: e98a83b9fb00e5245a94a040c1f5778a, type: 3}
+  m_SourcePrefab: {fileID: 100100000, guid: e98a83b9fb00e5245a94a040c1f5778a, type: 3}
+--- !u!4 &3690613389042809961 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 3015457569816276491, guid: e98a83b9fb00e5245a94a040c1f5778a,
+    type: 3}
+  m_PrefabInstance: {fileID: 1940699579521110626}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &6369313167901093756 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4794899190355164446, guid: e98a83b9fb00e5245a94a040c1f5778a,
+    type: 3}
+  m_PrefabInstance: {fileID: 1940699579521110626}
+  m_PrefabAsset: {fileID: 0}

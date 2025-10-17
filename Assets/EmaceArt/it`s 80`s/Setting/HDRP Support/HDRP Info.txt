@@ -1,0 +1,9 @@
+Open the project in common Unity 2018, 2019.
+Instruction for Unity 2019+HDRP
+
+Run Unity with ready profile HDRP (the best with the use of Unity HUB). Download it`s 80`s from the Asset Store. Look for the folder Emaceart>Assets>Setting>HDRP Support and click "HDRP_ExtractMe". After longer time, when imstallation is finished, you should see correctly the scene with ready to use project in the HDRP standard.
+
+To use HDRP in your project, you need to use a High-Definition Render Pipeline Asset. Make sure to assign it to the project: go to Edit > Project Settings > Graphics and select High Definition Render Pipeline Asset. Use my profile. HDRP Profile location: Emaceart>Assets>Setting>HDRP Support>HDRenderPipelineAsset
+
+If something doesn’t look right, that may be because the materials you’re using are not compatible with HDRP. Use the Render Pipeline Wizard to check that your settings, materials, and lighting are compatible with HDRP. 
+

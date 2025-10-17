@@ -271,6 +271,9 @@ Material:
     - _AR_OffsetU: 0
     - _AR_OffsetV: 0.3
     - _ATDistance: 1
+    - _AddLightMidtoneThreshold: 0.6
+    - _AddLightRampSmoothness: 0.1
+    - _AddLightShadowThreshold: 0.1
     - _AddPrecomputedVelocity: 0
     - _Add_Antipodean_RimLight: 0
     - _AlbedoAffectEmissive: 0
@@ -598,11 +601,13 @@ Material:
     - _simpleUI: 0
     - _utsTechnique: 0
     - _utsVersionX: 0
-    - _utsVersionY: 9
-    - _utsVersionZ: 4
+    - _utsVersionY: 10
+    - _utsVersionZ: 2
     m_Colors:
     - _1st_ShadeColor: {r: 0.8862745, g: 0.68235296, b: 0.68235296, a: 1}
     - _2nd_ShadeColor: {r: 1, g: 1, b: 1, a: 1}
+    - _AddLightMidtoneColor: {r: 0.7, g: 0.7, b: 0.7, a: 1}
+    - _AddLightShadowTint: {r: 0.19999996, g: 0.19999996, b: 0.29999998, a: 1}
     - _AmbientColor: {r: 0, g: 0, b: 0, a: 0}
     - _AngelRingMaskColor: {r: 0, g: 1, b: 0, a: 1}
     - _AngelRing_Color: {r: 1, g: 1, b: 1, a: 1}

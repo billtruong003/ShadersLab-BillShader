@@ -14,16 +14,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlatformerPlanet.PlayerSettings
   MoveSpeed: 8
   MovementSmoothTime: 0.05
-  JumpHeight: 2.2
+  JumpHeight: 4
   Gravity: -30
   CoyoteTime: 0.15
   AirControlSpeed: 6
   AirControlSmoothTime: 0.1
   GroundLayer:
     serializedVersion: 2
-    m_Bits: 512
-  GroundCheckDistance: 0.1
-  GroundCheckOffset: {x: 0, y: -1, z: 0}
+    m_Bits: 520
+  GroundCheckDistance: 0.2
+  GroundCheckOffset: {x: 0, y: -0.5, z: 0}
   WallLayer:
     serializedVersion: 2
     m_Bits: 8
@@ -36,6 +36,6 @@ MonoBehaviour:
   SwimBuoyancy: 15
   SwimDamping: 0.1
   FlySpeed: 10
-  FlyDamping: 0.08
-  TeleportDistance: 10
+  FlyDamping: 0.2
+  TeleportDistance: 2
   StillThreshold: 0.1

@@ -1,0 +1,179 @@
+Shader "#{SHADER_NAME}#"
+{
+    Properties
+    {
+        _BaseMap("Albedo", 2D) = "white" {}
+        _BaseColor("Color", Color) = (1, 1, 1, 1)
+
+        [NoScaleOffset] _MaskMap("Mask Map (R=Metallic, G=AO, B=Detail, A=Smoothness)", 2D) = "white" {}
+        _Metallic("Metallic", Range(0.0, 1.0)) = 0.0
+        _Smoothness("Smoothness", Range(0.0, 1.0)) = 0.5
+
+        [NoScaleOffset] _NormalMap("Normal Map", 2D) = "bump" {}
+        _NormalScale("Normal Scale", Range(0.0, 2.0)) = 1.0
+    }
+
+    SubShader
+    {
+        Tags
+        {
+            "RenderType" = "Opaque"
+            "RenderPipeline" = "UniversalPipeline"
+            "Queue" = "Geometry"
+        }
+
+        Pass
+        {
+            Name "PBR"
+            Tags
+            {
+                "LightMode" = "UniversalForward"
+            }
+
+            HLSLPROGRAM
+            #pragma vertex PBRVertex
+            #pragma fragment PBRFragment
+
+            // Bật các biến thể shader cho các tính năng chiếu sáng và bóng đổ của URP
+            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS
+            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS_CASCADE
+            #pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
+            #pragma multi_compile_fragment _ _SHADOWS_SOFT
+            #pragma multi_compile_fragment _ _SCREEN_SPACE_OCCLUSION
+            #pragma multi_compile_fragment _ _NORMALMAP
+
+            // Bật các biến thể cho chiếu sáng gián tiếp ( baked lighting )
+            #pragma multi_compile _ LIGHTMAP_ON
+            #pragma multi_compile _ DIRLIGHTMAP_COMBINED
+
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+
+            struct Attributes
+            {
+                float4 positionOS : POSITION;
+                float3 normalOS : NORMAL;
+                float4 tangentOS : TANGENT;
+                float2 uv : TEXCOORD0;
+                // TEXCOORD1 được URP sử dụng cho lightmap UVs
+                float2 lightmapUV : TEXCOORD1;
+            };
+
+            struct Varyings
+            {
+                float4 positionHCS : SV_POSITION;
+                float3 positionWS : TEXCOORD0;
+                half3 normalWS : TEXCOORD1;
+                half3 tangentWS : TEXCOORD2;
+                half3 bitangentWS : TEXCOORD3;
+                float2 uv : TEXCOORD4;
+                float4 shadowCoord : TEXCOORD5;
+
+                // Sử dụng cùng một khối điều kiện như trong các shader URP chuẩn
+                // bakedGI sẽ tồn tại nếu LIGHTMAP_ON được định nghĩa
+                // Ngược lại, vertexSH sẽ tồn tại để lưu trữ Spherical Harmonics
+                #if defined(LIGHTMAP_ON)
+                    float4 bakedGI : TEXCOORD6;
+                #else
+                        half3 vertexSH : TEXCOORD6;
+                #endif
+            };
+
+            TEXTURE2D(_BaseMap);
+            SAMPLER(sampler_BaseMap);
+            TEXTURE2D(_MaskMap);
+            SAMPLER(sampler_MaskMap);
+            TEXTURE2D(_NormalMap);
+            SAMPLER(sampler_NormalMap);
+
+            CBUFFER_START(UnityPerMaterial)
+            float4 _BaseMap_ST;
+            half4 _BaseColor;
+            half _Metallic;
+            half _Smoothness;
+            half _NormalScale;
+            CBUFFER_END
+
+            Varyings PBRVertex(Attributes input)
+            {
+                Varyings output;
+
+                VertexPositionInputs posInputs = GetVertexPositionInputs(input.positionOS.xyz);
+                output.positionHCS = posInputs.positionCS;
+                output.positionWS = posInputs.positionWS;
+
+                VertexNormalInputs normalInputs = GetVertexNormalInputs(input.normalOS, input.tangentOS);
+                output.normalWS = normalInputs.normalWS;
+                output.tangentWS = normalInputs.tangentWS;
+                output.bitangentWS = normalInputs.bitangentWS;
+
+                output.shadowCoord = GetShadowCoord(posInputs);
+                output.uv = TRANSFORM_TEX(input.uv, _BaseMap);
+
+                // Chỉ tính toán và gán giá trị cho các trường tương ứng dựa trên biến thể shader
+                #if defined(LIGHTMAP_ON)
+                    output.bakedGI = SampleBakedGI(input.lightmapUV, half3(1, 1, 1));
+                #else
+                        output.vertexSH = SampleSH(output.normalWS);
+                #endif
+
+                return output;
+            }
+
+            half4 PBRFragment(Varyings input) : SV_Target
+            {
+                half4 albedoMap = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.uv);
+                half3 albedo = albedoMap.rgb * _BaseColor.rgb;
+                half alpha = albedoMap.a * _BaseColor.a;
+
+                half4 maskMap = SAMPLE_TEXTURE2D(_MaskMap, sampler_MaskMap, input.uv);
+                half metallic = maskMap.r * _Metallic;
+                half occlusion = maskMap.g;
+                half smoothness = maskMap.a * _Smoothness;
+
+                #if defined(_NORMALMAP)
+                    half3 normalTS = UnpackNormalScale(SAMPLE_TEXTURE2D(_NormalMap, sampler_NormalMap, input.uv), _NormalScale);
+                    // Sử dụng hàm normal reconstruction của URP để đảm bảo tính nhất quán
+                    half3x3 tbn = CreateTangentToWorld(input.normalWS, input.tangentWS, input.bitangentWS);
+                    half3 normalWS = TransformTangentToWorld(normalTS, tbn);
+                #else
+                        half3 normalWS = normalize(input.normalWS);
+                #endif
+
+                // Khởi tạo các cấu trúc dữ liệu đầu vào cho hàm PBR của URP
+                SurfaceData surfaceData;
+                surfaceData.albedo = albedo;
+                surfaceData.metallic = metallic;
+                surfaceData.specular = half3(0.0h, 0.0h, 0.0h);
+                surfaceData.smoothness = smoothness;
+                surfaceData.occlusion = occlusion;
+                surfaceData.emission = half3(0.0h, 0.0h, 0.0h);
+                surfaceData.alpha = alpha;
+                surfaceData.normalTS = half3(0.0h, 0.0h, 1.0h);
+                surfaceData.clearCoatMask = 0.0h;
+                surfaceData.clearCoatSmoothness = 0.0h;
+
+                InputData inputData;
+                inputData.positionWS = input.positionWS;
+                inputData.normalWS = normalize(normalWS);
+                inputData.viewDirectionWS = GetWorldSpaceNormalizeViewDir(input.positionWS);
+                inputData.shadowCoord = input.shadowCoord;
+                inputData.fogCoord = 0;
+                // Sẽ được tính toán bên trong UniversalFragmentPBR
+
+                // Gán dữ liệu chiếu sáng gián tiếp vào đúng trường dựa trên biến thể
+                #if defined(LIGHTMAP_ON)
+                    inputData.bakedGI = input.bakedGI;
+                #else
+                        inputData.bakedGI = 0;
+                    // Khởi tạo giá trị mặc định khi không dùng lightmap
+                    inputData.vertexLighting = input.vertexSH;
+                #endif
+
+                // Gọi hàm PBR chuẩn của URP với đầy đủ dữ liệu
+                return UniversalFragmentPBR(inputData, surfaceData);
+            }
+            ENDHLSL
+        }
+    }
+}

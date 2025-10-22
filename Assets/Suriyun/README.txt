@@ -1,20 +1,3 @@
-::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
- This asset was shared by https://unityassetcollection.com
-
- Contact us for any questions:
- - Email: unityassetcollection@gmail.com
- - Telegram: @assetcollection or https://t.me/assetcollection
-								
- Become a VIP member to download everything you want without limitations. 
- This also helps support our website to grow even stronger.
- For more detail: https://tinyurl.com/uac-vip-mem			
- Thank you very much.
-::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-
-
-
-
 This asset comes with a UnityToonShader package. Please import the UnityToonShader Shader package along with the asset.
 
 If you encounter pink shader issue, please re-import assets with the shaders or manually import the shader at: https://docs.unity3d.com/Packages/com.unity.toonshader@0.9/manual/installation.html

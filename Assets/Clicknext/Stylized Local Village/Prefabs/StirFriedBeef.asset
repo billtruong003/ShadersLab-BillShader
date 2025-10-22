@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 50c16a641e1691c4cba8db7244b6075d, type: 3}
+  m_Name: StirFriedBeef
+  m_EditorClassIdentifier: 
+  Type: 23
+  ProduceTime: 42
+  isLocked: 0
+  ingredients:
+  - product: {fileID: 11400000, guid: 063e6cb709d350a40a1b000350f61ab9, type: 2}
+    amount: 2
+  - product: {fileID: 11400000, guid: 8d2a071f9867e124fbb779bcf9daa896, type: 2}
+    amount: 1
+  - product: {fileID: 11400000, guid: f9d829355ea794447931587f3df2673f, type: 2}
+    amount: 1

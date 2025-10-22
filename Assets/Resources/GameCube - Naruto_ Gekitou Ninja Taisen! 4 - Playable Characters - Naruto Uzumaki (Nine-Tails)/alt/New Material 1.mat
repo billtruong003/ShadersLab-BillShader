@@ -131,7 +131,7 @@ Material:
     m_Ints: []
     m_Floats:
     - _AddLightMidtoneThreshold: 0.6
-    - _AddLightRampSmoothness: 0.1
+    - _AddLightRampSmoothness: 0.05
     - _AddLightShadowThreshold: 0.1
     - _AddPrecomputedVelocity: 0
     - _AlphaClip: 0
@@ -248,8 +248,8 @@ Material:
     m_Colors:
     - _AddLightMidtoneColor: {r: 0.7, g: 0.7, b: 0.7, a: 1}
     - _AddLightShadowTint: {r: 0.19999996, g: 0.19999996, b: 0.29999998, a: 1}
-    - _AmbientColor: {r: 0.5, g: 0.5, b: 0.5, a: 0}
-    - _BaseColor: {r: 1024, g: 0, b: 0, a: 0}
+    - _AmbientColor: {r: 0.49056602, g: 0.20131719, b: 0.20131719, a: 1}
+    - _BaseColor: {r: 1024, g: 0, b: 0, a: 0.39215687}
     - _BlingColor: {r: 1, g: 1, b: 1, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _CosmicAmbientColor: {r: 0.1, g: 0.1, b: 0.2, a: 1}
@@ -260,8 +260,8 @@ Material:
     - _EmissionColor: {r: 766.99615, g: 0, b: 0, a: 1}
     - _EpicColor1: {r: 1, g: 0.5, b: 0, a: 1}
     - _EpicColor2: {r: 1, g: 1, b: 0, a: 1}
-    - _FakeLightColor: {r: 0.8, g: 0.8, b: 0.8, a: 1}
-    - _FakeLightDirection: {r: 0.5, g: 0.5, b: -0.5, a: 0}
+    - _FakeLightColor: {r: 1, g: 1, b: 1, a: 1}
+    - _FakeLightDirection: {r: 50, g: 50, b: -50, a: 0}
     - _FresnelOutlineColor: {r: 0, g: 0, b: 0, a: 1}
     - _GlintColor: {r: 1, g: 1, b: 0.5, a: 1}
     - _HiColor: {r: 1, g: 1, b: 1, a: 1}

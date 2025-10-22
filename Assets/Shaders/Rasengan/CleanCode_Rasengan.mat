@@ -32,13 +32,13 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _ScribbleTex:
-        m_Texture: {fileID: 2800000, guid: b5de291b2b0fa604c820f60ef99dcb3a, type: 3}
+        m_Texture: {fileID: 2800000, guid: bb1f99990e5ebfb49a4ef1f0438b1ff2, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _CoreIntensity: 20
-    - _CoreRadius: 0.554
+    - _CoreIntensity: 1.9
+    - _CoreRadius: 1
     - _FlowNoiseScale: 386.83
     - _FresnelPower: 5.03
     - _NoiseScale: 50
@@ -46,17 +46,17 @@ Material:
     - _RimSharpness: 14.6
     - _RotationSpeed: 100
     - _ScribbleDensity: 10
-    - _ScribbleSharpness: 100
-    - _ScribbleSpeed: 50
-    - _ShellFresnelPower: 1.2
-    - _ShellVisibility: 0
+    - _ScribbleSharpness: 1
+    - _ScribbleSpeed: 5
+    - _ShellFresnelPower: 2
+    - _ShellVisibility: 1
     m_Colors:
-    - _CoreColor: {r: 0.7783019, g: 0.9408805, b: 1, a: 1}
+    - _CoreColor: {r: 0.8160377, g: 0.95158887, b: 1, a: 1}
     - _FlowColor: {r: 0, g: 0.40341806, b: 1, a: 1}
     - _FlowNoiseSpeed: {r: 0.1, g: 0.05, b: -0.08, a: 0.12}
     - _RimColor: {r: 0, g: 0.6128311, b: 1, a: 0.5254902}
     - _ScribbleColor: {r: 0, g: 0.42960572, b: 1, a: 0.7294118}
     - _ScrollSpeed: {r: 0.1, g: 0.2, b: 0, a: 0}
-    - _ShellColor: {r: 0, g: 0.5461459, b: 1, a: 1}
+    - _ShellColor: {r: 0, g: 0.71245575, b: 1, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

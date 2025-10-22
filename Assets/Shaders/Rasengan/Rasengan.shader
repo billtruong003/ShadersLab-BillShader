@@ -14,7 +14,7 @@ Shader "CleanCode/TrueRasengan"
         _ScribbleSpeed("Scribble Speed", Float) = 2.5
         _ScribbleDensity("Scribble Density", Range(0, 10)) = 4.0
         _ScribbleSharpness("Scribble Sharpness", Range(1.0, 100.0)) = 10.0
-        
+
         [Header(Outer Shell)]
         _ShellColor("Shell Color (Rim)", Color) = (0.2, 0.5, 1, 1)
         _ShellFresnelPower("Shell Fresnel Power", Range(1.0, 50.0)) = 15.0
@@ -27,12 +27,15 @@ Shader "CleanCode/TrueRasengan"
     }
     SubShader
     {
-        Tags { "Queue"="Transparent" "RenderType"="Transparent" "DisableBatching"="True" }
+        Tags
+        {
+            "Queue" = "Transparent" "RenderType" = "Transparent" "DisableBatching" = "True"
+        }
 
         Pass
         {
             Blend SrcAlpha OneMinusSrcAlpha
-            Cull Back   
+            Cull Back
             ZWrite Off
             ZTest LEqual
 
@@ -66,14 +69,15 @@ Shader "CleanCode/TrueRasengan"
             float _ShellFresnelPower, _ShellVisibility;
             float4 _FlowNoiseSpeed;
             float _FlowNoiseScale;
-            
+
             v2f vert(appdata v)
             {
                 v2f o;
                 o.vertex = UnityObjectToClipPos(v.vertex);
                 o.worldPos = mul(unity_ObjectToWorld, v.vertex).xyz;
                 o.worldNormal = UnityObjectToWorldNormal(v.normal);
-                o.uv = v.uv; // Use raw UVs for calculations
+                o.uv = v.uv;
+                // Use raw UVs for calculations
                 return o;
             }
 
@@ -88,7 +92,7 @@ Shader "CleanCode/TrueRasengan"
             {
                 float2 uv1 = uv * _FlowNoiseScale + time * _FlowNoiseSpeed.xy;
                 float2 uv2 = uv * _FlowNoiseScale * 1.5 + time * _FlowNoiseSpeed.zw;
-                
+
                 float noise1 = tex2D(_FlowNoiseTex, uv1).r;
                 float noise2 = tex2D(_FlowNoiseTex, uv2).r;
 
@@ -113,11 +117,12 @@ Shader "CleanCode/TrueRasengan"
             fixed4 frag(v2f i) : SV_Target
             {
                 float fresnel = calculateFresnel(i.worldPos, i.worldNormal);
-                
+
                 // 1. Calculate the bright core
                 float2 centeredUV = i.uv - 0.5;
                 float coreMask = 1.0 - saturate(length(centeredUV) / _CoreRadius);
-                coreMask = pow(coreMask, 2.0); // Sharpen the core falloff
+                coreMask = pow(coreMask, 2.0);
+                // Sharpen the core falloff
                 float3 core = _CoreColor.rgb * coreMask * _CoreIntensity;
 
                 // 2. Calculate the chaotic internal flow
@@ -128,7 +133,8 @@ Shader "CleanCode/TrueRasengan"
                 float3 scribbles = _ScribbleColor.rgb * scribbleMask;
 
                 // 4. Combine inner parts, masked by view angle
-                float viewFade = 1.0 - pow(fresnel, 0.25); // Core and flow fade at the edges
+                float viewFade = 1.0 - pow(fresnel, 0.25);
+                // Core and flow fade at the edges
                 float3 internalEnergy = (flow + core) * viewFade;
 
                 // 5. Define the outer shell
@@ -136,7 +142,7 @@ Shader "CleanCode/TrueRasengan"
 
                 // 6. Layer everything together
                 float3 finalColor = internalEnergy + shell + (scribbles * viewFade);
-                
+
                 // 7. Define final alpha
                 float alpha = saturate(fresnel * _ShellVisibility + scribbleMask * viewFade + coreMask * viewFade);
 

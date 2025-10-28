@@ -18,20 +18,22 @@ Material:
   - _OUTLINEMODE_FRESNEL
   - _OUTLINE_SCALE_WITH_DISTANCE
   - _SURFACETYPE_OPAQUE
-  m_InvalidKeywords: []
+  m_InvalidKeywords:
+  - _ZWRITE_ON
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
-  m_CustomRenderQueue: 3000
+  m_CustomRenderQueue: 2000
   stringTagMap:
-    RenderType: Transparent
-  disabledShaderPasses: []
+    RenderType: Opaque
+  disabledShaderPasses:
+  - Outline
   m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
     - _BaseMap:
-        m_Texture: {fileID: 0}
+        m_Texture: {fileID: 2800000, guid: dfe6e0ac3e5f24740a17e14b65e08406, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _BumpMap:
@@ -72,6 +74,9 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
+    - _AddLightMidtoneThreshold: 0.8
+    - _AddLightRampSmoothness: 0.001
+    - _AddLightShadowThreshold: 0.4
     - _AlphaClipMode: 0
     - _AlphaFadeRange: 0.5
     - _BlingFresnelPower: 2
@@ -96,7 +101,9 @@ Material:
     - _DissolveType: 0
     - _DistanceFadeEnd: 30
     - _DistanceFadeStart: 20
+    - _DstBlend: 0
     - _EffectTier: 1
+    - _EffectType: 0
     - _EmissionMode: 0
     - _EnableDissolve: 1
     - _EnableHologramReveal: 0
@@ -118,6 +125,9 @@ Material:
     - _HologramFlickerSpeed: 20
     - _HologramPatternScale: 1
     - _LegendaryEffectType: 0
+    - _LegendaryFloat1: 1
+    - _LegendaryFloat2: 1
+    - _LegendaryFloat3: 1
     - _MaxDissolveDistance: 1
     - _MidtoneThreshold: 0.8
     - _NoiseScale: 1
@@ -129,17 +139,19 @@ Material:
     - _PatternFrequency: 10
     - _PatternType: 0
     - _RadialDirection: 1
-    - _RampSmoothness: 0.001
+    - _RampSmoothness: 0.5
     - _RareEffectType: 0
     - _RareFloat1: 1
     - _RareFloat2: 1
+    - _RenderMode: 0
     - _RevealProgress: 0
     - _RimPower: 6
-    - _ShadowThreshold: 0.4
+    - _ShadowThreshold: 0.5
     - _ShatterLiftSpeed: 1
     - _ShatterOffsetStrength: 0.5
     - _ShatterStrength: 1
     - _ShatterTriggerRange: 0.1
+    - _SrcBlend: 1
     - _StarfieldParallaxDepth: 0.08
     - _StarfieldScale: 2.5
     - _StarfieldScrollSpeed: 0.01
@@ -153,9 +165,13 @@ Material:
     - _VertexDisplacement: 0.1
     - _WindAmplitude: 0.1
     - _WindFrequency: 2
+    - _ZTest: 4
+    - _ZWrite: 1
     m_Colors:
-    - _AmbientColor: {r: 0.5, g: 0.5, b: 0.5, a: 0}
-    - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
+    - _AddLightMidtoneColor: {r: 0.7, g: 0.7, b: 0.7, a: 1}
+    - _AddLightShadowTint: {r: 0.2, g: 0.2, b: 0.3, a: 1}
+    - _AmbientColor: {r: 1, g: 1, b: 1, a: 0.49019608}
+    - _BaseColor: {r: 1.4142135, g: 0.47419292, b: 0.39357832, a: 1}
     - _BlingColor: {r: 1, g: 1, b: 1, a: 1}
     - _CosmicAmbientColor: {r: 0.1, g: 0.1, b: 0.2, a: 1}
     - _CosmicColor1: {r: 0.2, g: 0.5, b: 1, a: 1}
@@ -171,6 +187,8 @@ Material:
     - _GlintColor: {r: 1, g: 1, b: 0.5, a: 1}
     - _HiColor: {r: 1, g: 1, b: 1, a: 1}
     - _HologramEmissionColor: {r: 0, g: 1, b: 1, a: 1}
+    - _LegendaryColor1: {r: 0.5, g: 0, b: 1, a: 1}
+    - _LegendaryColor2: {r: 0, g: 1, b: 1, a: 1}
     - _MidtoneColor: {r: 0.6, g: 0.6, b: 0.6, a: 1}
     - _OutlineColor: {r: 0, g: 0, b: 0, a: 1}
     - _RareColor1: {r: 1, g: 1, b: 1, a: 1}

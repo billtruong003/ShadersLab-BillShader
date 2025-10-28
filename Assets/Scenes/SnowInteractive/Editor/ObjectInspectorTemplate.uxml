@@ -1,0 +1,14 @@
+<!-- ObjectInspectorTemplate.uxml -->
+<!-- Đặt file này trong thư mục "Editor" -->
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+    <ui:VisualElement class="inspector-box">
+        <ui:VisualElement class="inspector-header">
+            <uie:ObjectField name="object-field" type="UnityEngine.GameObject, UnityEngine.CoreModule" />
+            <ui:Button name="remove-button" text="X" />
+        </ui:VisualElement>
+        <ui:DropdownField name="script-selector" label="Script" />
+        <ui:Label text="Thuộc tính theo dõi" style="-unity-font-style: bold; margin-top: 10px;" />
+        <ui:VisualElement name="fields-container" class="fields-container" />
+        <ui:VisualElement name="values-container" class="values-container" />
+    </ui:VisualElement>
+</ui:UXML>

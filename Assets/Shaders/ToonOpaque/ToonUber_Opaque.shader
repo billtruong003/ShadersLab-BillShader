@@ -222,6 +222,7 @@ Shader "Bill's Toon/Opaque"
             ENDHLSL
         }
 
+        //
         Pass
         {
             Name "ShadowCaster"
@@ -272,5 +273,6 @@ Shader "Bill's Toon/Opaque"
             ENDHLSL
         }
     }
+
     CustomEditor "ToonOpaqueShaderGUI"
 }

@@ -13,7 +13,6 @@ Material:
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
   - _FAKELIGHT_ON
-  - _FORCE_FAKELIGHT_ON
   - _SURFACETYPE_OPAQUE
   m_InvalidKeywords:
   - _EMISSION
@@ -24,9 +23,9 @@ Material:
   m_LightmapFlags: 1
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
-  m_CustomRenderQueue: 3000
+  m_CustomRenderQueue: 2000
   stringTagMap:
-    RenderType: Transparent
+    RenderType: Opaque
   disabledShaderPasses: []
   m_LockedProperties: 
   m_SavedProperties:
@@ -146,7 +145,7 @@ Material:
     - _DitherFadeStart: 2
     - _DitherFadeToggle: 0
     - _DitherScale: 50
-    - _DstBlend: 10
+    - _DstBlend: 0
     - _EffectType: 0
     - _EmissionMode: 0
     - _EnableDissolve: 0
@@ -157,7 +156,7 @@ Material:
     - _EpicFloat2: 1
     - _EpicFloat3: 1
     - _FakeLightMode: 1
-    - _ForceFakeLight: 1
+    - _ForceFakeLight: 0
     - _FresnelOutlinePower: 5
     - _FresnelOutlineSharpness: 2
     - _FresnelOutlineToggle: 0
@@ -180,7 +179,7 @@ Material:
     - _MaxBrightness: 5
     - _MaxDissolveDistance: 1
     - _Metallic: 0
-    - _MidtoneThreshold: 0.8
+    - _MidtoneThreshold: 0.628
     - _Mode: 0
     - _Morph: 0
     - _MorphToggle: 0
@@ -198,23 +197,23 @@ Material:
     - _RampSmoothness: 0.05
     - _RareFloat1: 1
     - _RareFloat2: 1
-    - _RenderMode: 2
+    - _RenderMode: 0
     - _RevealProgress: 0
     - _RimPower: 6
-    - _ShadowThreshold: 0.4
+    - _ShadowThreshold: 0.281
     - _ShatterLiftSpeed: 1
     - _ShatterOffsetStrength: 0.5
     - _ShatterStrength: 1
     - _ShatterTriggerRange: 0.1
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
-    - _SrcBlend: 5
+    - _SrcBlend: 1
     - _StarfieldParallaxDepth: 0.08
     - _StarfieldScale: 2.5
     - _StarfieldScrollSpeed: 0.01
     - _SurfaceType: 0
     - _TimeScale: 1
-    - _ToonRampSmoothness: 0.5
+    - _ToonRampSmoothness: 0.001
     - _ToonStyle: 0
     - _TranslucencyStrength: 1
     - _TriplanarSharpness: 5
@@ -243,7 +242,7 @@ Material:
     - _EmissionColor: {r: 1, g: 1, b: 0.10702311, a: 1}
     - _EpicColor1: {r: 1, g: 0.5, b: 0, a: 1}
     - _EpicColor2: {r: 1, g: 1, b: 0, a: 1}
-    - _FakeLightColor: {r: 0.8, g: 0.8, b: 0.8, a: 1}
+    - _FakeLightColor: {r: 1, g: 1, b: 1, a: 1}
     - _FakeLightDirection: {r: 0.5, g: 0.5, b: -0.5, a: 0}
     - _FresnelOutlineColor: {r: 0, g: 0, b: 0, a: 1}
     - _GlintColor: {r: 1, g: 1, b: 0.5, a: 1}

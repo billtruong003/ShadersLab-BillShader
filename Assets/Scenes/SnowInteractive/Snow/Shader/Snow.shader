@@ -7,6 +7,8 @@ Shader "BillEnv/URP/Interactive Snow"
         _MainTex("Snow Texture", 2D) = "white" {}
         _SnowTextureOpacity("Snow Texture Opacity", Range(0, 1)) = 0.3
         _SnowTextureScale("Snow Texture Scale", Range(0, 2)) = 0.3
+        _Normal("Snow Normal Map", 2D) = "bump" {}
+        _SnowNormalStrength("Snow Normal Strength", Range(0, 1)) = 0.5
         [HDR] _ShadowColor("Shadow Color", Color) = (0.5, 0.5, 0.6, 1)
 
         [Header(Snow Shape)]
@@ -55,6 +57,13 @@ Shader "BillEnv/URP/Interactive Snow"
             #pragma hull Hull
             #pragma domain Domain
             #pragma target 4.6
+
+            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE _MAIN_LIGHT_SHADOWS_SCREEN
+            #pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
+            #pragma multi_compile _ _ADDITIONAL_LIGHT_SHADOWS
+            #pragma multi_compile _ _SHADOWS_SOFT
+            #pragma multi_compile_fog
+
             #include "Includes/SnowFunctions.hlsl"
 
             [domain("tri")]
@@ -95,8 +104,8 @@ Shader "BillEnv/URP/Interactive Snow"
             #include "Includes/SnowFunctions.hlsl"
 
             struct ShadowVaryings
-            { float4 positionCS : SV_POSITION;
-
+            {
+                float4 positionCS : SV_POSITION;
             };
 
             [domain("tri")]

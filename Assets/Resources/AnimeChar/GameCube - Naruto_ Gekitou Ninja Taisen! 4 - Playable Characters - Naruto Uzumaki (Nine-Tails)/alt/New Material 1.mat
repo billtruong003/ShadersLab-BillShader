@@ -39,7 +39,6 @@ Material:
     RenderType: Transparent
   disabledShaderPasses:
   - MOTIONVECTORS
-  - Outline
   m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
@@ -164,8 +163,8 @@ Material:
     - _DissolveEdgeWidth: 0.05
     - _DissolveThreshold: -0.5
     - _DissolveType: 0
-    - _DistanceFadeEnd: 20
-    - _DistanceFadeStart: -45
+    - _DistanceFadeEnd: 45
+    - _DistanceFadeStart: -100
     - _DstBlend: 10
     - _DstBlendAlpha: 0
     - _EffectType: 0
@@ -202,9 +201,9 @@ Material:
     - _NoiseStrength: 0.1
     - _OcclusionStrength: 1
     - _Offset: 0.8
-    - _OutlineMode: 0
+    - _OutlineMode: 2
     - _OutlineScaleWithDistance: 1
-    - _OutlineWidth: 1
+    - _OutlineWidth: 0.75
     - _Parallax: 0.005
     - _PatternFrequency: 10
     - _PatternType: 0

@@ -55,4 +55,9 @@ public class UIBillProgress : SerializedMonoBehaviour
         float clampedValue = Mathf.Clamp01(normalizedValue);
         progressImage.fillAmount = clampedValue;
     }
+
+    public float GetCurrentFill()
+    {
+        return progressImage != null ? progressImage.fillAmount : 0;
+    }
 }

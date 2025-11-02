@@ -8,11 +8,12 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: MetalnessB
-  m_Shader: {fileID: 4800000, guid: 54a134dc857b568439394eaedabcec3e, type: 3}
+  m_Shader: {fileID: 4800000, guid: 8c6816f17d74145a98782de98bb7a170, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
   - _FAKELIGHT_ON
+  - _INDIRECTSPECULAR_ON
   - _OUTLINE_SCALE_WITH_DISTANCE
   - _SURFACETYPE_METALLIC
   m_InvalidKeywords:
@@ -31,6 +32,10 @@ Material:
     m_TexEnvs:
     - _BaseMap:
         m_Texture: {fileID: 2800000, guid: cb9441540c095d846b855f13f11c6339, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _BaseMapB:
+        m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _BumpMap:
@@ -54,6 +59,10 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _DetailNormalMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _DitherPatternTex:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
@@ -151,6 +160,11 @@ Material:
     - _DissolveType: 0
     - _DistanceFadeEnd: 15
     - _DistanceFadeStart: -45
+    - _DitherEdgeWidth: 0.1
+    - _DitherFadeEnd: 1
+    - _DitherFadeStart: 2
+    - _DitherFadeToggle: 0
+    - _DitherScale: 50
     - _DstBlend: 0
     - _DstBlendAlpha: 0
     - _EffectType: 0
@@ -164,6 +178,7 @@ Material:
     - _EpicFloat2: 1
     - _EpicFloat3: 1
     - _FakeLightMode: 1
+    - _ForceFakeLight: 0
     - _FresnelOutlinePower: 5
     - _FresnelOutlineSharpness: 2
     - _FresnelOutlineWidth: 0.1
@@ -177,13 +192,18 @@ Material:
     - _HighlightOffset: 0.65
     - _HologramFlickerSpeed: 20
     - _HologramPatternScale: 1
+    - _IndirectSpecular: 1
+    - _IndirectSpecularIntensity: 2
     - _LegendaryFloat1: 1
     - _LegendaryFloat2: 1
     - _LegendaryFloat3: 1
+    - _MaxBrightness: 1.5
     - _MaxDissolveDistance: 1
     - _Metallic: 0.478
     - _MidtoneThreshold: 0.8
     - _Mode: 0
+    - _Morph: 0
+    - _MorphToggle: 0
     - _NoiseScale: 1
     - _NoiseStrength: 0.1
     - _OcclusionStrength: 1
@@ -219,6 +239,8 @@ Material:
     - _Surface: 0
     - _SurfaceType: 1
     - _TimeScale: 1
+    - _ToonRampSmoothness: 0.05
+    - _ToonStyle: 0
     - _TranslucencyStrength: 1
     - _TriplanarSharpness: 5
     - _UVSec: 0
@@ -244,6 +266,7 @@ Material:
     - _CosmicColor2: {r: 1, g: 0.3, b: 0.8, a: 1}
     - _DissolveDirection: {r: 0, g: 1, b: 0, a: 0}
     - _DissolveEdgeColor: {r: 1, g: 0.5, b: 0, a: 1}
+    - _DitherEdgeColor: {r: 0.5, g: 0.8, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _EpicColor1: {r: 1, g: 0.5, b: 0, a: 1}
     - _EpicColor2: {r: 1, g: 1, b: 0, a: 1}

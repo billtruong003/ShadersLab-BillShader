@@ -17,7 +17,6 @@ namespace Synty.Tools.SyntyPropBoneTool
     ///     The PropBoneBinder is responsible for creating, managing and updating the prop bones at runtime.
     ///     Only one of these components is needed per character. It will manage all prop bones defined in the propBoneConfig.
     /// </summary>
-    [ExecuteInEditMode]
     public class PropBoneBinder : MonoBehaviour
     {
         [Tooltip("Reference to the animator for this character")]
@@ -28,7 +27,6 @@ namespace Synty.Tools.SyntyPropBoneTool
 
         [Tooltip("Determins when this script will update the transforms. For best results run this script later than the animator.")]
         public UpdateType updateType = UpdateType.LateUpdate;
-        public bool updateInEditMode = true;
 
         [Tooltip("Rebinds all the bones on awake. Useful if your rigs change often, saves needing to rebind them at edit time.")]
         public bool rebindOnAwake = false;
@@ -191,11 +189,6 @@ namespace Synty.Tools.SyntyPropBoneTool
         /// </summary>
         public void UpdateBones()
         {
-            if (!Application.isPlaying && !updateInEditMode)
-            {
-                return;
-            }
-
             for (int index = 0; index < _propBoneBindings.Count; ++index)
             {
                 UpdateBone(_propBoneBindings[index]);

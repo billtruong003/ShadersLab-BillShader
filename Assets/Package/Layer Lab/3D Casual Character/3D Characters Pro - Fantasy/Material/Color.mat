@@ -8,20 +8,20 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: Color
-  m_Shader: {fileID: 4800000, guid: 54a134dc857b568439394eaedabcec3e, type: 3}
+  m_Shader: {fileID: 4800000, guid: 8c6816f17d74145a98782de98bb7a170, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
   - _FAKELIGHT_ON
   - _OUTLINE_SCALE_WITH_DISTANCE
   - _SURFACETYPE_OPAQUE
-  - _VERTEX_DISPLACEMENT_ON
   m_InvalidKeywords:
   - _EMISSIVE_SIMPLE
   - _IS_ANGELRING_OFF
   - _IS_CLIPPING_OFF
   - _IS_OUTLINE_CLIPPING_NO
   - _OUTLINE_NML
+  - _VERTEX_DISPLACEMENT_ON
   - _ZWRITE_ON
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
@@ -62,6 +62,10 @@ Material:
         m_Offset: {x: 0, y: 0}
     - _BaseMap:
         m_Texture: {fileID: 2800000, guid: cb9441540c095d846b855f13f11c6339, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _BaseMapB:
+        m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _BentNormalMap:
@@ -109,6 +113,10 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _DistortionVectorMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _DitherPatternTex:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
@@ -281,9 +289,9 @@ Material:
     - _AR_OffsetU: 0
     - _AR_OffsetV: 0.3
     - _ATDistance: 1
-    - _AddLightMidtoneThreshold: 0.8
-    - _AddLightRampSmoothness: 0.25
-    - _AddLightShadowThreshold: 0.4
+    - _AddLightMidtoneThreshold: 0.6
+    - _AddLightRampSmoothness: 0.2
+    - _AddLightShadowThreshold: 0.2
     - _AddPrecomputedVelocity: 0
     - _Add_Antipodean_RimLight: 0
     - _AlbedoAffectEmissive: 0
@@ -375,6 +383,11 @@ Material:
     - _DistortionSrcBlend: 0
     - _DistortionVectorBias: -1
     - _DistortionVectorScale: 2
+    - _DitherEdgeWidth: 0.1
+    - _DitherFadeEnd: 1
+    - _DitherFadeStart: 2
+    - _DitherFadeToggle: 0
+    - _DitherScale: 50
     - _DoubleSidedEnable: 0
     - _DoubleSidedNormalMode: 1
     - _DstBlend: 0
@@ -402,6 +415,7 @@ Material:
     - _Farthest_Distance: 100
     - _FirstShadeOverridden: 0
     - _FirstShadeVisible: 1
+    - _ForceFakeLight: 0
     - _FresnelOutlinePower: 5
     - _FresnelOutlineSharpness: 2
     - _FresnelOutlineWidth: 0.1
@@ -428,6 +442,8 @@ Material:
     - _HighlightVisible: 1
     - _HologramFlickerSpeed: 20
     - _HologramPatternScale: 1
+    - _IndirectSpecular: 0
+    - _IndirectSpecularIntensity: 0
     - _InvTilingScale: 1
     - _Inverse_Clipping: 0
     - _Inverse_MatcapMask: 0
@@ -472,10 +488,13 @@ Material:
     - _LinkDetailsWithBase: 1
     - _MatCap: 0
     - _MaterialID: 1
+    - _MaxBrightness: 5
     - _MaxDissolveDistance: 1
     - _Metallic: 0
     - _MidtoneThreshold: 0.4
     - _Mode: 0
+    - _Morph: 0
+    - _MorphToggle: 0
     - _Nearest_Distance: 0.5
     - _NoiseScale: 30
     - _NoiseStrength: 0.1
@@ -504,7 +523,7 @@ Material:
     - _PatternType: 0
     - _QueueOffset: 0
     - _RadialDirection: 1
-    - _RampSmoothness: 0.25
+    - _RampSmoothness: 0.5
     - _RareFloat1: 1
     - _RareFloat2: 1
     - _ReceiveShadows: 1
@@ -531,7 +550,7 @@ Material:
     - _SecondShadeVisible: 1
     - _Set_SystemShadowsToBase: 0
     - _ShadeColor_Step: 1
-    - _ShadowThreshold: 0.2
+    - _ShadowThreshold: 0.1
     - _ShatterLiftSpeed: 1
     - _ShatterOffsetStrength: 0.5
     - _ShatterStrength: 1
@@ -584,6 +603,8 @@ Material:
     - _Thickness: 1
     - _ThicknessMultiplier: 1
     - _TimeScale: 0.5
+    - _ToonRampSmoothness: 0.001
+    - _ToonStyle: 0
     - _TranslucencyStrength: 1
     - _TransmissionEnable: 1
     - _TransmissionMask: 1
@@ -642,7 +663,7 @@ Material:
     - _2nd_ShadeColor: {r: 0.24528301, g: 0.24528301, b: 0.24528301, a: 1}
     - _AddLightMidtoneColor: {r: 0.5283019, g: 0.5283019, b: 0.5283019, a: 1}
     - _AddLightShadowTint: {r: 0, g: 0, b: 0, a: 1}
-    - _AmbientColor: {r: 0.44339618, g: 0, b: 0, a: 0}
+    - _AmbientColor: {r: 0.115723014, g: 0, b: 0.254717, a: 0}
     - _AngelRingMaskColor: {r: 0, g: 1, b: 0, a: 1}
     - _AngelRing_Color: {r: 1, g: 1, b: 1, a: 1}
     - _Ap_RimLightColor: {r: 1, g: 1, b: 1, a: 1}
@@ -658,6 +679,7 @@ Material:
     - _DiffusionProfileAsset: {r: 0, g: 0, b: 0, a: 0}
     - _DissolveDirection: {r: 1, g: 0, b: 0, a: 0}
     - _DissolveEdgeColor: {r: 0, g: 0.09947634, b: 1, a: 1}
+    - _DitherEdgeColor: {r: 0.5, g: 0.8, b: 1, a: 1}
     - _DoubleSidedConstants: {r: 1, g: 1, b: -1, a: 0}
     - _EmissionColor: {r: 1, g: 1, b: 1, a: 1}
     - _EmissiveColor: {r: 0, g: 0, b: 0, a: 1}
@@ -679,7 +701,7 @@ Material:
     - _LegendaryColor1: {r: 0.5, g: 0, b: 1, a: 1}
     - _LegendaryColor2: {r: 0, g: 1, b: 1, a: 1}
     - _MatCapColor: {r: 1, g: 1, b: 1, a: 1}
-    - _MidtoneColor: {r: 0.88235295, g: 0.88235295, b: 0.88235295, a: 1}
+    - _MidtoneColor: {r: 0.6792453, g: 0.6792453, b: 0.6792453, a: 1}
     - _OutlineColor: {r: 0, g: 0, b: 0, a: 1}
     - _OutlineMaskColor: {r: 0, g: 0, b: 0, a: 1}
     - _Outline_Color: {r: 0, g: 0, b: 0, a: 1}

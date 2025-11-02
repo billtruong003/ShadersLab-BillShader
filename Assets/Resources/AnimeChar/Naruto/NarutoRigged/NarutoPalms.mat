@@ -8,7 +8,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: NarutoPalms
-  m_Shader: {fileID: 4800000, guid: 54a134dc857b568439394eaedabcec3e, type: 3}
+  m_Shader: {fileID: 4800000, guid: 8c6816f17d74145a98782de98bb7a170, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
@@ -16,13 +16,13 @@ Material:
   - _OUTLINE_SCALE_WITH_DISTANCE
   - _SURFACETYPE_OPAQUE
   m_InvalidKeywords:
+  - _OUTLINEMODE_FRESNEL
   - _ZWRITE_ON
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
-  m_CustomRenderQueue: 2000
-  stringTagMap:
-    RenderType: Opaque
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
   disabledShaderPasses:
   - MOTIONVECTORS
   - Outline
@@ -198,7 +198,7 @@ Material:
     - _LegendaryFloat1: 1
     - _LegendaryFloat2: 1
     - _LegendaryFloat3: 1
-    - _MaxBrightness: 1
+    - _MaxBrightness: 5
     - _MaxDissolveDistance: 1
     - _Metallic: 0
     - _MidtoneThreshold: 0.8
@@ -217,7 +217,7 @@ Material:
     - _PatternType: 0
     - _QueueOffset: 0
     - _RadialDirection: 1
-    - _RampSmoothness: 0.05
+    - _RampSmoothness: 0.001
     - _RareFloat1: 1
     - _RareFloat2: 1
     - _ReceiveShadows: 1
@@ -279,11 +279,11 @@ Material:
     - _HologramEmissionColor: {r: 0, g: 1, b: 1, a: 1}
     - _LegendaryColor1: {r: 0.5, g: 0, b: 1, a: 1}
     - _LegendaryColor2: {r: 0, g: 1, b: 1, a: 1}
-    - _MidtoneColor: {r: 0.6, g: 0.6, b: 0.6, a: 1}
+    - _MidtoneColor: {r: 0.6320754, g: 0.6320754, b: 0.6320754, a: 1}
     - _OutlineColor: {r: 0, g: 0, b: 0, a: 1}
     - _RareColor1: {r: 1, g: 1, b: 1, a: 1}
     - _RimColor: {r: 1, g: 0.3, b: 0.3, a: 1}
-    - _ShadowTint: {r: 0.1, g: 0.1, b: 0.2, a: 1}
+    - _ShadowTint: {r: 0, g: 0, b: 0, a: 1}
     - _SpecColor: {r: 0.2, g: 0.2, b: 0.2, a: 1}
     - _SpecuColor: {r: 0.8, g: 0.45, b: 0.2, a: 1}
     - _StarfieldColor: {r: 1, g: 1, b: 0.8, a: 1}

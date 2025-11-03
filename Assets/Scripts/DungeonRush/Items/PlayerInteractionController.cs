@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace DungeonRush
 {
-    [RequireComponent(typeof(DungeonRush.Inventories.InventorySystem))]
+    [RequireComponent(typeof(InventorySystem))]
     public class PlayerInteractionController : MonoBehaviour
     {
         [Header("Interaction Settings")]
@@ -16,55 +16,61 @@ namespace DungeonRush
 
         private void Awake()
         {
-            playerInventory = GetComponent<DungeonRush.Inventories.InventorySystem>();
+            playerInventory = GetComponent<Inventories.InventorySystem>();
         }
 
         private void Update()
         {
-            FindInteractable();
-            HandleInteractionInput();
+            FindBestInteractable();
+            ProcessInteractionInput();
         }
 
-        private void FindInteractable()
+        private void FindBestInteractable()
         {
             Collider[] colliders = Physics.OverlapSphere(transform.position, interactionRadius, interactableLayer);
 
-            DungeonRush.Items.ItemPickup closestPickup = null;
-            float minDistance = float.MaxValue;
+            Items.ItemPickup closestPickup = null;
+            float minDistanceSqr = float.MaxValue;
 
             foreach (var col in colliders)
             {
-                if (col.TryGetComponent<DungeonRush.Items.ItemPickup>(out var pickup))
+                if (col.TryGetComponent<Items.ItemPickup>(out var pickup))
                 {
-                    float distance = Vector3.Distance(transform.position, col.transform.position);
-                    if (distance < minDistance)
+                    float distanceSqr = (transform.position - col.transform.position).sqrMagnitude;
+                    if (distanceSqr < minDistanceSqr)
                     {
-                        minDistance = distance;
+                        minDistanceSqr = distanceSqr;
                         closestPickup = pickup;
                     }
                 }
             }
 
-            if (currentTarget != closestPickup)
-            {
-                currentTarget?.HidePrompt();
-                currentTarget = closestPickup;
-                currentTarget?.ShowPrompt();
-            }
+            UpdateTarget(closestPickup);
         }
 
-        private void HandleInteractionInput()
+        private void UpdateTarget(Items.ItemPickup newTarget)
+        {
+            if (currentTarget == newTarget) return;
+
+            currentTarget?.HidePrompt();
+            currentTarget = newTarget;
+            currentTarget?.ShowPrompt();
+        }
+
+        private void ProcessInteractionInput()
         {
             if (Input.GetKeyDown(KeyCode.E) && currentTarget != null)
             {
-                if (currentTarget.PickupItem(playerInventory))
+                bool pickupSuccessful = currentTarget.PickupItem(playerInventory);
+
+                if (pickupSuccessful)
                 {
-                    // Vật phẩm đã được nhặt thành công, target sẽ tự hủy
-                    // FindInteractable() ở frame tiếp theo sẽ tự dọn dẹp currentTarget
+                    // Quan trọng: Dọn dẹp target ngay lập tức sau khi nhặt thành công.
+                    // Điều này ngăn FindBestInteractable() tìm lại nó trong cùng một frame.
+                    UpdateTarget(null);
                 }
                 else
                 {
-                    // Có thể hiện thông báo "Inventory Full" ở đây
                     Debug.Log("Inventory is full!");
                 }
             }

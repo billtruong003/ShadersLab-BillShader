@@ -56,6 +56,9 @@ public class ToonOpaqueShaderGUI : ToonOpaqueShaderBase
                 materialEditor.ShaderProperty(fresnelOutlinePowerProp, "Power");
                 materialEditor.ShaderProperty(fresnelOutlineSharpnessProp, "Sharpness");
                 EditorGUILayout.Space();
+
+                bool fresnelGroupEnabled = fresnelOutlineToggleProp.floatValue > 0.5f || fresnelOutlineToggleProp.hasMixedValue;
+                EditorGUI.BeginDisabledGroup(!fresnelGroupEnabled);
                 DrawPropertyGroup(glintToggleProp, glintToggleProp.displayName, () =>
                 {
                     materialEditor.ShaderProperty(glintColorProp, "Glint Color");
@@ -63,6 +66,7 @@ public class ToonOpaqueShaderGUI : ToonOpaqueShaderBase
                     materialEditor.ShaderProperty(glintSpeedProp, "Glint Speed");
                     materialEditor.ShaderProperty(glintThresholdProp, "Glint Threshold");
                 });
+                EditorGUI.EndDisabledGroup();
             });
         });
     }

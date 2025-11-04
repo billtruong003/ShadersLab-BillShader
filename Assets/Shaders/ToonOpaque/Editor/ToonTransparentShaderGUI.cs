@@ -1,23 +1,17 @@
 using UnityEngine;
 using UnityEditor;
 using System;
+using System.Linq;
 
 /// <summary>
 /// Giao diện tùy chỉnh cho ToonTransparentShader, cung cấp một Inspector được sắp xếp gọn gàng
 /// với các mục có thể thu gọn (foldout) và các nhóm thuộc tính có điều kiện.
+/// Tối ưu hóa để hỗ trợ chỉnh sửa nhiều material cùng lúc.
 /// </summary>
 public class ToonTransparentShaderGUI : ShaderGUI
 {
     private MaterialEditor materialEditor;
-    private Material material;
-
-    // Foldout states
-    private static bool showBaseSettings = true;
-    private static bool showLightingSettings = true;
-    private static bool showGlassSettings = true;
-    private static bool showOutlineSettings = true;
-
-    // Properties
+    private Material[] materials;
     private MaterialProperty baseMapProp, baseColorProp;
     private MaterialProperty emissionModeProp, emissionColorProp, emissionMapProp;
     private MaterialProperty fakeLightModeProp, fakeLightColorProp, fakeLightDirectionProp;
@@ -26,14 +20,24 @@ public class ToonTransparentShaderGUI : ShaderGUI
     private MaterialProperty fresnelOutlineToggleProp, fresnelOutlineColorProp, fresnelOutlineWidthProp, fresnelOutlinePowerProp, fresnelOutlineSharpnessProp;
     private MaterialProperty glintToggleProp, glintColorProp, glintScaleProp, glintSpeedProp, glintThresholdProp;
 
+    private static bool showBaseSettings = true;
+    private static bool showLightingSettings = true;
+    private static bool showGlassSettings = true;
+    private static bool showOutlineSettings = true;
+
     public override void OnGUI(MaterialEditor editor, MaterialProperty[] properties)
     {
         this.materialEditor = editor;
-        this.material = editor.target as Material;
+        this.materials = Array.ConvertAll(editor.targets, item => (Material)item);
 
         FindProperties(properties);
+
+        EditorGUI.BeginChangeCheck();
         DrawGUI();
-        ApplyKeywords();
+        if (EditorGUI.EndChangeCheck())
+        {
+            ApplyKeywords();
+        }
     }
 
     private void FindProperties(MaterialProperty[] properties)
@@ -131,8 +135,8 @@ public class ToonTransparentShaderGUI : ShaderGUI
                 EditorGUILayout.Space();
             });
 
-            // Glint effect is dependent on the outline being enabled
-            EditorGUI.BeginDisabledGroup(fresnelOutlineToggleProp.floatValue == 0);
+            bool fresnelGroupEnabled = fresnelOutlineToggleProp.floatValue > 0.5f || fresnelOutlineToggleProp.hasMixedValue;
+            EditorGUI.BeginDisabledGroup(!fresnelGroupEnabled);
             DrawPropertyGroup(glintToggleProp, "Enable Glint Effect", () =>
             {
                 materialEditor.ShaderProperty(glintColorProp, "Color");
@@ -146,20 +150,18 @@ public class ToonTransparentShaderGUI : ShaderGUI
 
     private void ApplyKeywords()
     {
-        SetKeyword("_EMISSION_ON", emissionModeProp.floatValue > 0);
+        SetKeyword("_EMISSION_ON", emissionModeProp.floatValue > 0.5f);
         if (fakeLightModeProp != null)
         {
-            SetKeyword("_FAKELIGHT_ON", fakeLightModeProp.floatValue > 0);
+            SetKeyword("_FAKELIGHT_ON", fakeLightModeProp.floatValue > 0.5f);
         }
 
-        bool fresnelEnabled = fresnelOutlineToggleProp.floatValue > 0;
+        bool fresnelEnabled = fresnelOutlineToggleProp.floatValue > 0.5f;
         SetKeyword("_OUTLINEMODE_FRESNEL", fresnelEnabled);
 
-        bool glintEnabled = fresnelEnabled && glintToggleProp.floatValue > 0;
+        bool glintEnabled = fresnelEnabled && glintToggleProp.floatValue > 0.5f;
         SetKeyword("_OUTLINEGLINT_ON", glintEnabled);
     }
-
-    // --- Helper Methods ---
 
     private void DrawFoldout(string title, ref bool display, Action contents)
     {
@@ -193,8 +195,10 @@ public class ToonTransparentShaderGUI : ShaderGUI
     {
         materialEditor.ShaderProperty(toggle, title);
 
+        bool isGroupEnabled = toggle.floatValue > 0.5f || toggle.hasMixedValue;
+
         EditorGUI.indentLevel++;
-        EditorGUI.BeginDisabledGroup(toggle.floatValue == 0);
+        EditorGUI.BeginDisabledGroup(!isGroupEnabled);
         contents();
         EditorGUI.EndDisabledGroup();
         EditorGUI.indentLevel--;
@@ -202,18 +206,15 @@ public class ToonTransparentShaderGUI : ShaderGUI
 
     private void SetKeyword(string keyword, bool enabled)
     {
-        if (enabled)
+        foreach (var mat in materials)
         {
-            if (!material.IsKeywordEnabled(keyword))
+            if (enabled)
             {
-                material.EnableKeyword(keyword);
+                mat.EnableKeyword(keyword);
             }
-        }
-        else
-        {
-            if (material.IsKeywordEnabled(keyword))
+            else
             {
-                material.DisableKeyword(keyword);
+                mat.DisableKeyword(keyword);
             }
         }
     }

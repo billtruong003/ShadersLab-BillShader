@@ -289,9 +289,9 @@ Material:
     - _AR_OffsetU: 0
     - _AR_OffsetV: 0.3
     - _ATDistance: 1
-    - _AddLightMidtoneThreshold: 0.6
-    - _AddLightRampSmoothness: 0.2
-    - _AddLightShadowThreshold: 0.2
+    - _AddLightMidtoneThreshold: 0.8
+    - _AddLightRampSmoothness: 0.001
+    - _AddLightShadowThreshold: 0.4
     - _AddPrecomputedVelocity: 0
     - _Add_Antipodean_RimLight: 0
     - _AlbedoAffectEmissive: 0
@@ -488,7 +488,7 @@ Material:
     - _LinkDetailsWithBase: 1
     - _MatCap: 0
     - _MaterialID: 1
-    - _MaxBrightness: 5
+    - _MaxBrightness: 1
     - _MaxDissolveDistance: 1
     - _Metallic: 0
     - _MidtoneThreshold: 0.4
@@ -663,7 +663,7 @@ Material:
     - _2nd_ShadeColor: {r: 0.24528301, g: 0.24528301, b: 0.24528301, a: 1}
     - _AddLightMidtoneColor: {r: 0.5283019, g: 0.5283019, b: 0.5283019, a: 1}
     - _AddLightShadowTint: {r: 0, g: 0, b: 0, a: 1}
-    - _AmbientColor: {r: 0.115723014, g: 0, b: 0.254717, a: 0}
+    - _AmbientColor: {r: 1, g: 1, b: 1, a: 0}
     - _AngelRingMaskColor: {r: 0, g: 1, b: 0, a: 1}
     - _AngelRing_Color: {r: 1, g: 1, b: 1, a: 1}
     - _Ap_RimLightColor: {r: 1, g: 1, b: 1, a: 1}

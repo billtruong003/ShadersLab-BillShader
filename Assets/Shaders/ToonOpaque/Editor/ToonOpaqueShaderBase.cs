@@ -2,12 +2,14 @@ using UnityEngine;
 using UnityEditor;
 using System;
 using UnityEngine.Rendering;
+using System.Linq;
 
 public abstract class ToonOpaqueShaderBase : ShaderGUI
 {
     protected MaterialEditor materialEditor;
     protected MaterialProperty[] properties;
-    protected Material material;
+    protected Material firstMaterial;
+    protected Material[] materials;
 
     private static bool showRenderStates = true;
     private static bool showBaseSettings = true;
@@ -34,7 +36,8 @@ public abstract class ToonOpaqueShaderBase : ShaderGUI
     {
         materialEditor = editor;
         properties = props;
-        material = materialEditor.target as Material;
+        materials = Array.ConvertAll(editor.targets, item => (Material)item);
+        firstMaterial = materials[0];
 
         if (headerStyle == null)
         {
@@ -156,7 +159,10 @@ public abstract class ToonOpaqueShaderBase : ShaderGUI
 
     protected virtual void ApplyKeywords()
     {
-        ApplyRenderModeKeywords();
+        foreach (var mat in materials)
+        {
+            ApplyRenderModeKeywords(mat);
+        }
 
         var surface = (ToonOpaqueDrawerUtils.SurfaceType)surfaceTypeProp.floatValue;
         SetKeyword("_SURFACETYPE_OPAQUE", surface == ToonOpaqueDrawerUtils.SurfaceType.Opaque);
@@ -185,8 +191,6 @@ public abstract class ToonOpaqueShaderBase : ShaderGUI
             bool morphOn = morphToggleProp.floatValue > 0.5f && baseMapBProp != null && baseMapBProp.textureValue != null;
             SetKeyword("_MORPH_ON", morphOn);
         }
-
-        EditorUtility.SetDirty(material);
     }
 
     protected abstract void DrawWorkflowSettings();
@@ -201,24 +205,34 @@ public abstract class ToonOpaqueShaderBase : ShaderGUI
 
     protected void DrawSurfaceTypeSelector()
     {
+        EditorGUI.showMixedValue = surfaceTypeProp.hasMixedValue;
         var currentSurfaceType = (ToonOpaqueDrawerUtils.SurfaceType)surfaceTypeProp.floatValue;
-        var newSurfaceType = (ToonOpaqueDrawerUtils.SurfaceType)EditorGUILayout.EnumPopup("Surface Type", currentSurfaceType);
 
-        if (newSurfaceType != currentSurfaceType)
+        EditorGUI.BeginChangeCheck();
+        var newSurfaceType = (ToonOpaqueDrawerUtils.SurfaceType)EditorGUILayout.EnumPopup("Surface Type", currentSurfaceType);
+        if (EditorGUI.EndChangeCheck())
         {
             surfaceTypeProp.floatValue = (float)newSurfaceType;
         }
+        EditorGUI.showMixedValue = false;
     }
 
     private void DrawRenderStates()
     {
         DrawFoldout("Render States", ref showRenderStates, () =>
         {
+            EditorGUI.showMixedValue = renderModeProp.hasMixedValue;
             var mode = (RenderMode)renderModeProp.floatValue;
-            mode = (RenderMode)EditorGUILayout.EnumPopup("Render Mode", mode);
-            renderModeProp.floatValue = (float)mode;
 
-            if (mode == RenderMode.Transparent)
+            EditorGUI.BeginChangeCheck();
+            mode = (RenderMode)EditorGUILayout.EnumPopup("Render Mode", mode);
+            if (EditorGUI.EndChangeCheck())
+            {
+                renderModeProp.floatValue = (float)mode;
+            }
+            EditorGUI.showMixedValue = false;
+
+            if (!renderModeProp.hasMixedValue && mode == RenderMode.Transparent)
             {
                 materialEditor.ShaderProperty(srcBlendProp, "Source Blend");
                 materialEditor.ShaderProperty(dstBlendProp, "Destination Blend");
@@ -242,14 +256,14 @@ public abstract class ToonOpaqueShaderBase : ShaderGUI
                 {
                     materialEditor.TexturePropertySingleLine(new GUIContent(baseMapBProp.displayName), baseMapBProp);
                     materialEditor.ShaderProperty(morphProp, morphProp.displayName);
-                    if (baseMapBProp.textureValue == null)
+                    if (baseMapBProp.textureValue == null && !baseMapBProp.hasMixedValue)
                     {
                         EditorGUILayout.HelpBox("Albedo B is not assigned. Morph will not be visible.", MessageType.Warning);
                     }
                 });
             }
 
-            if ((RenderMode)renderModeProp.floatValue == RenderMode.Cutout)
+            if (!renderModeProp.hasMixedValue && (RenderMode)renderModeProp.floatValue == RenderMode.Cutout)
             {
                 materialEditor.ShaderProperty(cutoffProp, cutoffProp.displayName);
             }
@@ -288,13 +302,13 @@ public abstract class ToonOpaqueShaderBase : ShaderGUI
             materialEditor.ShaderProperty(forceFakeLightProp, forceFakeLightProp.displayName);
             bool isForceFakeLightOn = forceFakeLightProp.floatValue > 0.5f;
 
-            EditorGUI.BeginDisabledGroup(isForceFakeLightOn);
+            EditorGUI.BeginDisabledGroup(isForceFakeLightOn && !forceFakeLightProp.hasMixedValue);
             materialEditor.ShaderProperty(fakeLightModeProp, fakeLightModeProp.displayName);
             EditorGUI.EndDisabledGroup();
 
-            if (isForceFakeLightOn) fakeLightModeProp.floatValue = 1.0f;
+            if (isForceFakeLightOn && !forceFakeLightProp.hasMixedValue) fakeLightModeProp.floatValue = 1.0f;
 
-            if (fakeLightModeProp.floatValue > 0.5f)
+            if (fakeLightModeProp.floatValue > 0.5f || fakeLightModeProp.hasMixedValue)
             {
                 EditorGUI.indentLevel++;
                 string helpText = isForceFakeLightOn ? "Fake Light is forced on, ignoring scene lighting." : "Fake Light acts as a fallback when no main Directional Light is present.";
@@ -336,6 +350,12 @@ public abstract class ToonOpaqueShaderBase : ShaderGUI
 
     private void DrawSurfaceTypeSpecificProperties()
     {
+        if (surfaceTypeProp.hasMixedValue)
+        {
+            EditorGUILayout.HelpBox("Editing of surface-specific properties is disabled because materials with different Surface Types are selected.", MessageType.Warning);
+            return;
+        }
+
         var surface = (ToonOpaqueDrawerUtils.SurfaceType)surfaceTypeProp.floatValue;
         switch (surface)
         {
@@ -364,7 +384,7 @@ public abstract class ToonOpaqueShaderBase : ShaderGUI
         });
     }
 
-    private void ApplyRenderModeKeywords()
+    private void ApplyRenderModeKeywords(Material material)
     {
         var mode = (RenderMode)renderModeProp.floatValue;
         switch (mode)
@@ -375,7 +395,7 @@ public abstract class ToonOpaqueShaderBase : ShaderGUI
                 material.SetInt("_SrcBlend", (int)BlendMode.One);
                 material.SetInt("_DstBlend", (int)BlendMode.Zero);
                 material.SetInt("_ZWrite", 1);
-                SetKeyword("_ALPHACLIP_ON", false);
+                SetKeywordOnMaterial(material, "_ALPHACLIP_ON", false);
                 break;
             case RenderMode.Cutout:
                 material.SetOverrideTag("RenderType", "TransparentCutout");
@@ -383,7 +403,7 @@ public abstract class ToonOpaqueShaderBase : ShaderGUI
                 material.SetInt("_SrcBlend", (int)BlendMode.One);
                 material.SetInt("_DstBlend", (int)BlendMode.Zero);
                 material.SetInt("_ZWrite", 1);
-                SetKeyword("_ALPHACLIP_ON", true);
+                SetKeywordOnMaterial(material, "_ALPHACLIP_ON", true);
                 break;
             case RenderMode.Transparent:
                 material.SetOverrideTag("RenderType", "Transparent");
@@ -391,14 +411,13 @@ public abstract class ToonOpaqueShaderBase : ShaderGUI
                 material.SetInt("_SrcBlend", (int)srcBlendProp.floatValue);
                 material.SetInt("_DstBlend", (int)dstBlendProp.floatValue);
                 material.SetInt("_ZWrite", zWriteProp.floatValue > 0.5f ? 1 : 0);
-                SetKeyword("_ALPHACLIP_ON", false);
+                SetKeywordOnMaterial(material, "_ALPHACLIP_ON", false);
                 break;
         }
     }
 
     protected void DrawFoldout(string title, ref bool state, Action contents)
     {
-        var rect = EditorGUILayout.BeginVertical();
         state = EditorGUILayout.BeginFoldoutHeaderGroup(state, title);
         if (state)
         {
@@ -407,26 +426,16 @@ public abstract class ToonOpaqueShaderBase : ShaderGUI
             EditorGUILayout.EndVertical();
         }
         EditorGUILayout.EndFoldoutHeaderGroup();
-        var bgRect = GUILayoutUtility.GetLastRect();
-        bgRect.x = rect.x - 2;
-        bgRect.width = rect.width + 4;
-        EditorGUI.DrawRect(bgRect, new Color(0, 0, 0, 0.05f));
-        EditorGUILayout.EndVertical();
         EditorGUILayout.Space(2);
     }
 
     protected void DrawPropertyGroup(MaterialProperty toggleProp, string title, Action contents)
     {
-        bool isEnabled = toggleProp.floatValue > 0;
+        materialEditor.ShaderProperty(toggleProp, title);
 
-        EditorGUILayout.BeginHorizontal();
-        isEnabled = EditorGUILayout.Toggle(isEnabled, GUILayout.Width(15));
-        EditorGUILayout.LabelField(title, EditorStyles.boldLabel);
-        EditorGUILayout.EndHorizontal();
+        bool isGroupEnabled = toggleProp.floatValue > 0.5f || toggleProp.hasMixedValue;
 
-        toggleProp.floatValue = isEnabled ? 1.0f : 0.0f;
-
-        if (isEnabled)
+        if (isGroupEnabled)
         {
             EditorGUI.indentLevel++;
             contents();
@@ -437,8 +446,16 @@ public abstract class ToonOpaqueShaderBase : ShaderGUI
 
     protected void SetKeyword(string keyword, bool state)
     {
-        if (state) material.EnableKeyword(keyword);
-        else material.DisableKeyword(keyword);
+        foreach (var mat in materials)
+        {
+            SetKeywordOnMaterial(mat, keyword, state);
+        }
+    }
+
+    private void SetKeywordOnMaterial(Material mat, string keyword, bool state)
+    {
+        if (state) mat.EnableKeyword(keyword);
+        else mat.DisableKeyword(keyword);
     }
 
     protected void SwitchShader(string newShaderName)
@@ -446,7 +463,7 @@ public abstract class ToonOpaqueShaderBase : ShaderGUI
         var newShader = Shader.Find(newShaderName);
         if (newShader != null)
         {
-            material.shader = newShader;
+            materialEditor.SetShader(newShader, true);
         }
         else
         {

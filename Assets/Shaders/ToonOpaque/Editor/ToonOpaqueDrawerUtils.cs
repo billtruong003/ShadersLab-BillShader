@@ -34,20 +34,23 @@ public static class ToonOpaqueDrawerUtils
 
             bool isHardStyle = toonStyle.floatValue > 0.5f;
 
-            EditorGUI.BeginDisabledGroup(isHardStyle);
+            EditorGUI.BeginDisabledGroup(isHardStyle && !toonStyle.hasMixedValue);
             editor.ShaderProperty(smoothness, "Ramp Smoothness");
             EditorGUI.EndDisabledGroup();
 
             editor.ShaderProperty(shadowTint, "Shadow Tint");
             editor.ShaderProperty(midtoneColor, "Mid-tone Color");
 
-            if (isHardStyle)
+            if (!toonStyle.hasMixedValue)
             {
-                EditorGUILayout.HelpBox("Hard Style creates sharp, distinct bands. 'Ramp Smoothness' is disabled in this mode.", MessageType.Info);
-            }
-            else
-            {
-                EditorGUILayout.HelpBox("Smooth Style uses 'Ramp Smoothness' to blend between light and shadow bands.", MessageType.Info);
+                if (isHardStyle)
+                {
+                    EditorGUILayout.HelpBox("Hard Style creates sharp, distinct bands. 'Ramp Smoothness' is disabled in this mode.", MessageType.Info);
+                }
+                else
+                {
+                    EditorGUILayout.HelpBox("Smooth Style uses 'Ramp Smoothness' to blend between light and shadow bands.", MessageType.Info);
+                }
             }
         });
     }

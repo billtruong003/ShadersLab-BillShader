@@ -14,13 +14,15 @@ Material:
   m_ValidKeywords:
   - _FAKELIGHT_ON
   - _OUTLINE_SCALE_WITH_DISTANCE
+  - _SURFACETYPE_OPAQUE
   m_InvalidKeywords:
   - _ZWRITE_ON
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
-  m_CustomRenderQueue: -1
-  stringTagMap: {}
+  m_CustomRenderQueue: 2000
+  stringTagMap:
+    RenderType: Opaque
   disabledShaderPasses:
   - MOTIONVECTORS
   m_LockedProperties: 
@@ -102,7 +104,7 @@ Material:
     m_Ints: []
     m_Floats:
     - _AddLightMidtoneThreshold: 0.6
-    - _AddLightRampSmoothness: 0.001
+    - _AddLightRampSmoothness: 0.1
     - _AddLightShadowThreshold: 0.1
     - _AddPrecomputedVelocity: 0
     - _AlphaClip: 0
@@ -115,7 +117,7 @@ Material:
     - _BlingSpeed: 1
     - _BlingThreshold: 0.95
     - _BlingWorldSpace: 0
-    - _Brightness: 1.3
+    - _Brightness: 0.45
     - _BumpScale: 1
     - _ClearCoatMask: 0
     - _ClearCoatSmoothness: 0
@@ -142,14 +144,14 @@ Material:
     - _HighlightOffset: 0.9
     - _IndirectSpecular: 0
     - _IndirectSpecularIntensity: 1
-    - _MaxBrightness: 5
+    - _MaxBrightness: 1
     - _Metallic: 0
-    - _MidtoneThreshold: 0.6
+    - _MidtoneThreshold: 0.8
     - _Mode: 0
     - _Morph: 0
     - _MorphToggle: 0
     - _OcclusionStrength: 1
-    - _Offset: 0.8
+    - _Offset: 0.563
     - _OutlineScaleWithDistance: 1
     - _OutlineWidth: 1
     - _Parallax: 0.02
@@ -157,7 +159,7 @@ Material:
     - _ReceiveShadows: 1
     - _RenderMode: 0
     - _RimPower: 6
-    - _ShadowThreshold: 0.4
+    - _ShadowThreshold: 0.7
     - _Smoothness: 0.5
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
@@ -176,8 +178,8 @@ Material:
     - _ZWrite: 1
     m_Colors:
     - _AddLightMidtoneColor: {r: 0.7, g: 0.7, b: 0.7, a: 1}
-    - _AddLightShadowTint: {r: 0.2, g: 0.2, b: 0.3, a: 1}
-    - _AmbientColor: {r: 1, g: 1, b: 1, a: 0.49019608}
+    - _AddLightShadowTint: {r: 0, g: 0, b: 0, a: 1}
+    - _AmbientColor: {r: 1, g: 1, b: 1, a: 1}
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _BlingColor: {r: 1, g: 1, b: 1, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
@@ -186,10 +188,10 @@ Material:
     - _FakeLightColor: {r: 0.8, g: 0.8, b: 0.8, a: 1}
     - _FakeLightDirection: {r: 0.5, g: 0.5, b: -0.5, a: 0}
     - _HiColor: {r: 1, g: 1, b: 1, a: 1}
-    - _MidtoneColor: {r: 0.6, g: 0.6, b: 0.6, a: 1}
+    - _MidtoneColor: {r: 0.509434, g: 0.509434, b: 0.509434, a: 1}
     - _OutlineColor: {r: 0, g: 0, b: 0, a: 1}
     - _RimColor: {r: 1, g: 0.3, b: 0.3, a: 1}
-    - _ShadowTint: {r: 0.1, g: 0.1, b: 0.2, a: 1}
+    - _ShadowTint: {r: 0, g: 0, b: 0, a: 1}
     - _SpecColor: {r: 0.2, g: 0.2, b: 0.2, a: 1}
     - _SpecuColor: {r: 0.8, g: 0.45, b: 0.2, a: 1}
     - _TranslucencyColor: {r: 0.7, g: 0.9, b: 0.3, a: 1}

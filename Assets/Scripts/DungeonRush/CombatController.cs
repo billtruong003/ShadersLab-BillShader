@@ -32,13 +32,18 @@ namespace DungeonRush
         private bool isAttackBuffered = false;
 
         public bool IsAttacking { get; private set; }
-
+        [FoldoutGroup("CheatEquip")]
+        public WeaponData DataCheat;
+        [FoldoutGroup("CheatEquip")]
+        public bool EquipFromStart;
         private void Awake()
         {
             animationController = GetComponent<PlayerAnimationController>();
             playerController = GetComponent<PlayerController>();
             playerRigidbody = GetComponent<Rigidbody>();
             equipmentManager = GetComponent<EquipmentManager>();
+            if (EquipFromStart && DataCheat != null)
+                UpdateWeapon(DataCheat);
         }
 
         private void OnEnable()

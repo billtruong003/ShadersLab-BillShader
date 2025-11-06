@@ -35,14 +35,13 @@ namespace DungeonRush.Items
             }
         }
 
-        private void LateUpdate()
-        {
-            // UI prompt luôn hướng về phía camera
-            if (pickupPromptText != null && pickupPromptText.gameObject.activeSelf && playerCameraTransform != null)
-            {
-                pickupPromptText.transform.LookAt(playerCameraTransform);
-            }
-        }
+        // private void LateUpdate()
+        // {
+        //     if (pickupPromptText != null && pickupPromptText.gameObject.activeSelf && playerCameraTransform != null)
+        //     {
+        //         pickupPromptText.transform.LookAt(playerCameraTransform);
+        //     }
+        // }
 
         public bool PickupItem(DungeonRush.Inventories.InventorySystem inventory)
         {

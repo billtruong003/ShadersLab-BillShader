@@ -133,7 +133,6 @@ namespace DungeonRush
             }
         }
 
-        // --- METHOD NÀY SẼ ĐƯỢC GỌI TỪ ANIMATION EVENT ---
         public void FinalizeAttackState()
         {
             IsAttacking = false;

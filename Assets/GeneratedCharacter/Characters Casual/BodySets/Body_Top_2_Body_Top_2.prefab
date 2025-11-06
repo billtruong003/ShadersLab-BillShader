@@ -1,0 +1,110 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &5648738661604581955
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1625597278560889176}
+  - component: {fileID: 6679223063887305426}
+  m_Layer: 0
+  m_Name: Body_Top_2_Body_Top_2
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1625597278560889176
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5648738661604581955}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!137 &6679223063887305426
+SkinnedMeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5648738661604581955}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 3
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: cd8738494cfa247b2a26f25d207f4c0e, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  serializedVersion: 2
+  m_Quality: 0
+  m_UpdateWhenOffscreen: 0
+  m_SkinnedMotionVectors: 1
+  m_Mesh: {fileID: 3934687319983674998, guid: 3010f4f15ee6d4c3ab409c1a0243f1b1, type: 3}
+  m_Bones:
+  - {fileID: 3790990528703289410, guid: f9799ba52096d4792ba9070651523a74, type: 3}
+  - {fileID: 2677656414963913635, guid: f9799ba52096d4792ba9070651523a74, type: 3}
+  - {fileID: 7656732034738484892, guid: f9799ba52096d4792ba9070651523a74, type: 3}
+  - {fileID: 2917584192210845275, guid: f9799ba52096d4792ba9070651523a74, type: 3}
+  - {fileID: 5647624537516672021, guid: f9799ba52096d4792ba9070651523a74, type: 3}
+  - {fileID: 5160456915973420889, guid: f9799ba52096d4792ba9070651523a74, type: 3}
+  - {fileID: 1043445139744223735, guid: f9799ba52096d4792ba9070651523a74, type: 3}
+  - {fileID: 2140639120789473745, guid: f9799ba52096d4792ba9070651523a74, type: 3}
+  - {fileID: 3207949416708176630, guid: f9799ba52096d4792ba9070651523a74, type: 3}
+  - {fileID: 4710228832949755826, guid: f9799ba52096d4792ba9070651523a74, type: 3}
+  - {fileID: 8957615876970571760, guid: f9799ba52096d4792ba9070651523a74, type: 3}
+  - {fileID: 5122373078310571892, guid: f9799ba52096d4792ba9070651523a74, type: 3}
+  - {fileID: 8342758136323456740, guid: f9799ba52096d4792ba9070651523a74, type: 3}
+  - {fileID: 1524445998942285215, guid: f9799ba52096d4792ba9070651523a74, type: 3}
+  - {fileID: 1658150969449288354, guid: f9799ba52096d4792ba9070651523a74, type: 3}
+  - {fileID: 2756363682427881338, guid: f9799ba52096d4792ba9070651523a74, type: 3}
+  - {fileID: 3235517898490603160, guid: f9799ba52096d4792ba9070651523a74, type: 3}
+  m_BlendShapeWeights: []
+  m_RootBone: {fileID: 3790990528703289410, guid: f9799ba52096d4792ba9070651523a74, type: 3}
+  m_AABB:
+    m_Center: {x: -0.27313393, y: -0.030256853, z: 0.00000011920929}
+    m_Extent: {x: 0.2789122, y: 0.17547137, z: 0.47930756}
+  m_DirtyAABB: 0

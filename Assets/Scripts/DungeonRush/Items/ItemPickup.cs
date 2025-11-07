@@ -12,6 +12,7 @@ namespace DungeonRush.Items
         [SerializeField] private int quantity = 1;
 
         [Header("UI Feedback")]
+        [TextArea][SerializeField] private string notifyText = "Press [E] to pick up";
         [SerializeField] private TextMeshPro pickupPromptText;
         [SerializeField] private Vector3 promptOffset = new Vector3(0, 1.5f, 0);
 
@@ -57,7 +58,7 @@ namespace DungeonRush.Items
         {
             if (pickupPromptText != null)
             {
-                pickupPromptText.text = $"Press [E] to pick up\n{itemData.displayName}";
+                pickupPromptText.text = $"notifyText\n{itemData.displayName}";
                 pickupPromptText.transform.position = transform.position + promptOffset;
                 pickupPromptText.gameObject.SetActive(true);
             }

@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1 &2334740899073976745
+--- !u!1 &8971361481791357067
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -8,8 +8,8 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 381523910514983156}
-  - component: {fileID: 3652449014447374552}
+  - component: {fileID: 522963515560408835}
+  - component: {fileID: 1649173006224936915}
   m_Layer: 0
   m_Name: Shield_2
   m_TagString: Untagged
@@ -17,13 +17,13 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &381523910514983156
+--- !u!4 &522963515560408835
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2334740899073976745}
+  m_GameObject: {fileID: 8971361481791357067}
   serializedVersion: 2
   m_LocalRotation: {x: 0.003047932, y: 0.7071002, z: 0.7071002, w: 0.003047932}
   m_LocalPosition: {x: -0.57268137, y: 1.049632, z: -0.39274573}
@@ -32,13 +32,13 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!137 &3652449014447374552
+--- !u!137 &1649173006224936915
 SkinnedMeshRenderer:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2334740899073976745}
+  m_GameObject: {fileID: 8971361481791357067}
   m_Enabled: 1
   m_CastShadows: 1
   m_ReceiveShadows: 1

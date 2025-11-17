@@ -226,6 +226,7 @@ GameObject:
   - component: {fileID: 68760862}
   - component: {fileID: 68760861}
   - component: {fileID: 68760864}
+  - component: {fileID: 68760865}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -300,8 +301,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 68760860}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.27781588, y: 0.36497167, z: -0.1150751, w: 0.8811196}
-  m_LocalPosition: {x: 0, y: 5, z: 0}
+  m_LocalRotation: {x: 0.2778159, y: 0.3649717, z: -0.115075134, w: 0.88111955}
+  m_LocalPosition: {x: -5, y: 4.951215, z: -5}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -351,6 +352,28 @@ MonoBehaviour:
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
   m_Version: 2
+--- !u!114 &68760865
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 68760860}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 75bb836014c8448b68ca004c8054c16d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::IsometricCameraController
+  target: {fileID: 1844370353}
+  offset: {x: 0, y: 5, z: 5}
+  pitchAngle: 35
+  positionSmoothTime: 0.1
+  rotationSmoothTime: 0.2
+  zoomSpeed: 4
+  minDistance: 5
+  maxDistance: 9
+  allowRotation: 1
+  rotationSpeed: 120
 --- !u!1 &869172579
 GameObject:
   m_ObjectHideFlags: 0
@@ -410,7 +433,7 @@ Light:
   m_Type: 2
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_Intensity: 2
-  m_Range: 3.507426
+  m_Range: 1
   m_SpotAngle: 30
   m_InnerSpotAngle: 21.80208
   m_CookieSize: 10
@@ -448,7 +471,7 @@ Light:
     serializedVersion: 2
     m_Bits: 4294967295
   m_RenderingLayerMask: 1
-  m_Lightmapping: 4
+  m_Lightmapping: 1
   m_LightShadowCasterMode: 0
   m_AreaSize: {x: 1, y: 1}
   m_BounceIntensity: 1
@@ -507,7 +530,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1229767942}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.01716158, y: 0.9229501, z: -0.38229847, w: 0.041431714}
+  m_LocalRotation: {x: 0.36417013, y: -0.28388047, z: 0.11758716, w: 0.8791844}
   m_LocalPosition: {x: 0, y: 1.25, z: -0.5}
   m_LocalScale: {x: 0.03, y: 0.03, z: 0.03}
   m_ConstrainProportionsScale: 1
@@ -864,7 +887,7 @@ Transform:
   m_GameObject: {fileID: 1844370347}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 3.46276, y: 1.14, z: 3.46002}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -1658,7 +1681,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4428116797716975666}
   m_Layer: 0
-  m_Name: KIndly
+  m_Name: Kindly
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

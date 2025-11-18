@@ -1,4 +1,4 @@
-Shader "Bill's Toon/Opaque"
+Shader "Bill's Toon/Opaque - Full URP Compatible"
 {
     Properties
     {
@@ -11,14 +11,14 @@ Shader "Bill's Toon/Opaque"
         [Toggle] _ZWrite ("ZWrite", Float) = 1
 
         [Header(Base Properties)]
-        _BaseMap("Albedo A (RGB) Alpha (A)", 2D) = "white" {}
+        _BaseMap("Albedo A (RGB) Alpha (A)", 2D) = "white"{}
         [HDR] _BaseColor("Base Color", Color) = (1, 1, 1, 1)
-        [NoScaleOffset] _BumpMap("Normal Map", 2D) = "bump" {}
+        [NoScaleOffset] _BumpMap("Normal Map", 2D) = "bump"{}
         _BumpScale("Normal Intensity", Range(0.0, 2.0)) = 1.0
 
         [Header(Texture Morph)]
         [Toggle(_MORPH_ON)] _MorphToggle("Enable Morph", Float) = 0
-        [NoScaleOffset] _BaseMapB("Albedo B (RGB) Alpha (A)", 2D) = "white" {}
+        [NoScaleOffset] _BaseMapB("Albedo B (RGB) Alpha (A)", 2D) = "white"{}
         _Morph("Morph (0=A, 1=B)", Range(0, 1)) = 0
 
         [Header(Alpha Clipping)]
@@ -27,11 +27,11 @@ Shader "Bill's Toon/Opaque"
         [Header(Emission)]
         [Toggle(_EMISSION_ON)] _EmissionMode("Enable Emission", Float) = 0
         [HDR] _EmissionColor("Emission Color", Color) = (0, 0, 0, 1)
-        _EmissionMap("Emission Map", 2D) = "black" {}
+        _EmissionMap("Emission Map", 2D) = "black"{}
 
         [Header(Advanced Dither Fade)]
         [Toggle(_DITHERFADE_ON)] _DitherFadeToggle("Enable Dither Fade", Float) = 0
-        _DitherPatternTex("Dither Pattern (Bayer/Blue Noise)", 2D) = "white" {}
+        _DitherPatternTex("Dither Pattern (Bayer/Blue Noise)", 2D) = "white"{}
         _DitherScale("Dither Pattern Scale", Range(1.0, 200.0)) = 50.0
         _DitherFadeStart("Dither Fade Start (Far)", Float) = 2.0
         _DitherFadeEnd("Dither Fade End (Near)", Float) = 1.0
@@ -69,7 +69,7 @@ Shader "Bill's Toon/Opaque"
         _AddLightRampSmoothness("Ramp Smoothness", Range(0.001, 0.5)) = 0.1
 
         [Header(Stylized Metal)]
-        _Ramp("Toon Ramp (RGB)", 2D) = "white" {}
+        _Ramp("Toon Ramp (RGB)", 2D) = "white"{}
         _Brightness("Specular Brightness", Range(0, 2)) = 1.3
         _Offset("Specular Size", Range(0, 1)) = 0.8
         [HDR] _SpecuColor("Specular Color", Color) = (0.8, 0.45, 0.2, 1)
@@ -86,7 +86,7 @@ Shader "Bill's Toon/Opaque"
         _TranslucencyStrength("Translucency Strength", Range(0, 5)) = 1.0
 
         [Header(Bling Effect)]
-        [NoScaleOffset] _NoiseTex("Noise Texture (Grayscale, Tiling)", 2D) = "gray" {}
+        [NoScaleOffset] _NoiseTex("Noise Texture (Grayscale, Tiling)", 2D) = "gray"{}
         [Toggle(_BLING_WORLDSPACE_ON)] _BlingWorldSpace("Use World Space Bling", Float) = 0
         [HDR] _BlingColor("Bling Color", Color) = (1, 1, 1, 1)
         _BlingIntensity("Bling Intensity", Range(0, 10)) = 2.0
@@ -113,9 +113,14 @@ Shader "Bill's Toon/Opaque"
     {
         Tags
         {
-            "RenderPipeline" = "UniversalPipeline" "RenderType" = "Opaque" "Queue" = "Geometry"
+            "RenderPipeline" = "UniversalPipeline"
+            "RenderType" = "Opaque"
+            "Queue" = "Geometry"
         }
 
+            // ===================================================================
+            // 1. Main Forward Pass
+            // ===================================================================
         Pass
         {
             Name "ForwardLit"
@@ -165,7 +170,7 @@ Shader "Bill's Toon/Opaque"
                 o.normalWS = TransformObjectToWorldNormal(v.normalOS);
                 o.uv = TRANSFORM_TEX(v.uv, _BaseMap);
                 o.color = v.color;
-                o.screenPos = o.positionCS;
+                o.screenPos = ComputeScreenPos(o.positionCS);
 
                 #if defined(_NORMALMAP_ON)
                     o.tangentWS = TransformObjectToWorldDir(v.tangentOS.xyz);
@@ -221,8 +226,9 @@ Shader "Bill's Toon/Opaque"
             }
             ENDHLSL
         }
-
-        //
+            // ===================================================================
+            // SHADOW CASTER PASS – FIXED 2025 (Cast shadow chính xác)
+            // ===================================================================
         Pass
         {
             Name "ShadowCaster"
@@ -231,10 +237,7 @@ Shader "Bill's Toon/Opaque"
                 "LightMode" = "ShadowCaster"
             }
 
-            ZWrite On
-            ZTest LEqual
-            ColorMask 0
-            Cull [_CullMode]
+            ZWrite On ZTest LEqual Cull [_CullMode] ColorMask 0
 
             HLSLPROGRAM
             #pragma vertex ShadowVert
@@ -245,30 +248,425 @@ Shader "Bill's Toon/Opaque"
             #pragma shader_feature_local_fragment _MORPH_ON
             #pragma multi_compile_vertex _ _CASTING_PUNCTUAL_LIGHT_SHADOW
 
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Shadows.hlsl"
             #include "Includes/Toon/ToonUberCore.hlsl"
 
-            struct ShadowVaryings
+            float3 _LightDirection;
+            float3 _LightPosition;
+
+            struct Attributes
+            {
+                float4 positionOS : POSITION;
+                float3 normalOS : NORMAL;
+                float2 uv : TEXCOORD0;
+                float4 color : COLOR;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
+            };
+
+            struct Varyings
+            {
+                float4 positionCS : SV_POSITION;
+                float2 uv : TEXCOORD0;
+                UNITY_VERTEX_OUTPUT_STEREO
+            };
+
+            Varyings ShadowVert(Attributes input)
+            {
+                Varyings output;
+                UNITY_SETUP_INSTANCE_ID(input);
+                UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(output);
+
+                float3 positionOS = input.positionOS.xyz;
+                float3 normalOS = input.normalOS;
+
+                #if defined(_SURFACETYPE_FOLIAGE)
+                    ApplyWind(positionOS, input.color);
+                #endif
+
+                VertexPositionInputs vertexPosition = GetVertexPositionInputs(positionOS);
+                VertexNormalInputs vertexNormal = GetVertexNormalInputs(normalOS);
+
+                    // ===== BIAS CHUẨN URP 2024-2025 =====
+                float3 positionWS = vertexPosition.positionWS;
+                float3 normalWS = vertexNormal.normalWS;
+
+                float4 clipPos;
+                #if _CASTING_PUNCTUAL_LIGHT_SHADOW
+                    float3 lightDirWS = normalize(_LightPosition - positionWS);
+                #else
+                        float3 lightDirWS = _LightDirection;
+                #endif
+
+                    // Apply shadow bias
+                float depthBias = _ShadowBias.x;
+                float normalBias = _ShadowBias.y * saturate(dot(normalWS, lightDirWS));
+                positionWS += (normalWS * normalBias + lightDirWS * depthBias);
+
+                clipPos = TransformWorldToHClip(positionWS);
+
+                #if UNITY_REVERSED_Z
+                    clipPos.z = min(clipPos.z, clipPos.w * UNITY_NEAR_CLIP_VALUE);
+                #else
+                        clipPos.z = max(clipPos.z, clipPos.w * UNITY_NEAR_CLIP_VALUE);
+                #endif
+
+                output.positionCS = clipPos;
+                output.uv = TRANSFORM_TEX(input.uv, _BaseMap);
+                return output;
+            }
+
+            half4 ShadowFrag(Varyings input) : SV_Target
+            {
+                #if defined(_ALPHACLIP_ON)
+                    ApplyAlphaClip(input.uv);
+                #endif
+                return 0;
+            }
+            ENDHLSL
+        }
+
+            // ===================================================================
+            // 3. Depth Only
+            // ===================================================================
+        Pass
+        {
+            Name "DepthOnly"
+            Tags
+            {
+                "LightMode" = "DepthOnly"
+            }
+
+            ZWrite On ColorMask 0 Cull [_CullMode]
+
+            HLSLPROGRAM
+            #pragma vertex DepthVert
+            #pragma fragment DepthFrag
+            #pragma shader_feature_local_fragment _ALPHACLIP_ON
+            #pragma shader_feature_local _SURFACETYPE_FOLIAGE
+            #pragma shader_feature_local_fragment _MORPH_ON
+            #include "Includes/Toon/ToonUberCore.hlsl"
+
+            struct DepthVaryings
             {
                 float4 positionCS : SV_POSITION;
                 float2 uv : TEXCOORD0;
             };
 
-            ShadowVaryings ShadowVert(Attributes input)
+            DepthVaryings DepthVert(Attributes input)
             {
-                ShadowVaryings o;
-                float3 positionOS = input.positionOS.xyz;
+                DepthVaryings o;
+                float3 posOS = input.positionOS.xyz;
                 #if defined(_SURFACETYPE_FOLIAGE)
-                    ApplyWind(positionOS, input.color);
+                    ApplyWind(posOS, input.color);
                 #endif
-                o.positionCS = GetShadowCoord(GetVertexPositionInputs(positionOS));
+                VertexPositionInputs vertexInput = GetVertexPositionInputs(posOS);
+                o.positionCS = vertexInput.positionCS;
                 o.uv = TRANSFORM_TEX(input.uv, _BaseMap);
                 return o;
             }
 
-            half4 ShadowFrag(ShadowVaryings i) : SV_Target
+            half4 DepthFrag(DepthVaryings i) : SV_Target
             {
                 ApplyAlphaClip(i.uv);
                 return 0;
+            }
+            ENDHLSL
+        }
+
+            // ===================================================================
+            // 4. Depth Normals
+            // ===================================================================
+        Pass
+        {
+            Name "DepthNormals"
+            Tags
+            {
+                "LightMode" = "DepthNormals"
+            }
+
+            ZWrite On Cull [_CullMode]
+
+            HLSLPROGRAM
+            #pragma vertex DepthNormalsVert
+            #pragma fragment DepthNormalsFrag
+            #pragma shader_feature_local_fragment _NORMALMAP_ON
+            #pragma shader_feature_local_fragment _ALPHACLIP_ON
+            #pragma shader_feature_local _SURFACETYPE_FOLIAGE
+            #pragma shader_feature_local_fragment _MORPH_ON
+            #include "Includes/Toon/ToonUberCore.hlsl"
+
+            struct DepthNormalsVaryings
+            {
+                float4 positionCS : SV_POSITION;
+                float2 uv : TEXCOORD0;
+                float4 normalWS : TEXCOORD1;
+                #if defined(_NORMALMAP_ON)
+                    float4 tangentWS : TEXCOORD2;
+                    float4 bitangentWS : TEXCOORD3;
+                #endif
+            };
+
+            DepthNormalsVaryings DepthNormalsVert(Attributes input)
+            {
+                DepthNormalsVaryings o;
+                float3 posOS = input.positionOS.xyz;
+                #if defined(_SURFACETYPE_FOLIAGE)
+                    ApplyWind(posOS, input.color);
+                #endif
+
+                VertexPositionInputs posInput = GetVertexPositionInputs(posOS);
+                VertexNormalInputs normInput = GetVertexNormalInputs(input.normalOS, input.tangentOS);
+
+                o.positionCS = posInput.positionCS;
+                o.uv = TRANSFORM_TEX(input.uv, _BaseMap);
+                o.normalWS = float4(normInput.normalWS, 0);
+
+                #if defined(_NORMALMAP_ON)
+                    o.tangentWS = float4(normInput.tangentWS, 0);
+                    o.bitangentWS = float4(normInput.bitangentWS, 0);
+                #endif
+                return o;
+            }
+
+            half4 DepthNormalsFrag(DepthNormalsVaryings i, half facing : VFACE) : SV_Target
+            {
+                ApplyAlphaClip(i.uv);
+                float3 normalWS = normalize(i.normalWS.xyz) * sign(facing);
+                #if defined(_NORMALMAP_ON)
+                    normalWS = ApplyNormalMap(i.uv, normalWS, i.tangentWS.xyz, i.bitangentWS.xyz);
+                #endif
+                return half4(PackNormalOctRectEncode(TransformWorldToViewNormal(normalWS)), 0, 0);
+            }
+            ENDHLSL
+        }
+
+            // ===================================================================
+            // Motion Vectors – Bản fix 2025 (không dùng MotionVectorsCore nữa)
+            // ===================================================================
+        Pass
+        {
+            Name "MotionVectors"
+            Tags
+            {
+                "LightMode" = "MotionVectors"
+            }
+
+            ZWrite Off Cull [_CullMode]
+            ColorMask RG
+
+            HLSLPROGRAM
+            #pragma vertex Vert
+            #pragma fragment Frag
+            #pragma shader_feature_local_fragment _ALPHACLIP_ON
+            #pragma shader_feature_local _SURFACETYPE_FOLIAGE
+            #pragma shader_feature_local_fragment _MORPH_ON
+
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/MotionVectors.hlsl"
+            #include "Includes/Toon/ToonUberCore.hlsl"
+
+            VaryingsMotion Vert(Attributes input)
+            {
+                VaryingsMotion o;
+                UNITY_INITIALIZE_OUTPUT(VaryingsMotion, o);
+
+                float3 posOS = input.positionOS.xyz;
+                #if defined(_SURFACETYPE_FOLIAGE)
+                    ApplyWind(posOS, input.color);
+                #endif
+
+                VertexPositionInputs pos = GetVertexPositionInputs(posOS);
+                o.positionCS = pos.positionCS;
+                o.previousPositionCS = GetPreviousPositionCS(posOS);
+                o.uv = TRANSFORM_TEX(input.uv, _BaseMap);
+
+                return o;
+            }
+
+            half4 Frag(VaryingsMotion i) : SV_Target
+            {
+                ApplyAlphaClip(i.uv);
+                return MotionVectorFragment(i.positionCS, i.previousPositionCS);
+            }
+            ENDHLSL
+        }
+
+            // ===================================================================
+            // 6. GBuffer (Deferred Rendering)
+            // ===================================================================
+        Pass
+        {
+            Name "GBuffer"
+            Tags
+            {
+                "LightMode" = "UniversalGBuffer"
+            }
+
+            ZWrite [_ZWrite]
+            Cull [_CullMode]
+            Blend [_SrcBlend] [_DstBlend]
+
+            HLSLPROGRAM
+            #pragma vertex GBufferVert
+            #pragma fragment GBufferFrag
+            #pragma shader_feature_local_fragment _NORMALMAP_ON
+            #pragma shader_feature_local_fragment _ALPHACLIP_ON
+            #pragma shader_feature_local _SURFACETYPE_FOLIAGE
+            #pragma shader_feature_local_fragment _MORPH_ON
+            #pragma shader_feature_local_fragment _EMISSION_ON
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+            #include "Includes/Toon/ToonUberCore.hlsl"
+
+            struct GBufferVaryings
+            {
+                float4 positionCS : SV_POSITION;
+                float2 uv : TEXCOORD0;
+                float3 normalWS : TEXCOORD1;
+                float3 positionWS : TEXCOORD2;
+                #if defined(_NORMALMAP_ON)
+                    float4 tangentWS : TEXCOORD3;
+                    float4 bitangentWS : TEXCOORD4;
+                #endif
+            };
+
+            GBufferVaryings GBufferVert(Attributes input)
+            {
+                GBufferVaryings o;
+                float3 posOS = input.positionOS.xyz;
+                #if defined(_SURFACETYPE_FOLIAGE)
+                    ApplyWind(posOS, input.color);
+                #endif
+
+                VertexPositionInputs posInput = GetVertexPositionInputs(posOS);
+                VertexNormalInputs normInput = GetVertexNormalInputs(input.normalOS, input.tangentOS);
+
+                o.positionCS = posInput.positionCS;
+                o.positionWS = posInput.positionWS;
+                o.uv = TRANSFORM_TEX(input.uv, _BaseMap);
+                o.normalWS = normInput.normalWS;
+
+                #if defined(_NORMALMAP_ON)
+                    o.tangentWS.xyz = normInput.tangentWS;
+                    o.bitangentWS.xyz = normInput.bitangentWS;
+                #endif
+                return o;
+            }
+
+            GBufferOutput GBufferFrag(GBufferVaryings i, half facing : VFACE)
+            {
+                ApplyAlphaClip(i.uv);
+
+                float3 normalWS = normalize(i.normalWS) * sign(facing);
+                #if defined(_NORMALMAP_ON)
+                    normalWS = ApplyNormalMap(i.uv, normalWS, i.tangentWS.xyz, i.bitangentWS.xyz);
+                #endif
+
+                half4 albedo = GetAlbedoAndAlpha(i.uv);
+                half3 emission = ApplyEmission(0, i.uv);
+
+                GBufferOutput o;
+                o.GBuffer0 = half4(albedo.rgb * _BaseColor.rgb, 0);
+                o.GBuffer1 = half4(0, 0, 0, 0);
+                o.GBuffer2 = half4(normalWS * 0.5 + 0.5, 0);
+                o.GBuffer3 = half4(emission, 1);
+                return o;
+            }
+            ENDHLSL
+        }
+
+            // ===================================================================
+            // 7. Meta (Lightmap & Light Probe Baking)
+            // ===================================================================
+        Pass
+        {
+            Name "Meta"
+            Tags
+            {
+                "LightMode" = "Meta"
+            }
+
+            Cull Off
+
+            HLSLPROGRAM
+            #pragma vertex MetaVert
+            #pragma fragment MetaFrag
+            #pragma shader_feature_local_fragment _EMISSION_ON
+            #pragma shader_feature_local_fragment _MORPH_ON
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/MetaInput.hlsl"
+            #include "Includes/Toon/ToonUberCore.hlsl"
+
+            struct MetaVaryings
+            {
+                float4 positionCS : SV_POSITION;
+                float2 uv : TEXCOORD0;
+            };
+
+            MetaVaryings MetaVert(Attributes input)
+            {
+                MetaVaryings o;
+                o.positionCS = UnityMetaVertexPosition(input.positionOS.xyz, input.uv0, input.uv1);
+                o.uv = TRANSFORM_TEX(input.uv, _BaseMap);
+                return o;
+            }
+
+            half4 MetaFrag(MetaVaryings i) : SV_Target
+            {
+                UnityMetaInput meta;
+                UNITY_INITIALIZE_OUTPUT(UnityMetaInput, meta);
+
+                half4 albedo = GetAlbedoAndAlpha(i.uv);
+                meta.Albedo = albedo.rgb * _BaseColor.rgb;
+                meta.Emission = ApplyEmission(0, i.uv);
+
+                return UnityMetaFragment(meta);
+            }
+            ENDHLSL
+        }
+
+            // ===================================================================
+            // SceneSelection + ScenePicking – Bản inline, không cần file riêng
+            // ===================================================================
+        Pass
+        {
+            Name "SceneSelectionPass"
+            Tags
+            {
+                "LightMode" = "SceneSelectionPass"
+            }
+
+            Cull Off
+            ZWrite Off
+
+            HLSLPROGRAM
+            #pragma vertex Vert
+            #pragma fragment Frag
+
+            #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Version.hlsl"
+            #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Color.hlsl"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "Includes/Toon/ToonUberCore.hlsl"
+
+            struct AttributesLean
+            {
+                float4 positionOS : POSITION;
+                float2 uv : TEXCOORD0;
+                float4 color : COLOR;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
+            };
+
+            float4 Vert(AttributesLean input) : SV_POSITION
+            {
+                float3 posOS = input.positionOS.xyz;
+                #if defined(_SURFACETYPE_FOLIAGE)
+                    ApplyWind(posOS, input.color);
+                #endif
+                return TransformObjectToHClip(posOS);
+            }
+
+            half4 Frag() : SV_Target
+            {
+                return half4(1, 1, 1, 1); // Unity sẽ tự override màu highlight
             }
             ENDHLSL
         }

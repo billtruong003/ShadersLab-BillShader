@@ -1,69 +1,117 @@
 using UnityEngine;
 using System.Collections.Generic;
 using Sirenix.OdinInspector;
-using System.Linq;
 
 namespace Nebulanook.Player
 {
     [RequireComponent(typeof(Rigidbody), typeof(PlayerInputHandler))]
     public class PlayerMovement : MonoBehaviour
     {
-        [FoldoutGroup("Movement Settings")]
-        [SerializeField] private float walkSpeed = 5f;
-        [FoldoutGroup("Movement Settings")]
-        [SerializeField] private float sprintSpeed = 9f;
-        [FoldoutGroup("Movement Settings")]
-        [SerializeField] private float rotationSpeed = 20f;
+        // === DEPENDENCIES ===
+        private PlayerFXController fx => PlayerFXController.Instance;
+        [FoldoutGroup("Components")][SerializeField] private Rigidbody playerRigidbody;
+        [FoldoutGroup("Components")][SerializeField] private PlayerInputHandler playerInput;
+        [FoldoutGroup("Components")][SerializeField] private PlayerStamina playerStamina;
+        [FoldoutGroup("Components")][SerializeField] private Transform camTransform;
 
-        [FoldoutGroup("Dash Settings")]
-        [InfoBox("Dash Force sử dụng ForceMode.Impulse, cần giá trị lớn (vd: 700-1500) để có hiệu quả.")]
-        [SerializeField] private List<DashTier> dashTiers;
-        [FoldoutGroup("Dash Settings")]
-        [SerializeField] private float dashDuration = 0.3f;
-        [FoldoutGroup("Dash Settings")]
-        [SerializeField] private float dashSteeringSpeed = 8f; // Tốc độ bẻ lái khi đang húc
-        [FoldoutGroup("Dash Settings")]
-        [SerializeField] private float knockbackForce = 50f;
+        // === MOVEMENT SETTINGS ===
+        [FoldoutGroup("Movement")][SerializeField] private float walkSpeed = 5f;
+        [FoldoutGroup("Movement")][SerializeField] private float sprintSpeed = 9f;
+        [FoldoutGroup("Movement")][SerializeField] private float rotationSpeed = 20f;
 
-        [FoldoutGroup("Ground Check")]
-        [SerializeField] private Transform groundCheckTransform;
-        [FoldoutGroup("Ground Check")]
-        [SerializeField] private float groundCheckRadius = 0.2f;
-        [FoldoutGroup("Ground Check")]
-        [SerializeField] private LayerMask groundLayer;
+        // === DASH SETTINGS ===
+        [FoldoutGroup("Dash")]
+        [InfoBox("Dash Force sử dụng ForceMode.Impulse (700-1500+).")]
+        [SerializeField] private List<DashTier> dashTiers = new List<DashTier>();
+        [FoldoutGroup("Dash")][SerializeField] private float dashDuration = 0.3f;
+        [FoldoutGroup("Dash")][SerializeField] private float dashSteeringSpeed = 8f;
+        [FoldoutGroup("Dash")][SerializeField] private float knockbackForce = 50f;
+        [FoldoutGroup("Dash")][SerializeField][Range(0, 1)] private float minStaminaPercentToDash = 0.2f;
 
-        private Rigidbody playerRigidbody;
-        private PlayerInputHandler playerInput;
-        private PlayerStamina playerStamina;
-        private Transform mainCameraTransform;
+        // === GROUND CHECK ===
+        [FoldoutGroup("Ground Check")][SerializeField] private Transform groundCheckTransform;
+        [FoldoutGroup("Ground Check")][SerializeField] private float groundCheckRadius = 0.2f;
+        [FoldoutGroup("Ground Check")][SerializeField] private LayerMask groundLayer;
 
-        private float currentChargeTime;
-        private float dashTimer;
+        // === FX SETTINGS ===
+        [FoldoutGroup("FX")][SerializeField] private float dashImpactKnockbackFXDelay = 1.5f;
 
+        // === STATE VARIABLES ===
         public MovementState CurrentState { get; private set; } = MovementState.Idle;
         public bool IsGrounded { get; private set; }
         public float MaxSpeed => sprintSpeed;
 
+        private float currentChargeTime;
+        private float dashTimer;
+
+        // Input flags
+        private bool _dashInputDown, _dashInputHeld, _dashInputUp;
+
         private void Awake()
         {
-            playerRigidbody = GetComponent<Rigidbody>();
-            playerInput = GetComponent<PlayerInputHandler>();
-            playerStamina = GetComponentInChildren<PlayerStamina>();
-            mainCameraTransform = Camera.main.transform;
+            if (playerRigidbody == null) playerRigidbody = GetComponent<Rigidbody>();
+            if (playerInput == null) playerInput = GetComponent<PlayerInputHandler>();
+            if (playerStamina == null) playerStamina = GetComponentInChildren<PlayerStamina>();
+            if (camTransform == null) camTransform = Camera.main.transform;
         }
 
         private void Update()
         {
-            if (IsGrounded && CurrentState != MovementState.Dashing && CurrentState != MovementState.Knockback)
-            {
-                HandleDashInput();
-            }
+            ReadAndBufferInput();
+            HandleDashChargingInput();
         }
 
         private void FixedUpdate()
         {
             UpdateGroundStatus();
+            HandleStateUpdate();
+        }
 
+        private void ReadAndBufferInput()
+        {
+            _dashInputDown = playerInput.DashInputDown;
+            _dashInputHeld = playerInput.DashInputHeld;
+            _dashInputUp = playerInput.DashInputUp;
+        }
+
+        #region State Machine Core
+
+        private void TransitionToState(MovementState newState)
+        {
+            if (CurrentState == newState) return;
+
+            OnExitState(CurrentState);
+            CurrentState = newState;
+            OnEnterState(newState);
+        }
+
+        private void OnEnterState(MovementState state)
+        {
+            switch (state)
+            {
+                case MovementState.Sprinting:
+                    fx.Play(PlayerFXID.SprintTrail);
+                    fx.Stop(PlayerFXID.FootstepDust); // Đảm bảo tắt hiệu ứng đi bộ
+                    break;
+                case MovementState.Walking:
+                    fx.Play(PlayerFXID.FootstepDust);
+                    fx.Stop(PlayerFXID.SprintTrail); // Đảm bảo tắt hiệu ứng chạy nhanh
+                    break;
+                case MovementState.Charging:
+                    currentChargeTime = 0f;
+                    playerRigidbody.linearVelocity = Vector3.zero;
+                    fx.PlayOneShot(PlayerFXID.DashChargeStart);
+                    fx.Play(PlayerFXID.DashChargeLoop);
+                    break;
+                case MovementState.Dashing:
+                    dashTimer = dashDuration;
+                    fx.SetActive(PlayerFXID.DashTrail, true);
+                    break;
+            }
+        }
+
+        private void HandleStateUpdate()
+        {
             switch (CurrentState)
             {
                 case MovementState.Idle:
@@ -72,173 +120,190 @@ namespace Nebulanook.Player
                     HandleLocomotion();
                     HandleRotation();
                     break;
-
-                case MovementState.Charging:
-                    playerRigidbody.linearVelocity = Vector3.zero;
-                    break;
-
                 case MovementState.Dashing:
-                    HandleDashingState();
+                    HandleDashing();
                     break;
-
                 case MovementState.Knockback:
-                    if (IsGrounded && playerRigidbody.linearVelocity.magnitude < 1f)
-                    {
-                        CurrentState = MovementState.Idle;
-                    }
+                    if (IsGrounded && playerRigidbody.linearVelocity.sqrMagnitude < 1f)
+                        TransitionToState(MovementState.Idle);
                     break;
             }
         }
 
-        private void HandleDashingState()
+        private void OnExitState(MovementState state)
+        {
+            switch (state)
+            {
+                case MovementState.Sprinting:
+                    fx.Stop(PlayerFXID.SprintTrail);
+                    break;
+                case MovementState.Walking:
+                    fx.Stop(PlayerFXID.FootstepDust);
+                    break;
+                case MovementState.Charging:
+                    fx.Stop(PlayerFXID.DashChargeLoop);
+                    break;
+                case MovementState.Dashing:
+                    fx.SetActive(PlayerFXID.DashTrail, false);
+                    break;
+            }
+        }
+
+        #endregion
+
+        #region State Logic
+
+        private void HandleLocomotion()
+        {
+            Vector3 moveDir = CalculateMoveDirection();
+
+            if (moveDir.sqrMagnitude < 0.01f)
+            {
+                TransitionToState(MovementState.Idle);
+                playerRigidbody.linearVelocity = new Vector3(0f, playerRigidbody.linearVelocity.y, 0f);
+                return;
+            }
+
+            bool wantsSprint = playerInput.SprintInputHeld;
+            bool canSprint = wantsSprint && playerStamina.TryDrainStaminaForSprint(Time.fixedDeltaTime);
+
+            float targetSpeed = canSprint ? sprintSpeed : walkSpeed;
+            TransitionToState(canSprint ? MovementState.Sprinting : MovementState.Walking);
+
+            Vector3 velocity = moveDir * targetSpeed;
+            velocity.y = playerRigidbody.linearVelocity.y;
+            playerRigidbody.linearVelocity = velocity;
+        }
+
+        private void HandleRotation()
+        {
+            if (CurrentState == MovementState.Idle) return;
+            Vector3 lookDir = CalculateMoveDirection();
+            if (lookDir.sqrMagnitude < 0.01f) return;
+            Quaternion targetRot = Quaternion.LookRotation(lookDir);
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, rotationSpeed * Time.fixedDeltaTime);
+        }
+
+        private void HandleDashChargingInput()
+        {
+            bool canStartCharging = IsGrounded &&
+                                    CurrentState != MovementState.Charging &&
+                                    CurrentState != MovementState.Dashing &&
+                                    CurrentState != MovementState.Knockback &&
+                                    playerStamina.CurrentStamina > playerStamina.MaxStamina * minStaminaPercentToDash;
+
+            if (_dashInputDown && canStartCharging)
+            {
+                TransitionToState(MovementState.Charging);
+            }
+
+            if (CurrentState == MovementState.Charging)
+            {
+                currentChargeTime += Time.deltaTime;
+                if (_dashInputUp)
+                {
+                    ExecuteDash();
+                }
+            }
+        }
+
+        private void ExecuteDash()
+        {
+            DashTier tier = GetDashTierForCurrentCharge();
+
+            if (!playerStamina.TryConsumeStamina(tier.staminaCost))
+            {
+                fx.PlayOneShot(PlayerFXID.DashChargeEnd);
+                TransitionToState(MovementState.Idle);
+                return;
+            }
+
+            fx.PlayOneShot(PlayerFXID.DashExecute);
+
+            playerRigidbody.linearVelocity = Vector3.zero;
+            playerRigidbody.AddForce(transform.forward * tier.dashForce, ForceMode.Impulse);
+
+            TransitionToState(MovementState.Dashing);
+        }
+
+        private void HandleDashing()
         {
             dashTimer -= Time.fixedDeltaTime;
+            SteerWhileDashing();
 
-            SteerWhileDashing(); // <-- LOGIC BẺ LÁI MỚI
-
-            if (dashTimer <= 0)
+            if (dashTimer <= 0f)
             {
                 EndDash();
             }
         }
 
-        private void SteerWhileDashing()
-        {
-            Vector3 steeringDirection = CalculateMoveDirection();
-            if (steeringDirection.sqrMagnitude > 0.1f)
-            {
-                float currentDashSpeed = playerRigidbody.linearVelocity.magnitude;
-                Vector3 targetVelocity = steeringDirection * currentDashSpeed;
-
-                playerRigidbody.linearVelocity = Vector3.Lerp(
-                    playerRigidbody.linearVelocity,
-                    targetVelocity,
-                    dashSteeringSpeed * Time.fixedDeltaTime);
-
-                transform.rotation = Quaternion.LookRotation(playerRigidbody.linearVelocity.normalized);
-            }
-        }
-
         private void EndDash()
         {
+            fx.PlayOneShot(PlayerFXID.DashImpact);
+            fx.StopAndDeactivateAfterDelay(PlayerFXID.KnockbackHit, dashImpactKnockbackFXDelay);
             playerRigidbody.linearVelocity *= 0.1f;
             ApplyKnockback();
         }
+
+        private void ApplyKnockback()
+        {
+            playerRigidbody.AddForce(-transform.forward * knockbackForce, ForceMode.Impulse);
+            TransitionToState(MovementState.Knockback);
+        }
+
+        #endregion
+
+        #region Helper Methods
 
         private void UpdateGroundStatus()
         {
             IsGrounded = Physics.CheckSphere(groundCheckTransform.position, groundCheckRadius, groundLayer);
         }
 
-        private void HandleLocomotion()
-        {
-            Vector3 moveDirection = CalculateMoveDirection();
-
-            if (moveDirection.sqrMagnitude < 0.01f)
-            {
-                CurrentState = MovementState.Idle;
-                playerRigidbody.linearVelocity = new Vector3(0, playerRigidbody.linearVelocity.y, 0);
-                return;
-            }
-
-            // --- LOGIC SPRINT ĐÃ SỬA LẠI ---
-            bool isTryingToSprint = playerInput.SprintInputHeld;
-            float targetSpeed;
-
-            if (isTryingToSprint && playerStamina.TryDrainStaminaForSprint(Time.fixedDeltaTime))
-            {
-                // Chỉ chạy nếu trừ stamina thành công
-                targetSpeed = sprintSpeed;
-                CurrentState = MovementState.Sprinting;
-            }
-            else
-            {
-                // Nếu không, mặc định là đi bộ
-                targetSpeed = walkSpeed;
-                CurrentState = MovementState.Walking;
-            }
-
-            Vector3 targetVelocity = moveDirection * targetSpeed;
-            targetVelocity.y = playerRigidbody.linearVelocity.y;
-            playerRigidbody.linearVelocity = targetVelocity;
-        }
-
         private Vector3 CalculateMoveDirection()
         {
-            Vector3 cameraForward = mainCameraTransform.forward;
-            Vector3 cameraRight = mainCameraTransform.right;
-            cameraForward.y = 0;
-            cameraRight.y = 0;
-            return (cameraForward.normalized * playerInput.MoveInput.y + cameraRight.normalized * playerInput.MoveInput.x).normalized;
+            Vector3 camForward = camTransform.forward;
+            Vector3 camRight = camTransform.right;
+            camForward.y = 0f;
+            camRight.y = 0f;
+            return (camForward.normalized * playerInput.MoveInput.y + camRight.normalized * playerInput.MoveInput.x).normalized;
         }
 
-        private void HandleRotation()
-        {
-            if (CurrentState == MovementState.Sprinting || CurrentState == MovementState.Walking)
-            {
-                Vector3 lookDirection = CalculateMoveDirection();
-                if (lookDirection == Vector3.zero) return;
-                Quaternion targetRotation = Quaternion.LookRotation(lookDirection);
-                transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.fixedDeltaTime);
-            }
-        }
-
-        private void HandleDashInput()
-        {
-            if (playerInput.DashInputDown && CurrentState != MovementState.Charging)
-            {
-                CurrentState = MovementState.Charging;
-                currentChargeTime = 0f;
-            }
-
-            if (playerInput.DashInputHeld && CurrentState == MovementState.Charging)
-            {
-                currentChargeTime += Time.deltaTime;
-            }
-
-            if (playerInput.DashInputUp && CurrentState == MovementState.Charging)
-            {
-                ExecuteDash();
-            }
-        }
-
-        private void ExecuteDash()
-        {
-            DashTier selectedTier = GetDashTierForCurrentCharge();
-            if (!playerStamina.TryConsumeStamina(selectedTier.staminaCost))
-            {
-                CurrentState = MovementState.Idle;
-                return;
-            }
-
-            CurrentState = MovementState.Dashing;
-            dashTimer = dashDuration;
-
-            playerRigidbody.linearVelocity = Vector3.zero;
-            playerRigidbody.AddForce(transform.forward * selectedTier.dashForce, ForceMode.Impulse);
-        }
-
-        private void ApplyKnockback()
-        {
-            CurrentState = MovementState.Knockback;
-            playerRigidbody.AddForce(-transform.forward * knockbackForce, ForceMode.Impulse);
-        }
-
-        // --- LOGIC CHỌN NẤC DASH ĐÃ SỬA LẠI ---
         private DashTier GetDashTierForCurrentCharge()
         {
-            // Duyệt ngược từ nấc mạnh nhất về nấc yếu nhất
             for (int i = dashTiers.Count - 1; i >= 0; i--)
             {
-                // Nếu đủ thời gian charge cho nấc này, chọn nó ngay lập tức
                 if (currentChargeTime >= dashTiers[i].chargeTimeRequired)
-                {
                     return dashTiers[i];
-                }
             }
-            // Nếu không đủ cho bất kỳ nấc nào (trường hợp hiếm), trả về nấc yếu nhất
-            return dashTiers[0];
+            return dashTiers.Count > 0 ? dashTiers[0] : default;
         }
+
+        public void ResetMovement()
+        {
+            TransitionToState(MovementState.Idle);
+            playerRigidbody.linearVelocity = Vector3.zero;
+            fx.ClearAll();
+        }
+
+        private void SteerWhileDashing()
+        {
+            Vector3 dir = CalculateMoveDirection();
+            if (dir.sqrMagnitude > 0.1f)
+            {
+                float currentSpeed = playerRigidbody.linearVelocity.magnitude;
+                Vector3 targetVel = dir * currentSpeed;
+
+                playerRigidbody.linearVelocity = Vector3.Lerp(
+                    playerRigidbody.linearVelocity,
+                    targetVel,
+                    dashSteeringSpeed * Time.fixedDeltaTime);
+
+                transform.rotation = Quaternion.LookRotation(playerRigidbody.linearVelocity.normalized);
+            }
+        }
+
+        #endregion
 
         private void OnDrawGizmosSelected()
         {
@@ -247,24 +312,11 @@ namespace Nebulanook.Player
                 Gizmos.color = IsGrounded ? Color.green : Color.red;
                 Gizmos.DrawWireSphere(groundCheckTransform.position, groundCheckRadius);
             }
-
-            if (CurrentState == MovementState.Charging)
-            {
-                Gizmos.color = Color.yellow;
-                Gizmos.DrawRay(transform.position, -transform.forward * (knockbackForce / 10f));
-            }
         }
     }
 
-    public enum MovementState
-    {
-        Idle,
-        Walking,
-        Sprinting,
-        Charging,
-        Dashing,
-        Knockback
-    }
+    // Enums and Structs remain the same
+    public enum MovementState { Idle, Walking, Sprinting, Charging, Dashing, Knockback }
 
     [System.Serializable]
     public struct DashTier

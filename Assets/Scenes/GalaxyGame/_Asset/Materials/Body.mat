@@ -66,7 +66,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _DitherPatternTex:
-        m_Texture: {fileID: 0}
+        m_Texture: {fileID: 2800000, guid: e6a467a4c71a24898ac842ed6f9a1d52, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _EmissionMap:
@@ -74,6 +74,10 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MainTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Matcap:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
@@ -139,20 +143,20 @@ Material:
     - _DetailAlbedoMapScale: 1
     - _DetailNormalMapScale: 1
     - _DitherEdgeWidth: 0.1
-    - _DitherFadeEnd: 1
-    - _DitherFadeStart: 2
+    - _DitherFadeEnd: 0
+    - _DitherFadeStart: 0.5
     - _DitherFadeToggle: 0
-    - _DitherScale: 50
+    - _DitherScale: 75
     - _DstBlend: 0
     - _DstBlendAlpha: 0
     - _EmissionMode: 0
     - _EnvironmentReflections: 1
     - _FakeLightMode: 1
     - _ForceFakeLight: 0
-    - _FresnelOutlinePower: 5
+    - _FresnelOutlinePower: 100
     - _FresnelOutlineSharpness: 2
     - _FresnelOutlineToggle: 0
-    - _FresnelOutlineWidth: 0.1
+    - _FresnelOutlineWidth: 1
     - _GlintScale: 20
     - _GlintSpeed: 2
     - _GlintThreshold: 0.95
@@ -163,6 +167,9 @@ Material:
     - _HighlightOffset: 0.9
     - _IndirectSpecular: 0
     - _IndirectSpecularIntensity: 1
+    - _MatcapBlendMode: 0
+    - _MatcapStrength: 1
+    - _MatcapToggle: 0
     - _MaxBrightness: 1.5
     - _Metallic: 0
     - _MidtoneThreshold: 0.8
@@ -171,9 +178,12 @@ Material:
     - _MorphToggle: 0
     - _OcclusionStrength: 1
     - _Offset: 0.8
+    - _OutlineExtrusionToggle: 0
+    - _OutlineWidth: 0.02
     - _Parallax: 0.02
     - _QueueOffset: 0
     - _ReceiveShadows: 1
+    - _ReceiveShadowsOff: 0
     - _RenderMode: 0
     - _RimPower: 6
     - _ShadowThreshold: 0.4
@@ -200,7 +210,7 @@ Material:
     - _BaseColor: {r: 0.20754719, g: 0.20754719, b: 0.20754719, a: 1}
     - _BlingColor: {r: 1, g: 1, b: 1, a: 1}
     - _Color: {r: 0.8000706, g: 0.37618566, b: 0.63277036, a: 1}
-    - _DitherEdgeColor: {r: 0.5, g: 0.8, b: 1, a: 1}
+    - _DitherEdgeColor: {r: 0, g: 0.7490197, b: 0.7490197, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 0}
     - _FakeLightColor: {r: 0.8, g: 0.8, b: 0.8, a: 1}
     - _FakeLightDirection: {r: 0.5, g: 0.5, b: -0.5, a: 0}
@@ -208,6 +218,7 @@ Material:
     - _GlintColor: {r: 1, g: 1, b: 0.5, a: 1}
     - _HiColor: {r: 1, g: 1, b: 1, a: 1}
     - _MidtoneColor: {r: 0.6698113, g: 0.6698113, b: 0.6698113, a: 1}
+    - _OutlineColor: {r: 0, g: 0, b: 0, a: 1}
     - _RimColor: {r: 1, g: 0.3, b: 0.3, a: 1}
     - _ShadowTint: {r: 0.24528301, g: 0.24528301, b: 0.24528301, a: 1}
     - _SpecColor: {r: 0.2, g: 0.2, b: 0.2, a: 1}

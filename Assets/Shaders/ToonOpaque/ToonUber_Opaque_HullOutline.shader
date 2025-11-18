@@ -11,14 +11,14 @@ Shader "Bill's Toon/Opaque (Hull Outline)"
         [Toggle] _ZWrite ("ZWrite", Float) = 1
 
         [Header(Base Properties)]
-        _BaseMap("Albedo A (RGB) Alpha (A)", 2D) = "white" {}
+        _BaseMap("Albedo A (RGB) Alpha (A)", 2D) = "white"{}
         [HDR] _BaseColor("Base Color", Color) = (1, 1, 1, 1)
-        [NoScaleOffset] _BumpMap("Normal Map", 2D) = "bump" {}
+        [NoScaleOffset] _BumpMap("Normal Map", 2D) = "bump"{}
         _BumpScale("Normal Intensity", Range(0.0, 2.0)) = 1.0
 
         [Header(Texture Morph)]
         [Toggle(_MORPH_ON)] _MorphToggle("Enable Morph", Float) = 0
-        [NoScaleOffset] _BaseMapB("Albedo B (RGB) Alpha (A)", 2D) = "white" {}
+        [NoScaleOffset] _BaseMapB("Albedo B (RGB) Alpha (A)", 2D) = "white"{}
         _Morph("Morph (0=A, 1=B)", Range(0, 1)) = 0
 
         [Header(Alpha Clipping)]
@@ -27,11 +27,11 @@ Shader "Bill's Toon/Opaque (Hull Outline)"
         [Header(Emission)]
         [Toggle(_EMISSION_ON)] _EmissionMode("Enable Emission", Float) = 0
         [HDR] _EmissionColor("Emission Color", Color) = (0, 0, 0, 1)
-        _EmissionMap("Emission Map", 2D) = "black" {}
+        _EmissionMap("Emission Map", 2D) = "black"{}
 
         [Header(Advanced Dither Fade)]
         [Toggle(_DITHERFADE_ON)] _DitherFadeToggle("Enable Dither Fade", Float) = 0
-        _DitherPatternTex("Dither Pattern (Bayer/Blue Noise)", 2D) = "white" {}
+        _DitherPatternTex("Dither Pattern (Bayer/Blue Noise)", 2D) = "white"{}
         _DitherScale("Dither Pattern Scale", Range(1.0, 200.0)) = 50.0
         _DitherFadeStart("Dither Fade Start (Far)", Float) = 2.0
         _DitherFadeEnd("Dither Fade End (Near)", Float) = 1.0
@@ -66,7 +66,7 @@ Shader "Bill's Toon/Opaque (Hull Outline)"
         _AddLightRampSmoothness("Ramp Smoothness", Range(0.001, 0.5)) = 0.1
 
         [Header(Stylized Metal)]
-        _Ramp("Toon Ramp (RGB)", 2D) = "white" {}
+        _Ramp("Toon Ramp (RGB)", 2D) = "white"{}
         [HDR] _Brightness("Specular Brightness", Range(0, 2)) = 1.3
         _Offset("Specular Size", Range(0, 1)) = 0.8
         [HDR] _SpecuColor("Specular Color", Color) = (0.8, 0.45, 0.2, 1)
@@ -83,7 +83,7 @@ Shader "Bill's Toon/Opaque (Hull Outline)"
         _TranslucencyStrength("Translucency Strength", Range(0, 5)) = 1.0
 
         [Header(Bling Effect)]
-        [NoScaleOffset] _NoiseTex("Noise Texture (Grayscale, Tiling)", 2D) = "gray" {}
+        [NoScaleOffset] _NoiseTex("Noise Texture (Grayscale, Tiling)", 2D) = "gray"{}
         [Toggle(_BLING_WORLDSPACE_ON)] _BlingWorldSpace("Use World Space Bling", Float) = 0
         [HDR] _BlingColor("Bling Color", Color) = (1, 1, 1, 1)
         _BlingIntensity("Bling Intensity", Range(0, 10)) = 2.0
@@ -269,6 +269,9 @@ Shader "Bill's Toon/Opaque (Hull Outline)"
             ENDHLSL
         }
 
+            // ===================================================================
+            // SHADOW CASTER PASS – FIXED 2025 (Cast shadow chính xác)
+            // ===================================================================
         Pass
         {
             Name "ShadowCaster"
@@ -280,39 +283,98 @@ Shader "Bill's Toon/Opaque (Hull Outline)"
             ZWrite On
             ZTest LEqual
             ColorMask 0
-            Cull Back
+            Cull [_CullMode]
 
             HLSLPROGRAM
-            #pragma vertex ShadowVert
-            #pragma fragment ShadowFrag
+            #pragma only_renderers gles gles3 glcore d3d11
+            #pragma target 3.0
+
             #pragma shader_feature_local_fragment _ALPHACLIP_ON
             #pragma shader_feature_local _SURFACETYPE_FOLIAGE
             #pragma shader_feature_local_fragment _MORPH_ON
+
             #pragma multi_compile_vertex _ _CASTING_PUNCTUAL_LIGHT_SHADOW
 
+            #pragma vertex ShadowPassVertex
+            #pragma fragment ShadowPassFragment
+
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Shadows.hlsl"
             #include "Includes/Toon/ToonUberCore.hlsl"
 
-            struct ShadowVaryings
+                // --- Vertex ---
+            float3 _LightDirection;
+            float3 _LightPosition;
+
+            struct Attributes
+            {
+                float4 positionOS : POSITION;
+                float3 normalOS : NORMAL;
+                float2 uv : TEXCOORD0;
+                float4 color : COLOR;
+                #if defined(_NORMALMAP_ON)
+                    float4 tangentOS : TANGENT;
+                #endif
+                UNITY_VERTEX_INPUT_INSTANCE_ID
+            };
+
+            struct VaryingsShadow
             {
                 float4 positionCS : SV_POSITION;
                 float2 uv : TEXCOORD0;
+                UNITY_VERTEX_OUTPUT_STEREO
             };
 
-            ShadowVaryings ShadowVert(Attributes input)
+            VaryingsShadow ShadowPassVertex(Attributes input)
             {
-                ShadowVaryings o;
+                VaryingsShadow output;
+                UNITY_SETUP_INSTANCE_ID(input);
+                UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(output);
+
                 float3 positionOS = input.positionOS.xyz;
+                float3 normalOS = input.normalOS;
+
+                    // Áp dụng wind/foliage trước khi tính shadow
                 #if defined(_SURFACETYPE_FOLIAGE)
                     ApplyWind(positionOS, input.color);
                 #endif
-                o.positionCS = GetShadowCoord(GetVertexPositionInputs(positionOS));
-                o.uv = TRANSFORM_TEX(input.uv, _BaseMap);
-                return o;
+
+                VertexPositionInputs vertexInput = GetVertexPositionInputs(positionOS);
+                VertexNormalInputs normalInput = GetVertexNormalInputs(normalOS);
+
+                    // Hướng bóng chuẩn URP
+                float3 positionWS = vertexInput.positionWS;
+                float4 positionCS;
+
+                #if _CASTING_PUNCTUAL_LIGHT_SHADOW
+                    float3 lightDirectionWS = normalize(_LightPosition - positionWS);
+                #else
+                        float3 lightDirectionWS = _LightDirection;
+                #endif
+
+                    // Bias chuẩn URP cho toon (tránh shadow acne)
+                float3 normalWS = normalInput.normalWS;
+                positionWS += normalWS * _ShadowBias.xxx; // depth bias
+                positionCS = TransformWorldToHClip(positionWS);
+
+                #if UNITY_REVERSED_Z
+                    positionCS.z = min(positionCS.z, positionCS.w * UNITY_NEAR_CLIP_VALUE);
+                #else
+                        positionCS.z = max(positionCS.z, positionWS.z * UNITY_NEAR_CLIP_VALUE);
+                #endif
+
+                output.positionCS = positionCS;
+                output.uv = TRANSFORM_TEX(input.uv, _BaseMap);
+
+                return output;
             }
 
-            half4 ShadowFrag(ShadowVaryings i) : SV_Target
+                // --- Fragment ---
+            half4 ShadowPassFragment(VaryingsShadow input) : SV_Target
             {
-                ApplyAlphaClip(i.uv);
+                #if defined(_ALPHACLIP_ON)
+                    ApplyAlphaClip(input.uv);
+                #endif
                 return 0;
             }
             ENDHLSL

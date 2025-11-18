@@ -1,6 +1,7 @@
 using UnityEngine;
 using Sirenix.OdinInspector;
 using System.Collections;
+using Shmackle.Utils.CoroutinesTimer; // Thêm using để sử dụng tiện ích
 
 namespace Nebulanook.Player
 {
@@ -19,7 +20,9 @@ namespace Nebulanook.Player
 
         private BillProgress staminaBarUI;
         private Coroutine regenCoroutine;
-        private WaitForSeconds regenTick = new WaitForSeconds(0.1f);
+
+        // Đã loại bỏ biến "regenTick" để sử dụng CoroutineTimeUtils
+        private const float REGEN_TICK_INTERVAL = 0.1f;
 
         public float CurrentStamina => currentStamina;
         public float MaxStamina => maxStamina;
@@ -41,31 +44,36 @@ namespace Nebulanook.Player
             currentStamina -= amount;
             UpdateStaminaUI();
 
-            if (regenCoroutine != null)
-            {
-                StopCoroutine(regenCoroutine);
-            }
-            regenCoroutine = StartCoroutine(RegenerateStamina());
+            StopAndRestartRegeneration();
             return true;
         }
 
-        // --- THAY ĐỔI Ở ĐÂY ---
-        // Chuyển từ void sang bool để trả về kết quả thành công/thất bại
         public bool TryDrainStaminaForSprint(float deltaTime)
         {
             return TryConsumeStamina(sprintStaminaDrainRate * deltaTime);
         }
 
+        private void StopAndRestartRegeneration()
+        {
+            if (regenCoroutine != null)
+            {
+                StopCoroutine(regenCoroutine);
+            }
+            regenCoroutine = StartCoroutine(RegenerateStamina());
+        }
+
         private IEnumerator RegenerateStamina()
         {
-            yield return new WaitForSeconds(regenDelay);
+            // Thay thế new WaitForSeconds() bằng CoroutineTimeUtils
+            yield return CoroutineTimeUtils.GetWaitForSeconds(regenDelay);
 
             while (currentStamina < maxStamina)
             {
-                currentStamina += regenRate * 0.1f;
+                currentStamina += regenRate * REGEN_TICK_INTERVAL;
                 currentStamina = Mathf.Min(currentStamina, maxStamina);
                 UpdateStaminaUI();
-                yield return regenTick;
+
+                yield return CoroutineTimeUtils.GetWaitForSeconds(REGEN_TICK_INTERVAL);
             }
             regenCoroutine = null;
         }

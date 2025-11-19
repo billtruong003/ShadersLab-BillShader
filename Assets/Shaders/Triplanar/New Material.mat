@@ -30,7 +30,7 @@ Material:
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
-  m_CustomRenderQueue: 2999
+  m_CustomRenderQueue: -1
   stringTagMap: {}
   disabledShaderPasses:
   - MOTIONVECTORS
@@ -55,6 +55,10 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _BottomNormalMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _BottomTex:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
@@ -98,12 +102,20 @@ Material:
         m_Texture: {fileID: 2800000, guid: 73587d786d6ab43e083b4870d7cd1d6c, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _GrassNormalMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - _GrassOcclusion:
         m_Texture: {fileID: 2800000, guid: 64f8f8e3dbadc40458efa028e972e7e4, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MainTex:
-        m_Texture: {fileID: 0}
+        m_Texture: {fileID: 2800000, guid: d2ea375d999129248b22385b81b7d705, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MainTexSide:
+        m_Texture: {fileID: 2800000, guid: b47b1de5e61af3943a2d7d52c2496462, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MetallicGlossMap:
@@ -111,11 +123,31 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _Noise:
-        m_Texture: {fileID: 2800000, guid: e1a7a54272ead804e8aaac2691122101, type: 3}
+        m_Texture: {fileID: 2800000, guid: d0df5d95a5257094aaa78c67d95bf77c, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _NoiseTex:
         m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Normal:
+        m_Texture: {fileID: 2800000, guid: 56f1619329eb866408de84c6f9074726, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _NormalMapBottom:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _NormalMapSide:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _NormalMapTop:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _NormalT:
+        m_Texture: {fileID: 2800000, guid: 5389efab315830746a45ff6c32057cb0, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _OcclusionMap:
@@ -127,7 +159,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _Ramp:
-        m_Texture: {fileID: 0}
+        m_Texture: {fileID: 2800000, guid: 63dabf038bafcdd4c9fd22dcdf057dd9, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _RockAlbedo:
@@ -142,8 +174,16 @@ Material:
         m_Texture: {fileID: 2800000, guid: 3d17d983a79854333bbb7a67fb6ef9bc, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _RockNormalMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - _RockOcclusion:
         m_Texture: {fileID: 2800000, guid: 5206448eddbf0407c8a4f914b707bf03, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _SideAlbedo:
+        m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _SideBaseMap:
@@ -167,6 +207,10 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _ToonRamp:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _TopAlbedo:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
@@ -216,7 +260,7 @@ Material:
     - _AdditionalLightsRampOffset: -0.17
     - _AlphaClip: 0
     - _AlphaToMask: 0
-    - _AmbientStrength: 0.682
+    - _AmbientStrength: 0
     - _BakeProjection: 1
     - _Blend: 0
     - _BlendContrast: 10
@@ -235,7 +279,7 @@ Material:
     - _DetailNormalMapScale: 1
     - _DstBlend: 0
     - _DstBlendAlpha: 0
-    - _EdgeWidth: 0.264
+    - _EdgeWidth: 0.544
     - _EnableBottomNormal: 0
     - _EnableTopNormal: 0
     - _EnvironmentReflections: 1
@@ -243,23 +287,32 @@ Material:
     - _Glossiness: 0
     - _GlossyReflections: 0
     - _GrassBlendSharpness: 5.36
-    - _GrassPower: 3
+    - _GrassBlendSoftness: 0.1
+    - _GrassNormalStrength: 1
+    - _GrassPower: 4.29
+    - _GrassScale: 1
+    - _GrassSmoothness: 0.1
     - _GrassSpread: 4.85
     - _GrassTiling: 0.1
     - _LayerBlendContrast: 5
     - _Metallic: 0
-    - _NoiseScale: 0.02
+    - _NoiseScale: 0.01
     - _NoiseStrength: 0.1
+    - _NormalStrength: 1
     - _OcclusionStrength: 1
     - _Parallax: 0.005
     - _ProjectionSpace: 1
     - _QueueOffset: 0
     - _ReceiveShadows: 1
-    - _RimPower: 0.5
+    - _RimPower: 1.33
+    - _RockNormalStrength: 1
+    - _RockScale: 1
+    - _RockSmoothness: 0.2
     - _RockTiling: 0.1
+    - _Scale: 0.2
     - _ShadowThreshold: 0.5
     - _Shininess: 32
-    - _SideScale: 0.1
+    - _SideScale: 0.05
     - _Smoothness: 0
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
@@ -269,12 +322,13 @@ Material:
     - _SrcBlend: 1
     - _SrcBlendAlpha: 1
     - _Surface: 0
+    - _TextureScale: 1
     - _Tiling: 5.33
     - _TopLayerBlendSharpness: 8.47
     - _TopNormalScale: 0.06
     - _TopScale: 0.5
     - _TopSmoothness: 0.5
-    - _TopSpread: 1.357
+    - _TopSpread: 1.706
     - _TriplanarBlend: 19.5
     - _TriplanarBlendSharpness: 10.65
     - _TriplanarScale: 10
@@ -283,19 +337,23 @@ Material:
     - _XRMotionVectorsPass: 1
     - _ZWrite: 1
     m_Colors:
+    - _AmbientColor: {r: 0.13831697, g: 0.04387683, b: 0.5471698, a: 1}
     - _BakedPosition: {r: 0, g: -21, b: 0, a: 0}
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _BottomBaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _BottomColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
     - _BottomEmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
-    - _EdgeColor: {r: 1, g: 1, b: 1, a: 1}
+    - _EdgeColor: {r: 0.3584906, g: 0.3584906, b: 0.3584906, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
-    - _RimColorSide: {r: 1, g: 0.7727201, b: 0.7216981, a: 1}
-    - _RimColorTop: {r: 1.603092, g: 1.603092, b: 1.603092, a: 1}
+    - _RimColor: {r: 0.066037714, g: 0.066037714, b: 0.066037714, a: 1}
+    - _RimColor2: {r: 0.13207549, g: 0.13207549, b: 0.13207549, a: 1}
+    - _RimColorSide: {r: 0.5, g: 0.38636005, b: 0.36084905, a: 1}
+    - _RimColorTop: {r: 0.37450978, g: 0.37450978, b: 0.37450978, a: 1}
     - _ShadowColor: {r: 0.1, g: 0.1, b: 0.2, a: 1}
     - _SpecColor: {r: 1, g: 1, b: 1, a: 1}
     - _SpecularColor: {r: 1, g: 1, b: 1, a: 1}
+    - _Tint: {r: 1, g: 0.7877358, b: 0.7877358, a: 1}
     - _TopBaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _TopColor: {r: 1, g: 1, b: 1, a: 1}
     - _TopEmissionColor: {r: 1, g: 1, b: 1, a: 1}

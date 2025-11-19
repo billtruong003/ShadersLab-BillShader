@@ -6,6 +6,15 @@ using System.Linq;
 
 public class VAT_BakerEditorWindow : EditorWindow
 {
+    private struct RendererInfo
+    {
+        public Renderer renderer;
+        public Mesh sharedMesh;
+        public bool isSkinned;
+
+        public bool IsValid() => renderer != null && sharedMesh != null;
+    }
+
     private List<GameObject> _sourceObjects = new List<GameObject>();
     private Vector2 _scrollPosition;
     private const int FRAMERATE_OVERRIDE = 30;
@@ -103,7 +112,6 @@ public class VAT_BakerEditorWindow : EditorWindow
         string outputPath = EditorUtility.OpenFolderPanel("Select Output Folder for Baked Assets", "Assets", "");
         if (string.IsNullOrEmpty(outputPath)) return;
 
-        // Chuyển đổi đường dẫn tuyệt đối thành đường dẫn tương đối trong project
         string projectRelativePath = "Assets" + outputPath.Substring(Application.dataPath.Length);
 
         int bakedCount = 0;
@@ -134,21 +142,22 @@ public class VAT_BakerEditorWindow : EditorWindow
 
     private bool BakeSingleObject(GameObject sourceObject, string directory)
     {
-        if (!IsSourceValid(sourceObject))
+        var (isValid, rendererInfo) = IsSourceValid(sourceObject);
+        if (!isValid)
         {
-            Debug.LogWarning($"Skipping '{sourceObject.name}': Source is not valid. Check SkinnedMeshRenderer and Animator clips.", sourceObject);
+            Debug.LogWarning($"Skipping '{sourceObject.name}': Source is not valid. Check for a Renderer (Skinned or Mesh), Animator, and valid clips.", sourceObject);
             return false;
         }
 
-        string baseName = sourceObject.name;
         var tempInstance = Instantiate(sourceObject);
+        // Đặt lại transform của đối tượng gốc để việc bake vào local space được nhất quán
         tempInstance.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
         tempInstance.transform.localScale = Vector3.one;
 
         try
         {
-            var sourceSkinnedRenderer = tempInstance.GetComponentInChildren<SkinnedMeshRenderer>();
-            var animationClips = tempInstance.GetComponentInChildren<Animator>().runtimeAnimatorController.animationClips.Where(c => !c.legacy && c.length > 0).Distinct().ToArray();
+            var animationClips = tempInstance.GetComponentInChildren<Animator>().runtimeAnimatorController.animationClips
+                .Where(c => !c.legacy && c.length > 0).Distinct().ToArray();
 
             if (animationClips.Length == 0)
             {
@@ -156,15 +165,14 @@ public class VAT_BakerEditorWindow : EditorWindow
                 return false;
             }
 
-            var totalAnimationBounds = CalculateTotalLocalSpaceBounds(tempInstance, animationClips);
-            var (positionTexture, clipInfos) = BakeAnimationsToTexture(tempInstance, animationClips, totalAnimationBounds);
+            var totalAnimationBounds = CalculateTotalLocalSpaceBounds(tempInstance, animationClips, rendererInfo);
+            var (positionTexture, clipInfos) = BakeAnimationsToTexture(tempInstance, animationClips, rendererInfo, totalAnimationBounds);
 
-            var originalMesh = sourceObject.GetComponentInChildren<SkinnedMeshRenderer>().sharedMesh;
-            var bakedMesh = CreateMeshWithVertexIdUVs(originalMesh, totalAnimationBounds, baseName);
-            var animationData = CreateAnimationDataAsset(bakedMesh, positionTexture, totalAnimationBounds, clipInfos, baseName);
-            var material = CreateOptimizedMaterial(baseName);
+            var bakedMesh = CreateMeshWithVertexIdUVs(rendererInfo.sharedMesh, totalAnimationBounds, sourceObject.name);
+            var animationData = CreateAnimationDataAsset(bakedMesh, positionTexture, totalAnimationBounds, clipInfos, sourceObject.name);
+            var material = CreateOptimizedMaterial(sourceObject.name);
 
-            SaveAllAssets(directory, baseName, animationData, bakedMesh, positionTexture, material);
+            SaveAllAssets(directory, sourceObject.name, animationData, bakedMesh, positionTexture, material);
         }
         finally
         {
@@ -173,22 +181,35 @@ public class VAT_BakerEditorWindow : EditorWindow
         return true;
     }
 
-    private bool IsSourceValid(GameObject sourceObject)
+    private (bool, RendererInfo) IsSourceValid(GameObject sourceObject)
     {
-        if (sourceObject.GetComponentInChildren<SkinnedMeshRenderer>() == null) return false;
-
         var animator = sourceObject.GetComponentInChildren<Animator>();
-        if (animator == null || animator.runtimeAnimatorController == null) return false;
+        if (animator == null || animator.runtimeAnimatorController == null) return (false, default);
 
-        return true;
+        var skinnedRenderer = sourceObject.GetComponentInChildren<SkinnedMeshRenderer>();
+        if (skinnedRenderer != null && skinnedRenderer.sharedMesh != null)
+        {
+            return (true, new RendererInfo { renderer = skinnedRenderer, sharedMesh = skinnedRenderer.sharedMesh, isSkinned = true });
+        }
+
+        var meshRenderer = sourceObject.GetComponentInChildren<MeshRenderer>();
+        var meshFilter = sourceObject.GetComponentInChildren<MeshFilter>();
+        if (meshRenderer != null && meshFilter != null && meshFilter.sharedMesh != null)
+        {
+            return (true, new RendererInfo { renderer = meshRenderer, sharedMesh = meshFilter.sharedMesh, isSkinned = false });
+        }
+
+        return (false, default);
     }
 
-    private Bounds CalculateTotalLocalSpaceBounds(GameObject instance, AnimationClip[] clips)
+    private Bounds CalculateTotalLocalSpaceBounds(GameObject instance, AnimationClip[] clips, RendererInfo rendererInfo)
     {
-        var renderer = instance.GetComponentInChildren<SkinnedMeshRenderer>();
         var totalBounds = new Bounds();
-        var tempBakedMesh = new Mesh();
+        var tempMesh = new Mesh();
         bool first = true;
+
+        // Lấy renderer tương ứng từ trong instance, thay vì từ source object
+        var instanceRenderer = instance.GetComponentInChildren<Renderer>();
 
         foreach (var clip in clips)
         {
@@ -196,57 +217,88 @@ public class VAT_BakerEditorWindow : EditorWindow
             for (float time = 0; time <= clip.length; time += timeStep)
             {
                 clip.SampleAnimation(instance, time);
-                renderer.BakeMesh(tempBakedMesh, true);
-                var meshBounds = tempBakedMesh.bounds;
 
+                var vertices = new Vector3[rendererInfo.sharedMesh.vertexCount];
+                if (rendererInfo.isSkinned)
+                {
+                    (instanceRenderer as SkinnedMeshRenderer).BakeMesh(tempMesh, true);
+                    vertices = tempMesh.vertices;
+                }
+                else
+                {
+                    // Lấy ma trận biến đổi của renderer (có thể là con hoặc là chính instance)
+                    var matrix = instanceRenderer.transform.localToWorldMatrix;
+                    var sourceVertices = rendererInfo.sharedMesh.vertices;
+                    for (int i = 0; i < sourceVertices.Length; i++)
+                    {
+                        vertices[i] = matrix.MultiplyPoint3x4(sourceVertices[i]);
+                    }
+                }
+
+                var currentBounds = GeometryUtility.CalculateBounds(vertices, Matrix4x4.identity);
                 if (first)
                 {
-                    totalBounds = meshBounds;
+                    totalBounds = currentBounds;
                     first = false;
                 }
                 else
                 {
-                    totalBounds.Encapsulate(meshBounds);
+                    totalBounds.Encapsulate(currentBounds);
                 }
             }
         }
         totalBounds.Expand(0.01f);
-        DestroyImmediate(tempBakedMesh);
+        DestroyImmediate(tempMesh);
         return totalBounds;
     }
 
-    private (Texture2D, List<VAT_AnimationData.ClipInfo>) BakeAnimationsToTexture(GameObject instance, AnimationClip[] clips, Bounds totalBounds)
+    private (Texture2D, List<VAT_AnimationData.ClipInfo>) BakeAnimationsToTexture(GameObject instance, AnimationClip[] clips, RendererInfo rendererInfo, Bounds totalBounds)
     {
         var clipInfos = new List<VAT_AnimationData.ClipInfo>();
-        var renderer = instance.GetComponentInChildren<SkinnedMeshRenderer>();
-        int vertexCount = renderer.sharedMesh.vertexCount;
-        var tempBakedMesh = new Mesh();
+        var vertexCount = rendererInfo.sharedMesh.vertexCount;
+        var tempMesh = new Mesh();
         var allFramesData = new List<Color[]>();
         int totalFrames = 0;
+
+        var instanceRenderer = instance.GetComponentInChildren<Renderer>();
 
         foreach (var clip in clips)
         {
             int frameCount = Mathf.Max(2, Mathf.CeilToInt(clip.length * FRAMERATE_OVERRIDE));
             clipInfos.Add(new VAT_AnimationData.ClipInfo { name = clip.name, startFrame = totalFrames, frameCount = frameCount, duration = clip.length, wrapMode = clip.wrapMode });
 
+            var frameVertices = new Vector3[vertexCount];
             for (int frame = 0; frame < frameCount; frame++)
             {
                 float sampleTime = (frame / (float)(frameCount - 1)) * clip.length;
                 clip.SampleAnimation(instance, sampleTime);
-                renderer.BakeMesh(tempBakedMesh, true);
+
+                if (rendererInfo.isSkinned)
+                {
+                    (instanceRenderer as SkinnedMeshRenderer).BakeMesh(tempMesh, true);
+                    frameVertices = tempMesh.vertices;
+                }
+                else
+                {
+                    var matrix = instanceRenderer.transform.localToWorldMatrix;
+                    var sourceVertices = rendererInfo.sharedMesh.vertices;
+                    for (int i = 0; i < sourceVertices.Length; i++)
+                    {
+                        frameVertices[i] = matrix.MultiplyPoint3x4(sourceVertices[i]);
+                    }
+                }
 
                 var frameColors = new Color[vertexCount];
-                var vertices = tempBakedMesh.vertices;
                 for (int i = 0; i < vertexCount; i++)
                 {
-                    frameColors[i] = EncodeLocalPositionToColor(vertices[i], totalBounds);
+                    frameColors[i] = EncodeLocalPositionToColor(frameVertices[i], totalBounds);
                 }
                 allFramesData.Add(frameColors);
             }
             totalFrames += frameCount;
         }
 
-        DestroyImmediate(tempBakedMesh);
+        DestroyImmediate(tempMesh);
 
         var positionTexture = new Texture2D(vertexCount, totalFrames, TextureFormat.RGBAHalf, false)
         {

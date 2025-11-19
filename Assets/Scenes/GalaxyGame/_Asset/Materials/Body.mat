@@ -120,7 +120,7 @@ Material:
     m_Ints: []
     m_Floats:
     - _AddLightMidtoneThreshold: 0.6
-    - _AddLightRampSmoothness: 0.1
+    - _AddLightRampSmoothness: 0.001
     - _AddLightShadowThreshold: 0.1
     - _AddPrecomputedVelocity: 0
     - _AlphaClip: 0
@@ -172,7 +172,7 @@ Material:
     - _MatcapToggle: 0
     - _MaxBrightness: 1.5
     - _Metallic: 0
-    - _MidtoneThreshold: 0.8
+    - _MidtoneThreshold: 0.7
     - _Mode: 0
     - _Morph: 0
     - _MorphToggle: 0
@@ -186,7 +186,7 @@ Material:
     - _ReceiveShadowsOff: 0
     - _RenderMode: 0
     - _RimPower: 6
-    - _ShadowThreshold: 0.4
+    - _ShadowThreshold: 0.43
     - _Smoothness: 0.5
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
@@ -205,15 +205,15 @@ Material:
     - _ZWrite: 1
     m_Colors:
     - _AddLightMidtoneColor: {r: 0.7, g: 0.7, b: 0.7, a: 1}
-    - _AddLightShadowTint: {r: 0, g: 0, b: 0, a: 1}
+    - _AddLightShadowTint: {r: 0.3584906, g: 0.3584906, b: 0.3584906, a: 1}
     - _AmbientColor: {r: 0.5, g: 0.5, b: 0.5, a: 0}
-    - _BaseColor: {r: 0.20754719, g: 0.20754719, b: 0.20754719, a: 1}
+    - _BaseColor: {r: 1, g: 0.5706718, b: 0, a: 1}
     - _BlingColor: {r: 1, g: 1, b: 1, a: 1}
     - _Color: {r: 0.8000706, g: 0.37618566, b: 0.63277036, a: 1}
     - _DitherEdgeColor: {r: 0, g: 0.7490197, b: 0.7490197, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 0}
-    - _FakeLightColor: {r: 0.8, g: 0.8, b: 0.8, a: 1}
-    - _FakeLightDirection: {r: 0.5, g: 0.5, b: -0.5, a: 0}
+    - _FakeLightColor: {r: 1, g: 1, b: 1, a: 1}
+    - _FakeLightDirection: {r: 50, g: 50, b: -50, a: 0}
     - _FresnelOutlineColor: {r: 0, g: 0, b: 0, a: 1}
     - _GlintColor: {r: 1, g: 1, b: 0.5, a: 1}
     - _HiColor: {r: 1, g: 1, b: 1, a: 1}

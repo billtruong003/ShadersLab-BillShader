@@ -14,33 +14,27 @@ public class ToonOpaqueHullOutlineShaderGUI : ToonOpaqueShaderBase
         outlineColorProp = FindProperty("_OutlineColor", properties);
         outlineWidthProp = FindProperty("_OutlineWidth", properties);
         outlineScaleWithDistanceProp = FindProperty("_OutlineScaleWithDistance", properties);
-        distanceFadeStartProp = FindProperty("_DistanceFadeStart", properties);
-        distanceFadeEndProp = FindProperty("_DistanceFadeEnd", properties);
+        distanceFadeStartProp = FindProperty("_OutlineDistanceFadeStart", properties);
+        distanceFadeEndProp = FindProperty("_OutlineDistanceFadeEnd", properties);
     }
 
     protected override void DrawWorkflowSettings()
     {
         EditorGUILayout.BeginVertical("box");
         EditorGUILayout.LabelField("Workflow", EditorStyles.boldLabel);
-        EditorGUILayout.HelpBox("Select a Surface Type to unlock its specific settings. This shader variant includes an Inverted Hull outline.", MessageType.Info);
-
         DrawSurfaceTypeSelector();
+        EditorGUILayout.Space();
 
         EditorGUILayout.LabelField("Outline Mode", "Inverted Hull");
         if (GUILayout.Button("Remove Outline (Switch to Standard Opaque)"))
         {
-            if (EditorUtility.DisplayDialog("Switch Shader?", "This will switch to the standard Opaque shader and remove the outline. Are you sure?", "Yes", "No"))
-            {
-                SwitchShader("Bill's Toon/Opaque");
-            }
+            SwitchShader("Bill's Toon/Opaque - Full URP Compatible");
         }
         EditorGUILayout.EndVertical();
     }
 
     protected override void DrawMainProperties()
     {
-        base.DrawMainProperties();
-
         DrawFoldout("Inverted Hull Outline", ref showHullOutlineSettings, () =>
         {
             materialEditor.ShaderProperty(outlineColorProp, "Color");
@@ -53,6 +47,8 @@ public class ToonOpaqueHullOutlineShaderGUI : ToonOpaqueShaderBase
             materialEditor.ShaderProperty(distanceFadeEndProp, "Fade End");
             EditorGUI.indentLevel--;
         });
+
+        base.DrawMainProperties();
     }
 
     protected override void ApplyKeywords()

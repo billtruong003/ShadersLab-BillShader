@@ -40,26 +40,21 @@ CBUFFER_START(UnityPerMaterial)
     float4 _BaseColor;
     float  _BumpScale;
     float  _Cutoff;
-
     float4 _EmissionColor;
-    
     float4 _FakeLightColor;
     float3 _FakeLightDirection;
     float  _MaxBrightness;
-
     float4 _ShadowTint;
     float4 _MidtoneColor;
     float  _ShadowThreshold;
     float  _MidtoneThreshold;
     float  _ToonRampSmoothness;
     float4 _AmbientColor;
-
     float4 _AddLightShadowTint;
     float4 _AddLightMidtoneColor;
     float  _AddLightShadowThreshold;
     float  _AddLightMidtoneThreshold;
     float  _AddLightRampSmoothness;
-
     float  _Brightness;
     float  _Offset;
     float  _HighlightOffset;
@@ -67,45 +62,43 @@ CBUFFER_START(UnityPerMaterial)
     float4 _SpecuColor;
     float4 _HiColor;
     float4 _RimColor;
-
-    float  _WindFrequency;
-    float  _WindAmplitude;
-    float3 _WindDirection;
     float3 _TranslucencyColor;
     float  _TranslucencyStrength;
-
     float4 _BlingColor;
     float  _BlingIntensity;
     float  _BlingScale;
     float  _BlingSpeed;
     float  _BlingThreshold;
     float  _BlingFresnelPower;
-    
     float4 _FresnelOutlineColor;
     float  _FresnelOutlineWidth;
     float  _FresnelOutlinePower;
     float  _FresnelOutlineSharpness;
-
     float4 _GlintColor;
     float  _GlintScale;
     float  _GlintSpeed;
     float  _GlintThreshold;
-    
     float  _DitherFadeStart;
     float  _DitherFadeEnd;
     float  _DitherScale;
     float4 _DitherEdgeColor;
     float  _DitherEdgeWidth;
-
     float _IndirectSpecularIntensity;
-
     float _Morph;
+    
+    float  _WindSpeed;
+    float  _WindAmplitude;
+    float3 _WindDirection;
+    float  _WindNoiseScale;
+    float  _WindFadeStart;
+    float  _WindFadeEnd;
 
-    float _DistanceFadeStart;
-    float _DistanceFadeEnd;
-    float _OutlineWidth;
-    float4 _OutlineColor;
-
+    float  _MaskDivisions;
+    float  _MaskBlend;
+    half4  _MaskColor0,  _MaskColor1,  _MaskColor2,  _MaskColor3;
+    half4  _MaskColor4,  _MaskColor5,  _MaskColor6,  _MaskColor7;
+    half4  _MaskColor8,  _MaskColor9,  _MaskColor10, _MaskColor11;
+    half4  _MaskColor12, _MaskColor13, _MaskColor14, _MaskColor15;
 CBUFFER_END
 
 TEXTURE2D(_BaseMap);        SAMPLER(sampler_BaseMap);
@@ -115,6 +108,8 @@ TEXTURE2D(_EmissionMap);    SAMPLER(sampler_EmissionMap);
 TEXTURE2D(_Ramp);           SAMPLER(sampler_Ramp);
 TEXTURE2D(_DitherPatternTex); SAMPLER(sampler_DitherPatternTex);
 TEXTURE2D(_NoiseTex);       SAMPLER(sampler_NoiseTex); 
+TEXTURE2D(_WindNoiseTex);   SAMPLER(sampler_WindNoiseTex);
+TEXTURE2D(_MaskTexture);    SAMPLER(sampler_MaskTexture);
 
 #include "Includes/Toon/ToonUber_Functions.hlsl"
 
@@ -153,20 +148,14 @@ half3 ApplyDitherFade(float4 screenPos)
 {
     #if defined(_DITHERFADE_ON)
         float2 perspectiveCorrectedScreenPos = screenPos.xy / screenPos.w;
-        
         float distance = screenPos.w;
         float fadeRange = max(0.001, _DitherFadeStart - _DitherFadeEnd);
         float fadeThreshold = saturate((distance - _DitherFadeEnd) / fadeRange);
-
         float2 ditherUV = perspectiveCorrectedScreenPos * _ScreenParams.xy / _DitherScale;
         float noise = SAMPLE_TEXTURE2D(_DitherPatternTex, sampler_DitherPatternTex, ditherUV).r;
-
         float clipValue = fadeThreshold - noise;
         clip(clipValue);
-        
-        float edgeFactor = smoothstep(0, _DitherEdgeWidth, clipValue);
-        edgeFactor = 1.0 - edgeFactor;
-        
+        float edgeFactor = 1.0 - smoothstep(0, _DitherEdgeWidth, clipValue);
         return edgeFactor * _DitherEdgeColor.rgb * _DitherEdgeColor.a;
     #endif
     return 0.0;
@@ -199,18 +188,35 @@ half3 ApplyEmission(half3 surfaceColor, float2 uv)
     return surfaceColor;
 }
 
+half3 ApplyTextureMask(half3 surfaceColor, float2 uv)
+{
+    #if defined(_TEXTUREMASK_ON)
+        float2 cellCoords = floor(uv * _MaskDivisions);
+        int cellIndex = int(cellCoords.y * _MaskDivisions + cellCoords.x);
+
+        half4 colors[16] = {
+            _MaskColor0,  _MaskColor1,  _MaskColor2,  _MaskColor3,
+            _MaskColor4,  _MaskColor5,  _MaskColor6,  _MaskColor7,
+            _MaskColor8,  _MaskColor9,  _MaskColor10, _MaskColor11,
+            _MaskColor12, _MaskColor13, _MaskColor14, _MaskColor15
+        };
+
+        half4 maskColor = colors[cellIndex];
+        half3 tintedColor = surfaceColor * maskColor.rgb;
+        surfaceColor = lerp(surfaceColor, tintedColor, maskColor.a * _MaskBlend);
+    #endif
+    return surfaceColor;
+}
+
 half3 ApplyFresnelOutline(half3 surfaceColor, float3 normalWS, float3 viewDir, float3 worldPos)
 {
     #if defined(_OUTLINEMODE_FRESNEL)
         float fresnelDot = dot(normalWS, viewDir);
         float fresnelTerm = 1.0 - saturate(fresnelDot);
         float fresnelPower = MU_FastPow(fresnelTerm, _FresnelOutlinePower);
-        
         float screenSpaceDerivative = fwidth(fresnelPower);
         float edgeWidth = screenSpaceDerivative * _FresnelOutlineSharpness;
-        
         float outlineFactor = smoothstep(1.0 - _FresnelOutlineWidth - edgeWidth, 1.0 - _FresnelOutlineWidth, fresnelPower);
-        
         half3 finalOutlineColor = _FresnelOutlineColor.rgb;
 
         #if defined(_OUTLINEGLINT_ON)
@@ -245,11 +251,9 @@ Light GetEffectiveMainLight(float3 positionWS)
 
 float3 CalculateBlingLighting(float3 baseColor, float3 normalWS, float3 worldPos, Light mainLight, float3 viewDirWS, float4 positionCS)
 {
-    // --- Phần tính toán màu sắc cơ bản vẫn giữ nguyên ---
     float3 baseLighting = CalculateToonLighting(normalWS, worldPos, mainLight);
     float3 shadedColor = baseColor * baseLighting;
 
-    // --- Logic tạo nhiễu để lấp lánh vẫn giữ nguyên ---
     float2 noiseUV;
     #if defined(_BLING_WORLDSPACE_ON)
         noiseUV = worldPos.xy * _BlingScale * 0.1h;

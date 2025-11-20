@@ -17,7 +17,6 @@ public class ToonOpaqueShaderGUI : ToonOpaqueShaderBase
         fresnelOutlineWidthProp = FindProperty("_FresnelOutlineWidth", properties);
         fresnelOutlinePowerProp = FindProperty("_FresnelOutlinePower", properties);
         fresnelOutlineSharpnessProp = FindProperty("_FresnelOutlineSharpness", properties);
-
         glintToggleProp = FindProperty("_GlintToggle", properties);
         glintColorProp = FindProperty("_GlintColor", properties);
         glintScaleProp = FindProperty("_GlintScale", properties);
@@ -29,17 +28,13 @@ public class ToonOpaqueShaderGUI : ToonOpaqueShaderBase
     {
         EditorGUILayout.BeginVertical("box");
         EditorGUILayout.LabelField("Workflow", EditorStyles.boldLabel);
-        EditorGUILayout.HelpBox("Select a Surface Type to unlock its specific settings. Use the buttons below to manage outlines.", MessageType.Info);
-
         DrawSurfaceTypeSelector();
+        EditorGUILayout.Space();
 
-        EditorGUILayout.LabelField("Outline Mode", "None / Fresnel");
+        EditorGUILayout.LabelField("Outline Mode", "Fresnel (Default)");
         if (GUILayout.Button("Add Inverted Hull Outline (Switch Shader)"))
         {
-            if (EditorUtility.DisplayDialog("Switch Shader?", "This will switch to the 'Opaque (Hull Outline)' shader. Are you sure?", "Yes", "No"))
-            {
-                SwitchShader("Bill's Toon/Opaque (Hull Outline)");
-            }
+            SwitchShader("Bill's Toon/Opaque (Hull Outline)");
         }
         EditorGUILayout.EndVertical();
     }

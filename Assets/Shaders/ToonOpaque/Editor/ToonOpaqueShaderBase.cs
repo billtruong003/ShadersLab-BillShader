@@ -2,17 +2,16 @@ using UnityEngine;
 using UnityEditor;
 using System;
 using UnityEngine.Rendering;
-using System.Linq;
 
 public abstract class ToonOpaqueShaderBase : ShaderGUI
 {
     protected MaterialEditor materialEditor;
     protected MaterialProperty[] properties;
-    protected Material firstMaterial;
     protected Material[] materials;
 
     private static bool showRenderStates = true;
     private static bool showBaseSettings = true;
+    private static bool showTextureMaskSettings = true;
     private static bool showDitherFadeSettings = true;
     private static bool showLightingSettings = true;
     private static bool showIndirectLightingSettings = true;
@@ -28,16 +27,17 @@ public abstract class ToonOpaqueShaderBase : ShaderGUI
     protected MaterialProperty addLightShadowTintProp, addLightMidtoneColorProp, addLightShadowThresholdProp, addLightMidtoneThresholdProp, addLightRampSmoothnessProp;
     protected MaterialProperty indirectSpecularToggleProp, indirectSpecularIntensityProp;
     protected MaterialProperty rampProp, brightnessProp, offsetProp, specuColorProp, highlightOffsetProp, hiColorProp, rimColorProp, rimPowerProp;
-    protected MaterialProperty windFrequencyProp, windAmplitudeProp, windDirectionProp, translucencyColorProp, translucencyStrengthProp;
+    protected MaterialProperty windNoiseTexProp, windSpeedProp, windAmplitudeProp, windNoiseScaleProp, windDirectionProp, windFadeStartProp, windFadeEndProp, translucencyColorProp, translucencyStrengthProp;
     protected MaterialProperty noiseTexProp, blingWorldSpaceProp, blingColorProp, blingIntensityProp, blingScaleProp, blingSpeedProp, blingFresnelPowerProp, blingThresholdProp;
     protected MaterialProperty morphToggleProp, baseMapBProp, morphProp;
+    protected MaterialProperty textureMaskToggleProp, maskTextureProp, maskDivisionsProp, maskBlendProp;
+    protected MaterialProperty[] maskColorProps = new MaterialProperty[16];
 
     public override void OnGUI(MaterialEditor editor, MaterialProperty[] props)
     {
         materialEditor = editor;
         properties = props;
         materials = Array.ConvertAll(editor.targets, item => (Material)item);
-        firstMaterial = materials[0];
 
         if (headerStyle == null)
         {
@@ -65,17 +65,14 @@ public abstract class ToonOpaqueShaderBase : ShaderGUI
         srcBlendProp = FindProperty("_SrcBlend", properties);
         dstBlendProp = FindProperty("_DstBlend", properties);
         zWriteProp = FindProperty("_ZWrite", properties);
-
         baseMapProp = FindProperty("_BaseMap", properties);
         baseColorProp = FindProperty("_BaseColor", properties);
         bumpMapProp = FindProperty("_BumpMap", properties);
         bumpScaleProp = FindProperty("_BumpScale", properties);
-
         cutoffProp = FindProperty("_Cutoff", properties);
         emissionModeProp = FindProperty("_EmissionMode", properties);
         emissionColorProp = FindProperty("_EmissionColor", properties);
         emissionMapProp = FindProperty("_EmissionMap", properties);
-
         ditherFadeToggleProp = FindProperty("_DitherFadeToggle", properties);
         ditherPatternTexProp = FindProperty("_DitherPatternTex", properties);
         ditherScaleProp = FindProperty("_DitherScale", properties);
@@ -83,7 +80,6 @@ public abstract class ToonOpaqueShaderBase : ShaderGUI
         ditherFadeEndProp = FindProperty("_DitherFadeEnd", properties);
         ditherEdgeColorProp = FindProperty("_DitherEdgeColor", properties);
         ditherEdgeWidthProp = FindProperty("_DitherEdgeWidth", properties);
-
         cullModeProp = FindProperty("_CullMode", properties, false);
         forceFakeLightProp = FindProperty("_ForceFakeLight", properties);
         fakeLightModeProp = FindProperty("_FakeLightMode", properties);
@@ -91,23 +87,19 @@ public abstract class ToonOpaqueShaderBase : ShaderGUI
         fakeLightDirectionProp = FindProperty("_FakeLightDirection", properties);
         ambientColorProp = FindProperty("_AmbientColor", properties);
         maxBrightnessProp = FindProperty("_MaxBrightness", properties);
-
         toonStyleProp = FindProperty("_ToonStyle", properties);
         shadowThresholdProp = FindProperty("_ShadowThreshold", properties);
         midtoneThresholdProp = FindProperty("_MidtoneThreshold", properties);
         toonRampSmoothnessProp = FindProperty("_ToonRampSmoothness", properties);
         shadowTintProp = FindProperty("_ShadowTint", properties);
         midtoneColorProp = FindProperty("_MidtoneColor", properties);
-
         addLightShadowTintProp = FindProperty("_AddLightShadowTint", properties);
         addLightMidtoneColorProp = FindProperty("_AddLightMidtoneColor", properties);
         addLightShadowThresholdProp = FindProperty("_AddLightShadowThreshold", properties);
         addLightMidtoneThresholdProp = FindProperty("_AddLightMidtoneThreshold", properties);
         addLightRampSmoothnessProp = FindProperty("_AddLightRampSmoothness", properties);
-
         indirectSpecularToggleProp = FindProperty("_IndirectSpecular", properties);
         indirectSpecularIntensityProp = FindProperty("_IndirectSpecularIntensity", properties);
-
         rampProp = FindProperty("_Ramp", properties);
         brightnessProp = FindProperty("_Brightness", properties);
         offsetProp = FindProperty("_Offset", properties);
@@ -116,13 +108,15 @@ public abstract class ToonOpaqueShaderBase : ShaderGUI
         hiColorProp = FindProperty("_HiColor", properties);
         rimColorProp = FindProperty("_RimColor", properties);
         rimPowerProp = FindProperty("_RimPower", properties);
-
-        windFrequencyProp = FindProperty("_WindFrequency", properties);
+        windNoiseTexProp = FindProperty("_WindNoiseTex", properties);
+        windSpeedProp = FindProperty("_WindSpeed", properties);
         windAmplitudeProp = FindProperty("_WindAmplitude", properties);
+        windNoiseScaleProp = FindProperty("_WindNoiseScale", properties);
         windDirectionProp = FindProperty("_WindDirection", properties);
+        windFadeStartProp = FindProperty("_WindFadeStart", properties);
+        windFadeEndProp = FindProperty("_WindFadeEnd", properties);
         translucencyColorProp = FindProperty("_TranslucencyColor", properties);
         translucencyStrengthProp = FindProperty("_TranslucencyStrength", properties);
-
         noiseTexProp = FindProperty("_NoiseTex", properties);
         blingWorldSpaceProp = FindProperty("_BlingWorldSpace", properties);
         blingColorProp = FindProperty("_BlingColor", properties);
@@ -131,10 +125,17 @@ public abstract class ToonOpaqueShaderBase : ShaderGUI
         blingSpeedProp = FindProperty("_BlingSpeed", properties);
         blingFresnelPowerProp = FindProperty("_BlingFresnelPower", properties);
         blingThresholdProp = FindProperty("_BlingThreshold", properties);
-
         morphToggleProp = FindProperty("_MorphToggle", properties, false);
         baseMapBProp = FindProperty("_BaseMapB", properties, false);
         morphProp = FindProperty("_Morph", properties, false);
+        textureMaskToggleProp = FindProperty("_TextureMaskToggle", properties);
+        maskTextureProp = FindProperty("_MaskTexture", properties, false);
+        maskDivisionsProp = FindProperty("_MaskDivisions", properties);
+        maskBlendProp = FindProperty("_MaskBlend", properties);
+        for (int i = 0; i < 16; i++)
+        {
+            maskColorProps[i] = FindProperty("_MaskColor" + i, properties, false);
+        }
     }
 
     private void DrawGUI()
@@ -151,6 +152,7 @@ public abstract class ToonOpaqueShaderBase : ShaderGUI
     {
         DrawRenderStates();
         DrawBaseProperties();
+        ToonOpaqueDrawerUtils.DrawTextureMaskSettings(materialEditor, textureMaskToggleProp, maskDivisionsProp, maskBlendProp, maskColorProps, ref showTextureMaskSettings);
         DrawDitherFade();
         DrawLighting();
         DrawIndirectLighting();
@@ -172,10 +174,10 @@ public abstract class ToonOpaqueShaderBase : ShaderGUI
 
         SetKeyword("_NORMALMAP_ON", bumpMapProp.textureValue != null);
         SetKeyword("_EMISSION_ON", emissionModeProp.floatValue > 0.5f);
+        SetKeyword("_TEXTUREMASK_ON", textureMaskToggleProp.floatValue > 0.5f);
 
         bool isBlingActive = surface == ToonOpaqueDrawerUtils.SurfaceType.Bling;
         SetKeyword("_BLING_WORLDSPACE_ON", isBlingActive && blingWorldSpaceProp.floatValue > 0.5f);
-
         SetKeyword("_DITHERFADE_ON", ditherFadeToggleProp.floatValue > 0.5f);
         SetKeyword("_INDIRECTSPECULAR_ON", indirectSpecularToggleProp.floatValue > 0.5f);
 
@@ -282,7 +284,6 @@ public abstract class ToonOpaqueShaderBase : ShaderGUI
         {
             DrawPropertyGroup(ditherFadeToggleProp, "Enable Dither Fade", () =>
             {
-                EditorGUILayout.HelpBox("Fades the object based on camera distance using a screen-space dither pattern.", MessageType.Info);
                 materialEditor.TexturePropertySingleLine(new GUIContent(ditherPatternTexProp.displayName), ditherPatternTexProp);
                 materialEditor.ShaderProperty(ditherScaleProp, "Pattern Scale");
                 EditorGUILayout.Space();
@@ -320,7 +321,6 @@ public abstract class ToonOpaqueShaderBase : ShaderGUI
 
             EditorGUILayout.Space();
             materialEditor.ColorProperty(ambientColorProp, "Ambient Color");
-            EditorGUILayout.HelpBox("Use the Alpha channel to blend between Scene Ambient (A=0) and this custom color (A=1).", MessageType.Info);
             materialEditor.ShaderProperty(maxBrightnessProp, "Max Brightness");
 
             EditorGUILayout.Space();
@@ -339,10 +339,8 @@ public abstract class ToonOpaqueShaderBase : ShaderGUI
     {
         DrawFoldout("Indirect Lighting", ref showIndirectLightingSettings, () =>
         {
-            EditorGUILayout.HelpBox("Diffuse GI is handled automatically. Shader will use Adaptive Probe Volumes if enabled in the URP Asset, otherwise it will fall back to Light Probes.", MessageType.Info);
             DrawPropertyGroup(indirectSpecularToggleProp, "Enable Environment Reflections", () =>
             {
-                EditorGUILayout.HelpBox("Samples Reflection Probes or Skybox for specular reflections. Disabled for Metallic/Bling.", MessageType.Info);
                 materialEditor.ShaderProperty(indirectSpecularIntensityProp, "Intensity");
             });
         });
@@ -350,11 +348,7 @@ public abstract class ToonOpaqueShaderBase : ShaderGUI
 
     private void DrawSurfaceTypeSpecificProperties()
     {
-        if (surfaceTypeProp.hasMixedValue)
-        {
-            EditorGUILayout.HelpBox("Editing of surface-specific properties is disabled because materials with different Surface Types are selected.", MessageType.Warning);
-            return;
-        }
+        if (surfaceTypeProp.hasMixedValue) return;
 
         var surface = (ToonOpaqueDrawerUtils.SurfaceType)surfaceTypeProp.floatValue;
         switch (surface)
@@ -366,7 +360,7 @@ public abstract class ToonOpaqueShaderBase : ShaderGUI
                 ToonOpaqueDrawerUtils.DrawMetallicSettings(materialEditor, rampProp, brightnessProp, offsetProp, specuColorProp, highlightOffsetProp, hiColorProp, rimColorProp, rimPowerProp);
                 break;
             case ToonOpaqueDrawerUtils.SurfaceType.Foliage:
-                ToonOpaqueDrawerUtils.DrawFoliageSettings(materialEditor, windFrequencyProp, windAmplitudeProp, windDirectionProp, translucencyColorProp, translucencyStrengthProp);
+                ToonOpaqueDrawerUtils.DrawFoliageSettings(materialEditor, windNoiseTexProp, windSpeedProp, windAmplitudeProp, windNoiseScaleProp, windDirectionProp, windFadeStartProp, windFadeEndProp, translucencyColorProp, translucencyStrengthProp);
                 break;
             case ToonOpaqueDrawerUtils.SurfaceType.Bling:
                 ToonOpaqueDrawerUtils.DrawBlingSettings(materialEditor, noiseTexProp, blingWorldSpaceProp, blingColorProp, blingIntensityProp, blingScaleProp, blingSpeedProp, blingFresnelPowerProp, blingThresholdProp);
@@ -432,10 +426,7 @@ public abstract class ToonOpaqueShaderBase : ShaderGUI
     protected void DrawPropertyGroup(MaterialProperty toggleProp, string title, Action contents)
     {
         materialEditor.ShaderProperty(toggleProp, title);
-
-        bool isGroupEnabled = toggleProp.floatValue > 0.5f || toggleProp.hasMixedValue;
-
-        if (isGroupEnabled)
+        if (toggleProp.floatValue > 0.5f || toggleProp.hasMixedValue)
         {
             EditorGUI.indentLevel++;
             contents();
@@ -464,10 +455,6 @@ public abstract class ToonOpaqueShaderBase : ShaderGUI
         if (newShader != null)
         {
             materialEditor.SetShader(newShader, true);
-        }
-        else
-        {
-            Debug.LogWarning($"Could not find shader '{newShaderName}'");
         }
     }
 

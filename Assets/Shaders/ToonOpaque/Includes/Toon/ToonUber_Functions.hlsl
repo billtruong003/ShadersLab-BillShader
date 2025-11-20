@@ -1,22 +1,17 @@
 #ifndef BILLS_TOON_FUNCTIONS_INCLUDED
 #define BILLS_TOON_FUNCTIONS_INCLUDED
 
-#include "../../../Others/MathUtils.hlsl"
+#include "../../../Others/MathUtils_Core.hlsl"
 
 #if defined(_OUTLINEGLINT_ON)
 float CalculateGlintFactor(float3 worldPos)
 {
     float2 noiseUV = worldPos.xy * _GlintScale * 0.1;
-    
     half spatialNoise = SAMPLE_TEXTURE2D(_NoiseTex, sampler_NoiseTex, noiseUV).r;
-    
     float timeStep = floor(_Time.y * _GlintSpeed * 10.0);
     half temporalNoise = MU_Hash31(float3(worldPos.xy * 0.1, timeStep));
-    
     half combinedNoise = spatialNoise * temporalNoise;
-
     float glint = smoothstep(_GlintThreshold, _GlintThreshold + 0.05, combinedNoise);
-    
     return glint;
 }
 #endif
@@ -107,11 +102,21 @@ float3 CalculateFoliageLighting(float3 normalWS, float3 worldPos, Light mainLigh
 void ApplyWind(inout float3 positionOS, float4 vertexColor)
 {
     float3 worldPos = TransformObjectToWorld(positionOS);
-    float windPhase = dot(worldPos.xz, float2(0.2, 0.1));
-    float windSine = MU_FastSin(_Time.y * _WindFrequency + windPhase);
-    float3 windVector = normalize(_WindDirection) * windSine * _WindAmplitude;
-    float windMask = vertexColor.a;
-    positionOS.xyz += windVector * windMask;
+    
+    float camDist = distance(worldPos.xyz, _WorldSpaceCameraPos.xyz);
+    float distFade = 1.0h - saturate((camDist - _WindFadeStart) / max(0.001h, _WindFadeEnd - _WindFadeStart));
+
+    float2 noiseUV = worldPos.xz * _WindNoiseScale * 0.1h;
+    float2 windFlow = _WindDirection.xy * _Time.y * _WindSpeed * 0.1h;
+    
+    half noiseA = SAMPLE_TEXTURE2D_LOD(_WindNoiseTex, sampler_WindNoiseTex, noiseUV + windFlow, 0).r;
+    half noiseB = SAMPLE_TEXTURE2D_LOD(_WindNoiseTex, sampler_WindNoiseTex, noiseUV * 0.4h - windFlow * 0.6h, 0).r;
+    half finalNoise = (noiseA + noiseB) * 0.5h;
+
+    half displacement = (finalNoise * 2.0h - 1.0h);
+    float3 windOffset = _WindDirection.xyz * displacement * _WindAmplitude * vertexColor.a * distFade;
+
+    positionOS.xyz += windOffset;
 }
 
 #endif

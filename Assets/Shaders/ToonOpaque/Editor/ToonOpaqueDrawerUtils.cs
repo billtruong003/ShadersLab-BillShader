@@ -24,6 +24,47 @@ public static class ToonOpaqueDrawerUtils
         EditorGUILayout.Space(2);
     }
 
+    public static void DrawTextureMaskSettings(MaterialEditor editor, MaterialProperty toggle, MaterialProperty divisions, MaterialProperty blend, MaterialProperty[] colors, ref bool state)
+    {
+        DrawFoldout("Dynamic Texture Mask", ref state, () =>
+        {
+            editor.ShaderProperty(toggle, "Enable Texture Mask");
+            if (toggle.floatValue < 0.5f && !toggle.hasMixedValue) return;
+
+            EditorGUI.indentLevel++;
+
+            editor.ShaderProperty(divisions, divisions.displayName);
+            editor.ShaderProperty(blend, blend.displayName);
+            EditorGUILayout.Space();
+
+            if (!divisions.hasMixedValue && colors[0] != null)
+            {
+                EditorGUILayout.LabelField("Mask Colors", EditorStyles.boldLabel);
+                int divs = (int)divisions.floatValue;
+                int colorIndex = 0;
+                float originalLabelWidth = EditorGUIUtility.labelWidth;
+                EditorGUIUtility.labelWidth = 1f;
+
+                for (int y = 0; y < divs; y++)
+                {
+                    EditorGUILayout.BeginHorizontal();
+                    for (int x = 0; x < divs; x++)
+                    {
+                        if (colorIndex < colors.Length && colors[colorIndex] != null)
+                        {
+                            editor.ColorProperty(colors[colorIndex], "");
+                        }
+                        colorIndex++;
+                    }
+                    EditorGUILayout.EndHorizontal();
+                }
+                EditorGUIUtility.labelWidth = originalLabelWidth;
+            }
+
+            EditorGUI.indentLevel--;
+        });
+    }
+
     public static void DrawToonSettings(MaterialEditor editor, MaterialProperty toonStyle, MaterialProperty shadowThreshold, MaterialProperty midtoneThreshold, MaterialProperty smoothness, MaterialProperty shadowTint, MaterialProperty midtoneColor)
     {
         DrawFoldout("Toon Shading", ref showToonSettings, () =>
@@ -33,25 +74,12 @@ public static class ToonOpaqueDrawerUtils
             editor.ShaderProperty(midtoneThreshold, "Mid-tone Threshold");
 
             bool isHardStyle = toonStyle.floatValue > 0.5f;
-
             EditorGUI.BeginDisabledGroup(isHardStyle && !toonStyle.hasMixedValue);
             editor.ShaderProperty(smoothness, "Ramp Smoothness");
             EditorGUI.EndDisabledGroup();
 
             editor.ShaderProperty(shadowTint, "Shadow Tint");
             editor.ShaderProperty(midtoneColor, "Mid-tone Color");
-
-            if (!toonStyle.hasMixedValue)
-            {
-                if (isHardStyle)
-                {
-                    EditorGUILayout.HelpBox("Hard Style creates sharp, distinct bands. 'Ramp Smoothness' is disabled in this mode.", MessageType.Info);
-                }
-                else
-                {
-                    EditorGUILayout.HelpBox("Smooth Style uses 'Ramp Smoothness' to blend between light and shadow bands.", MessageType.Info);
-                }
-            }
         });
     }
 
@@ -76,14 +104,20 @@ public static class ToonOpaqueDrawerUtils
         });
     }
 
-    public static void DrawFoliageSettings(MaterialEditor editor, MaterialProperty windFreq, MaterialProperty windAmp, MaterialProperty windDir, MaterialProperty transColor, MaterialProperty transStrength)
+    public static void DrawFoliageSettings(MaterialEditor editor, MaterialProperty windNoiseTex, MaterialProperty windSpeed, MaterialProperty windAmp, MaterialProperty windNoiseScale, MaterialProperty windDir, MaterialProperty windFadeStart, MaterialProperty windFadeEnd, MaterialProperty transColor, MaterialProperty transStrength)
     {
         DrawFoldout("Foliage", ref showFoliageSettings, () =>
         {
             EditorGUILayout.LabelField("Wind", EditorStyles.boldLabel);
-            editor.ShaderProperty(windFreq, "Frequency");
+            editor.TexturePropertySingleLine(new GUIContent(windNoiseTex.displayName), windNoiseTex);
+            editor.ShaderProperty(windSpeed, "Speed");
             editor.ShaderProperty(windAmp, "Amplitude");
+            editor.ShaderProperty(windNoiseScale, "Noise Scale");
             editor.ShaderProperty(windDir, "Direction");
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField("Distance Fade", EditorStyles.boldLabel);
+            editor.ShaderProperty(windFadeStart, "Fade Start");
+            editor.ShaderProperty(windFadeEnd, "Fade End");
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Lighting", EditorStyles.boldLabel);
             editor.ShaderProperty(transColor, "Translucency Color");
@@ -95,10 +129,8 @@ public static class ToonOpaqueDrawerUtils
     {
         DrawFoldout("Bling Effect", ref showBlingSettings, () =>
         {
-            EditorGUILayout.HelpBox("This effect uses an optimized texture-based method for sparkling.", MessageType.Info);
             editor.TexturePropertySingleLine(new GUIContent(noiseTex.displayName), noiseTex);
             EditorGUILayout.Space();
-
             editor.ShaderProperty(worldSpace, worldSpace.displayName);
             editor.ShaderProperty(color, color.displayName);
             editor.ShaderProperty(intensity, intensity.displayName);

@@ -16,12 +16,12 @@ MonoBehaviour:
   showInSceneView: 1
   debugView: 0
   debugSectionsRaw: 0
-  discontinuityInput: 3
-  depthSensitivity: 0.1
-  depthDistanceModulation: 0
+  discontinuityInput: 6
+  depthSensitivity: 0.25
+  depthDistanceModulation: 1
   grazingAngleMaskPower: 0
   grazingAngleMaskHardness: 1
-  normalSensitivity: 0.05
+  normalSensitivity: 0
   luminanceSensitivity: 0
   objectId: 1
   particles: 0
@@ -59,7 +59,7 @@ MonoBehaviour:
   SectionMaskRenderingLayer:
     serializedVersion: 0
     m_Bits: 4294967295
-  maskInfluence: 4
+  maskInfluence: 0
   showSectionMapSection: 1
   showDiscontinuitySection: 1
   showOutlineSection: 1

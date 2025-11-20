@@ -29,6 +29,28 @@ Shader "Bill's Toon/Opaque - Full URP Compatible"
         [HDR] _EmissionColor("Emission Color", Color) = (0, 0, 0, 1)
         _EmissionMap("Emission Map", 2D) = "black"{}
 
+        [Header(Dynamic Texture Mask)]
+        [Toggle(_TEXTUREMASK_ON)] _TextureMaskToggle("Enable Texture Mask", Float) = 0
+        [NoScaleOffset] _MaskTexture("Mask Texture (Grayscale)", 2D) = "gray"{}
+        [IntRange] _MaskDivisions("Mask Divisions (e.g., 2=2x2)", Range(1, 4)) = 2
+        _MaskBlend("Mask Blend Strength", Range(0, 1)) = 1.0
+        [HideInInspector] _MaskColor0("Mask Color 0", Color) = (1, 0, 0, 1)
+        [HideInInspector] _MaskColor1("Mask Color 1", Color) = (0, 1, 0, 1)
+        [HideInInspector] _MaskColor2("Mask Color 2", Color) = (0, 0, 1, 1)
+        [HideInInspector] _MaskColor3("Mask Color 3", Color) = (1, 1, 0, 1)
+        [HideInInspector] _MaskColor4("Mask Color 4", Color) = (1, 1, 1, 1)
+        [HideInInspector] _MaskColor5("Mask Color 5", Color) = (1, 1, 1, 1)
+        [HideInInspector] _MaskColor6("Mask Color 6", Color) = (1, 1, 1, 1)
+        [HideInInspector] _MaskColor7("Mask Color 7", Color) = (1, 1, 1, 1)
+        [HideInInspector] _MaskColor8("Mask Color 8", Color) = (1, 1, 1, 1)
+        [HideInInspector] _MaskColor9("Mask Color 9", Color) = (1, 1, 1, 1)
+        [HideInInspector] _MaskColor10("Mask Color 10", Color) = (1, 1, 1, 1)
+        [HideInInspector] _MaskColor11("Mask Color 11", Color) = (1, 1, 1, 1)
+        [HideInInspector] _MaskColor12("Mask Color 12", Color) = (1, 1, 1, 1)
+        [HideInInspector] _MaskColor13("Mask Color 13", Color) = (1, 1, 1, 1)
+        [HideInInspector] _MaskColor14("Mask Color 14", Color) = (1, 1, 1, 1)
+        [HideInInspector] _MaskColor15("Mask Color 15", Color) = (1, 1, 1, 1)
+
         [Header(Advanced Dither Fade)]
         [Toggle(_DITHERFADE_ON)] _DitherFadeToggle("Enable Dither Fade", Float) = 0
         _DitherPatternTex("Dither Pattern (Bayer/Blue Noise)", 2D) = "white"{}
@@ -79,9 +101,13 @@ Shader "Bill's Toon/Opaque - Full URP Compatible"
         _RimPower("Rim Power", Range(0, 20)) = 6
 
         [Header(Foliage)]
-        _WindFrequency("Wind Frequency", Range(0.1, 10)) = 2.0
+        [NoScaleOffset] _WindNoiseTex("Wind Noise (Seamless, Grayscale)", 2D) = "gray"{}
+        _WindSpeed("Wind Speed", Range(0, 10)) = 2.0
         _WindAmplitude("Wind Amplitude", Range(0, 1)) = 0.1
+        _WindNoiseScale("Wind Noise Scale", Range(0.1, 10)) = 1.0
         _WindDirection("Wind Direction", Vector) = (1, 0, 0.5, 0)
+        _WindFadeStart("Wind Fade Start", Float) = 20.0
+        _WindFadeEnd("Wind Fade End", Float) = 50.0
         [HDR] _TranslucencyColor("Translucency Color", Color) = (0.7, 0.9, 0.3, 1)
         _TranslucencyStrength("Translucency Strength", Range(0, 5)) = 1.0
 
@@ -118,9 +144,6 @@ Shader "Bill's Toon/Opaque - Full URP Compatible"
             "Queue" = "Geometry"
         }
 
-            // ===================================================================
-            // 1. Main Forward Pass
-            // ===================================================================
         Pass
         {
             Name "ForwardLit"
@@ -128,7 +151,6 @@ Shader "Bill's Toon/Opaque - Full URP Compatible"
             {
                 "LightMode" = "UniversalForward"
             }
-
             Cull [_CullMode]
             ZWrite [_ZWrite]
             Blend [_SrcBlend] [_DstBlend]
@@ -150,6 +172,7 @@ Shader "Bill's Toon/Opaque - Full URP Compatible"
             #pragma shader_feature_local_fragment _INDIRECTSPECULAR_ON
             #pragma shader_feature_local_fragment _TOON_STYLE_HARD
             #pragma shader_feature_local_fragment _MORPH_ON
+            #pragma shader_feature_local_fragment _TEXTUREMASK_ON
 
             #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE
             #pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
@@ -217,6 +240,7 @@ Shader "Bill's Toon/Opaque - Full URP Compatible"
                         surfaceColor = albedo.rgb * (lighting + ambient);
                 #endif
 
+                surfaceColor = ApplyTextureMask(surfaceColor, i.uv);
                 surfaceColor += indirectLighting.specular;
                 surfaceColor = ApplyEmission(surfaceColor, i.uv);
                 surfaceColor = ApplyFresnelOutline(surfaceColor, normalWS, viewDir, i.positionWS);
@@ -226,9 +250,7 @@ Shader "Bill's Toon/Opaque - Full URP Compatible"
             }
             ENDHLSL
         }
-            // ===================================================================
-            // SHADOW CASTER PASS – FIXED 2025 (Cast shadow chính xác)
-            // ===================================================================
+
         Pass
         {
             Name "ShadowCaster"
@@ -236,7 +258,6 @@ Shader "Bill's Toon/Opaque - Full URP Compatible"
             {
                 "LightMode" = "ShadowCaster"
             }
-
             ZWrite On ZTest LEqual Cull [_CullMode] ColorMask 0
 
             HLSLPROGRAM
@@ -255,7 +276,7 @@ Shader "Bill's Toon/Opaque - Full URP Compatible"
             float3 _LightDirection;
             float3 _LightPosition;
 
-            struct Attributes
+            struct Attributes_Shadows
             {
                 float4 positionOS : POSITION;
                 float3 normalOS : NORMAL;
@@ -264,16 +285,16 @@ Shader "Bill's Toon/Opaque - Full URP Compatible"
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
-            struct Varyings
+            struct Varyings_Shadows
             {
                 float4 positionCS : SV_POSITION;
                 float2 uv : TEXCOORD0;
                 UNITY_VERTEX_OUTPUT_STEREO
             };
 
-            Varyings ShadowVert(Attributes input)
+            Varyings_Shadows ShadowVert(Attributes_Shadows input)
             {
-                Varyings output;
+                Varyings_Shadows output;
                 UNITY_SETUP_INSTANCE_ID(input);
                 UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(output);
 
@@ -284,39 +305,15 @@ Shader "Bill's Toon/Opaque - Full URP Compatible"
                     ApplyWind(positionOS, input.color);
                 #endif
 
-                VertexPositionInputs vertexPosition = GetVertexPositionInputs(positionOS);
-                VertexNormalInputs vertexNormal = GetVertexNormalInputs(normalOS);
+                float3 positionWS = TransformObjectToWorld(positionOS);
+                float3 normalWS = TransformObjectToWorldNormal(normalOS);
 
-                    // ===== BIAS CHUẨN URP 2024-2025 =====
-                float3 positionWS = vertexPosition.positionWS;
-                float3 normalWS = vertexNormal.normalWS;
-
-                float4 clipPos;
-                #if _CASTING_PUNCTUAL_LIGHT_SHADOW
-                    float3 lightDirWS = normalize(_LightPosition - positionWS);
-                #else
-                        float3 lightDirWS = _LightDirection;
-                #endif
-
-                    // Apply shadow bias
-                float depthBias = _ShadowBias.x;
-                float normalBias = _ShadowBias.y * saturate(dot(normalWS, lightDirWS));
-                positionWS += (normalWS * normalBias + lightDirWS * depthBias);
-
-                clipPos = TransformWorldToHClip(positionWS);
-
-                #if UNITY_REVERSED_Z
-                    clipPos.z = min(clipPos.z, clipPos.w * UNITY_NEAR_CLIP_VALUE);
-                #else
-                        clipPos.z = max(clipPos.z, clipPos.w * UNITY_NEAR_CLIP_VALUE);
-                #endif
-
-                output.positionCS = clipPos;
+                output.positionCS = GetShadowPositionHClip(positionWS, normalWS);
                 output.uv = TRANSFORM_TEX(input.uv, _BaseMap);
                 return output;
             }
 
-            half4 ShadowFrag(Varyings input) : SV_Target
+            half4 ShadowFrag(Varyings_Shadows input) : SV_Target
             {
                 #if defined(_ALPHACLIP_ON)
                     ApplyAlphaClip(input.uv);
@@ -326,9 +323,6 @@ Shader "Bill's Toon/Opaque - Full URP Compatible"
             ENDHLSL
         }
 
-            // ===================================================================
-            // 3. Depth Only
-            // ===================================================================
         Pass
         {
             Name "DepthOnly"
@@ -336,7 +330,6 @@ Shader "Bill's Toon/Opaque - Full URP Compatible"
             {
                 "LightMode" = "DepthOnly"
             }
-
             ZWrite On ColorMask 0 Cull [_CullMode]
 
             HLSLPROGRAM
@@ -347,26 +340,19 @@ Shader "Bill's Toon/Opaque - Full URP Compatible"
             #pragma shader_feature_local_fragment _MORPH_ON
             #include "Includes/Toon/ToonUberCore.hlsl"
 
-            struct DepthVaryings
+            Varyings DepthVert(Attributes input)
             {
-                float4 positionCS : SV_POSITION;
-                float2 uv : TEXCOORD0;
-            };
-
-            DepthVaryings DepthVert(Attributes input)
-            {
-                DepthVaryings o;
+                Varyings output;
                 float3 posOS = input.positionOS.xyz;
                 #if defined(_SURFACETYPE_FOLIAGE)
                     ApplyWind(posOS, input.color);
                 #endif
-                VertexPositionInputs vertexInput = GetVertexPositionInputs(posOS);
-                o.positionCS = vertexInput.positionCS;
-                o.uv = TRANSFORM_TEX(input.uv, _BaseMap);
-                return o;
+                output.positionCS = TransformObjectToHClip(posOS);
+                output.uv = TRANSFORM_TEX(input.uv, _BaseMap);
+                return output;
             }
 
-            half4 DepthFrag(DepthVaryings i) : SV_Target
+            half4 DepthFrag(Varyings i) : SV_Target
             {
                 ApplyAlphaClip(i.uv);
                 return 0;
@@ -374,9 +360,6 @@ Shader "Bill's Toon/Opaque - Full URP Compatible"
             ENDHLSL
         }
 
-            // ===================================================================
-            // 4. Depth Normals
-            // ===================================================================
         Pass
         {
             Name "DepthNormals"
@@ -384,7 +367,6 @@ Shader "Bill's Toon/Opaque - Full URP Compatible"
             {
                 "LightMode" = "DepthNormals"
             }
-
             ZWrite On Cull [_CullMode]
 
             HLSLPROGRAM
@@ -400,10 +382,9 @@ Shader "Bill's Toon/Opaque - Full URP Compatible"
             {
                 float4 positionCS : SV_POSITION;
                 float2 uv : TEXCOORD0;
-                float4 normalWS : TEXCOORD1;
+                float3 normalWS : TEXCOORD1;
                 #if defined(_NORMALMAP_ON)
                     float4 tangentWS : TEXCOORD2;
-                    float4 bitangentWS : TEXCOORD3;
                 #endif
             };
 
@@ -415,16 +396,11 @@ Shader "Bill's Toon/Opaque - Full URP Compatible"
                     ApplyWind(posOS, input.color);
                 #endif
 
-                VertexPositionInputs posInput = GetVertexPositionInputs(posOS);
-                VertexNormalInputs normInput = GetVertexNormalInputs(input.normalOS, input.tangentOS);
-
-                o.positionCS = posInput.positionCS;
+                o.positionCS = TransformObjectToHClip(posOS);
                 o.uv = TRANSFORM_TEX(input.uv, _BaseMap);
-                o.normalWS = float4(normInput.normalWS, 0);
-
+                o.normalWS = TransformObjectToWorldNormal(input.normalOS);
                 #if defined(_NORMALMAP_ON)
-                    o.tangentWS = float4(normInput.tangentWS, 0);
-                    o.bitangentWS = float4(normInput.bitangentWS, 0);
+                    o.tangentWS = float4(TransformObjectToWorldDir(input.tangentOS.xyz), input.tangentOS.w);
                 #endif
                 return o;
             }
@@ -432,18 +408,18 @@ Shader "Bill's Toon/Opaque - Full URP Compatible"
             half4 DepthNormalsFrag(DepthNormalsVaryings i, half facing : VFACE) : SV_Target
             {
                 ApplyAlphaClip(i.uv);
-                float3 normalWS = normalize(i.normalWS.xyz) * sign(facing);
+                float3 normalWS = normalize(i.normalWS) * (facing * 2 - 1);
                 #if defined(_NORMALMAP_ON)
-                    normalWS = ApplyNormalMap(i.uv, normalWS, i.tangentWS.xyz, i.bitangentWS.xyz);
+                    float3 bitangentWS = cross(i.normalWS, i.tangentWS.xyz) * i.tangentWS.w;
+                    normalWS = ApplyNormalMap(i.uv, normalWS, i.tangentWS.xyz, bitangentWS);
                 #endif
-                return half4(PackNormalOctRectEncode(TransformWorldToViewNormal(normalWS)), 0, 0);
+
+                float4 encodedNormal = PackNormalOctRectEncode(TransformWorldToViewNormal(normalWS));
+                return half4(encodedNormal.xy, 0, 0);
             }
             ENDHLSL
         }
 
-            // ===================================================================
-            // Motion Vectors – Bản fix 2025 (không dùng MotionVectorsCore nữa)
-            // ===================================================================
         Pass
         {
             Name "MotionVectors"
@@ -451,7 +427,6 @@ Shader "Bill's Toon/Opaque - Full URP Compatible"
             {
                 "LightMode" = "MotionVectors"
             }
-
             ZWrite Off Cull [_CullMode]
             ColorMask RG
 
@@ -463,7 +438,7 @@ Shader "Bill's Toon/Opaque - Full URP Compatible"
             #pragma shader_feature_local_fragment _MORPH_ON
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/MotionVectors.hlsl"
+            #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/MotionVectors.hlsl"
             #include "Includes/Toon/ToonUberCore.hlsl"
 
             VaryingsMotion Vert(Attributes input)
@@ -476,9 +451,8 @@ Shader "Bill's Toon/Opaque - Full URP Compatible"
                     ApplyWind(posOS, input.color);
                 #endif
 
-                VertexPositionInputs pos = GetVertexPositionInputs(posOS);
-                o.positionCS = pos.positionCS;
-                o.previousPositionCS = GetPreviousPositionCS(posOS);
+                o.positionCS = TransformObjectToHClip(posOS);
+                o.previousPositionCS = TransformObjectToPreviousHClip(posOS);
                 o.uv = TRANSFORM_TEX(input.uv, _BaseMap);
 
                 return o;
@@ -487,14 +461,11 @@ Shader "Bill's Toon/Opaque - Full URP Compatible"
             half4 Frag(VaryingsMotion i) : SV_Target
             {
                 ApplyAlphaClip(i.uv);
-                return MotionVectorFragment(i.positionCS, i.previousPositionCS);
+                return ComputeMotionVector(i.positionCS, i.previousPositionCS);
             }
             ENDHLSL
         }
 
-            // ===================================================================
-            // 6. GBuffer (Deferred Rendering)
-            // ===================================================================
         Pass
         {
             Name "GBuffer"
@@ -502,7 +473,6 @@ Shader "Bill's Toon/Opaque - Full URP Compatible"
             {
                 "LightMode" = "UniversalGBuffer"
             }
-
             ZWrite [_ZWrite]
             Cull [_CullMode]
             Blend [_SrcBlend] [_DstBlend]
@@ -515,7 +485,10 @@ Shader "Bill's Toon/Opaque - Full URP Compatible"
             #pragma shader_feature_local _SURFACETYPE_FOLIAGE
             #pragma shader_feature_local_fragment _MORPH_ON
             #pragma shader_feature_local_fragment _EMISSION_ON
+
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/GBuffer.hlsl"
             #include "Includes/Toon/ToonUberCore.hlsl"
 
             struct GBufferVaryings
@@ -526,7 +499,6 @@ Shader "Bill's Toon/Opaque - Full URP Compatible"
                 float3 positionWS : TEXCOORD2;
                 #if defined(_NORMALMAP_ON)
                     float4 tangentWS : TEXCOORD3;
-                    float4 bitangentWS : TEXCOORD4;
                 #endif
             };
 
@@ -538,46 +510,40 @@ Shader "Bill's Toon/Opaque - Full URP Compatible"
                     ApplyWind(posOS, input.color);
                 #endif
 
-                VertexPositionInputs posInput = GetVertexPositionInputs(posOS);
-                VertexNormalInputs normInput = GetVertexNormalInputs(input.normalOS, input.tangentOS);
-
-                o.positionCS = posInput.positionCS;
-                o.positionWS = posInput.positionWS;
+                o.positionWS = TransformObjectToWorld(posOS);
+                o.positionCS = TransformWorldToHClip(o.positionWS);
+                o.normalWS = TransformObjectToWorldNormal(input.normalOS);
                 o.uv = TRANSFORM_TEX(input.uv, _BaseMap);
-                o.normalWS = normInput.normalWS;
 
                 #if defined(_NORMALMAP_ON)
-                    o.tangentWS.xyz = normInput.tangentWS;
-                    o.bitangentWS.xyz = normInput.bitangentWS;
+                    o.tangentWS = float4(TransformObjectToWorldDir(input.tangentOS.xyz), input.tangentOS.w);
                 #endif
                 return o;
             }
 
-            GBufferOutput GBufferFrag(GBufferVaryings i, half facing : VFACE)
+            FragmentOutput GBufferFrag(GBufferVaryings i, half facing : VFACE)
             {
                 ApplyAlphaClip(i.uv);
 
-                float3 normalWS = normalize(i.normalWS) * sign(facing);
+                float3 normalWS = normalize(i.normalWS) * (facing * 2.0 - 1.0);
                 #if defined(_NORMALMAP_ON)
-                    normalWS = ApplyNormalMap(i.uv, normalWS, i.tangentWS.xyz, i.bitangentWS.xyz);
+                    float3 bitangentWS = cross(i.normalWS, i.tangentWS.xyz) * i.tangentWS.w;
+                    normalWS = ApplyNormalMap(i.uv, normalWS, i.tangentWS.xyz, bitangentWS);
                 #endif
 
                 half4 albedo = GetAlbedoAndAlpha(i.uv);
                 half3 emission = ApplyEmission(0, i.uv);
 
-                GBufferOutput o;
-                o.GBuffer0 = half4(albedo.rgb * _BaseColor.rgb, 0);
-                o.GBuffer1 = half4(0, 0, 0, 0);
-                o.GBuffer2 = half4(normalWS * 0.5 + 0.5, 0);
-                o.GBuffer3 = half4(emission, 1);
-                return o;
+                FragmentOutput output;
+                output.GBuffer0 = half4(albedo.rgb * _BaseColor.rgb, 0);
+                output.GBuffer1 = half4(0, 0, 0, 1);
+                output.GBuffer2 = half4(normalWS * 0.5 + 0.5, 0);
+                output.GBuffer3 = half4(emission, 1);
+                return output;
             }
             ENDHLSL
         }
 
-            // ===================================================================
-            // 7. Meta (Lightmap & Light Probe Baking)
-            // ===================================================================
         Pass
         {
             Name "Meta"
@@ -585,7 +551,6 @@ Shader "Bill's Toon/Opaque - Full URP Compatible"
             {
                 "LightMode" = "Meta"
             }
-
             Cull Off
 
             HLSLPROGRAM
@@ -602,11 +567,11 @@ Shader "Bill's Toon/Opaque - Full URP Compatible"
                 float2 uv : TEXCOORD0;
             };
 
-            MetaVaryings MetaVert(Attributes input)
+            MetaVaryings MetaVert(AttributesMesh input)
             {
                 MetaVaryings o;
-                o.positionCS = UnityMetaVertexPosition(input.positionOS.xyz, input.uv0, input.uv1);
-                o.uv = TRANSFORM_TEX(input.uv, _BaseMap);
+                o.positionCS = UnityMetaVertexPosition(input.positionOS, input.uv1, input.uv2);
+                o.uv = TRANSFORM_TEX(input.uv0, _BaseMap);
                 return o;
             }
 
@@ -624,9 +589,6 @@ Shader "Bill's Toon/Opaque - Full URP Compatible"
             ENDHLSL
         }
 
-            // ===================================================================
-            // SceneSelection + ScenePicking – Bản inline, không cần file riêng
-            // ===================================================================
         Pass
         {
             Name "SceneSelectionPass"
@@ -634,7 +596,6 @@ Shader "Bill's Toon/Opaque - Full URP Compatible"
             {
                 "LightMode" = "SceneSelectionPass"
             }
-
             Cull Off
             ZWrite Off
 
@@ -650,7 +611,6 @@ Shader "Bill's Toon/Opaque - Full URP Compatible"
             struct AttributesLean
             {
                 float4 positionOS : POSITION;
-                float2 uv : TEXCOORD0;
                 float4 color : COLOR;
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
@@ -666,7 +626,7 @@ Shader "Bill's Toon/Opaque - Full URP Compatible"
 
             half4 Frag() : SV_Target
             {
-                return half4(1, 1, 1, 1); // Unity sẽ tự override màu highlight
+                return half4(1, 1, 1, 1);
             }
             ENDHLSL
         }

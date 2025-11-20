@@ -1,0 +1,154 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Custom_Eye_Anime Parallax Dynamic Layers
+  m_Shader: {fileID: 4800000, guid: 52f72811335ff4b11892e62104e51ad3, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords:
+  - _LAYER1_ON
+  - _LAYER2_ON
+  - _LAYER3_ON
+  - _LAYER4_ON
+  - _LAYER5_ON
+  - _USESOCKET_ON
+  m_InvalidKeywords:
+  - _LAYER2_ADDITIVE_ON
+  - _LAYER4_ADDITIVE_ON
+  - _LAYER5_ADDITIVE_ON
+  - _LAYER6_ADDITIVE_ON
+  - _USEEYESOCKET_ON
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _EyeSocketMask:
+        m_Texture: {fileID: 2800000, guid: 7c9bc7f8a9a40ee478c05acd31474a21, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Layer1_Tex:
+        m_Texture: {fileID: 2800000, guid: 508dfa89338194e4686bb41cda467ebc, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Layer2_Tex:
+        m_Texture: {fileID: 2800000, guid: 1b2970a114ab1614d99a18ce46d4f458, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Layer3_Tex:
+        m_Texture: {fileID: 2800000, guid: 1b2970a114ab1614d99a18ce46d4f458, type: 3}
+        m_Scale: {x: 2, y: 2}
+        m_Offset: {x: 4.75, y: 0}
+    - _Layer4_Tex:
+        m_Texture: {fileID: 2800000, guid: ee5a8c4683ea6c64c9cacd1026b37848, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Layer5_Tex:
+        m_Texture: {fileID: 2800000, guid: 22ddd633ba392c34e93a0c82a5eb8600, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Layer6_Tex:
+        m_Texture: {fileID: 2800000, guid: d74b02add2f6c034aa96aae3c72f632f, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MainTex:
+        m_Texture: {fileID: 2800000, guid: 7c9bc7f8a9a40ee478c05acd31474a21, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _EyeSocketDepth: 0.2
+    - _Layer1_Additive: 0
+    - _Layer1_AdditiveStrength: 0
+    - _Layer1_BlendMode: 0
+    - _Layer1_Depth: 0.1
+    - _Layer1_Emissive: 0.5
+    - _Layer1_On: 1
+    - _Layer1_Rotation: 0
+    - _Layer1_Scale: 0.6
+    - _Layer2_Additive: 1
+    - _Layer2_AdditiveStrength: 0
+    - _Layer2_BlendMode: 0
+    - _Layer2_Depth: 0.1
+    - _Layer2_Emissive: 0.5
+    - _Layer2_On: 1
+    - _Layer2_Rotation: 0
+    - _Layer2_Scale: 1
+    - _Layer3_Additive: 0
+    - _Layer3_AdditiveStrength: 0.5
+    - _Layer3_BlendMode: 1
+    - _Layer3_Depth: -0.1
+    - _Layer3_Emissive: 0.5
+    - _Layer3_On: 1
+    - _Layer3_Rotation: 45
+    - _Layer3_Scale: 1
+    - _Layer4_Additive: 1
+    - _Layer4_AdditiveStrength: 0
+    - _Layer4_BlendMode: 2
+    - _Layer4_Depth: 0.1
+    - _Layer4_Emissive: 0
+    - _Layer4_On: 1
+    - _Layer4_Rotation: 0
+    - _Layer4_Scale: 1
+    - _Layer5_Additive: 1
+    - _Layer5_AdditiveStrength: 0
+    - _Layer5_BlendMode: 1
+    - _Layer5_Depth: 0.1
+    - _Layer5_Emissive: 0.25
+    - _Layer5_On: 1
+    - _Layer5_Rotation: 360
+    - _Layer5_Scale: 1
+    - _Layer6_Additive: 1
+    - _Layer6_AdditiveStrength: 0
+    - _Layer6_BlendMode: 1
+    - _Layer6_Depth: 0.1
+    - _Layer6_Emissive: 1
+    - _Layer6_On: 0
+    - _Layer6_Rotation: 45
+    - _Layer6_Scale: 1
+    - _MasterIntensity: 1
+    - _ParallaxStrength: 0.1
+    - _RimPower: 2.61
+    - _UseEyeSocket: 1
+    m_Colors:
+    - _Color: {r: 0, g: 0, b: 0, a: 1}
+    - _Layer1_Offset: {r: 0, g: 0, b: 0, a: 0}
+    - _Layer1_Scale: {r: 0.7, g: 0.8, b: 0, a: 0}
+    - _Layer1_ScrollSpeed: {r: 0, g: 0, b: 0, a: 0}
+    - _Layer1_Tint: {r: 0, g: 1, b: 0.5195739, a: 1}
+    - _Layer2_Offset: {r: 0.2, g: -0.2, b: 0, a: 0}
+    - _Layer2_Scale: {r: 0.5, g: 0.5, b: 0, a: 0}
+    - _Layer2_ScrollSpeed: {r: 0, g: 0, b: 0, a: 0}
+    - _Layer2_Tint: {r: 0.21698111, g: 0.21698111, b: 0.21698111, a: 1}
+    - _Layer3_Offset: {r: 0, g: 0, b: 0, a: 0}
+    - _Layer3_Scale: {r: 1, g: 1, b: 0, a: 0}
+    - _Layer3_ScrollSpeed: {r: 0, g: 0, b: 0, a: 0}
+    - _Layer3_Tint: {r: 0.15294118, g: 0.99607843, b: 0.5176471, a: 1}
+    - _Layer4_Offset: {r: 0, g: 0, b: 0, a: 0}
+    - _Layer4_Scale: {r: 5, g: 5, b: 0, a: 0}
+    - _Layer4_ScrollSpeed: {r: 0, g: 0.5, b: 0, a: 0}
+    - _Layer4_Tint: {r: 0.17895675, g: 1, b: 0, a: 1}
+    - _Layer5_Offset: {r: 0, g: 0, b: 0, a: 0}
+    - _Layer5_Scale: {r: 0.8, g: 0.8, b: 0, a: 0}
+    - _Layer5_ScrollSpeed: {r: 0, g: 0, b: 0, a: 0}
+    - _Layer5_Tint: {r: 1, g: 0, b: 0, a: 1}
+    - _Layer6_Offset: {r: 0, g: 0, b: 0, a: 0}
+    - _Layer6_Scale: {r: 1.5, g: 1.5, b: 0, a: 0}
+    - _Layer6_ScrollSpeed: {r: 0, g: 0, b: 0, a: 0}
+    - _Layer6_Tint: {r: 0.18039216, g: 0.99607843, b: 0.011764706, a: 1}
+    - _ParallaxCenter: {r: 0.5, g: 0.5, b: 0, a: 0}
+    - _RimColor: {r: 0, g: 0.8231988, b: 1, a: 1}
+    - _ScleraColor: {r: 0, g: 0, b: 0, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1

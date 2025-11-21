@@ -60,11 +60,19 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _MaskTexture:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - _NoiseTex:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _Ramp:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _WindNoiseTex:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
@@ -139,6 +147,8 @@ Material:
     - _HighlightOffset: 0.9
     - _IndirectSpecular: 0
     - _IndirectSpecularIntensity: 1
+    - _MaskBlend: 1
+    - _MaskDivisions: 2
     - _MaxBrightness: 1.76
     - _MidtoneThreshold: 0.8
     - _Morph: 0
@@ -153,12 +163,17 @@ Material:
     - _ShadowThreshold: 0.4
     - _SrcBlend: 1
     - _SurfaceType: 2
+    - _TextureMaskToggle: 0
     - _ToonRampSmoothness: 0.05
     - _ToonStyle: 0
     - _TranslucencyStrength: 1.73
     - _WindAmplitude: 0.1
+    - _WindFadeEnd: 50
+    - _WindFadeStart: 20
     - _WindFrequency: 2
+    - _WindNoiseScale: 1
     - _WindScale: 0.4
+    - _WindSpeed: 2
     - _WindStrength: 0.4
     - _WindTintContrast: 1
     - _WindTintOpacity: 0.25
@@ -182,6 +197,22 @@ Material:
     - _GlintColor: {r: 1, g: 1, b: 0.5, a: 1}
     - _GroundFadeColor: {r: 0.31372547, g: 0.39607847, b: 0.11372546, a: 1}
     - _HiColor: {r: 1, g: 1, b: 1, a: 1}
+    - _MaskColor0: {r: 1, g: 0, b: 0, a: 1}
+    - _MaskColor1: {r: 0, g: 1, b: 0, a: 1}
+    - _MaskColor10: {r: 1, g: 1, b: 1, a: 1}
+    - _MaskColor11: {r: 1, g: 1, b: 1, a: 1}
+    - _MaskColor12: {r: 1, g: 1, b: 1, a: 1}
+    - _MaskColor13: {r: 1, g: 1, b: 1, a: 1}
+    - _MaskColor14: {r: 1, g: 1, b: 1, a: 1}
+    - _MaskColor15: {r: 1, g: 1, b: 1, a: 1}
+    - _MaskColor2: {r: 0, g: 0, b: 1, a: 1}
+    - _MaskColor3: {r: 1, g: 1, b: 0, a: 1}
+    - _MaskColor4: {r: 1, g: 1, b: 1, a: 1}
+    - _MaskColor5: {r: 1, g: 1, b: 1, a: 1}
+    - _MaskColor6: {r: 1, g: 1, b: 1, a: 1}
+    - _MaskColor7: {r: 1, g: 1, b: 1, a: 1}
+    - _MaskColor8: {r: 1, g: 1, b: 1, a: 1}
+    - _MaskColor9: {r: 1, g: 1, b: 1, a: 1}
     - _MidtoneColor: {r: 0.6, g: 0.6, b: 0.6, a: 1}
     - _RimColor: {r: 1, g: 0.3, b: 0.3, a: 1}
     - _ShadowTint: {r: 0.1, g: 0.1, b: 0.2, a: 1}

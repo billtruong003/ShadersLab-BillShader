@@ -10,6 +10,19 @@ public static class ToonOpaqueDrawerUtils
     private static bool showMetallicSettings = true;
     private static bool showFoliageSettings = true;
     private static bool showBlingSettings = true;
+    private static bool showRimLightSettings = true;
+
+    public static void DrawToggleGroup(MaterialEditor editor, MaterialProperty toggle, string title, Action contents)
+    {
+        editor.ShaderProperty(toggle, title);
+        if (toggle.floatValue > 0.5f || toggle.hasMixedValue)
+        {
+            EditorGUI.indentLevel++;
+            contents.Invoke();
+            EditorGUI.indentLevel--;
+        }
+        EditorGUILayout.Space();
+    }
 
     private static void DrawFoldout(string title, ref bool state, Action contents)
     {
@@ -28,40 +41,36 @@ public static class ToonOpaqueDrawerUtils
     {
         DrawFoldout("Dynamic Texture Mask", ref state, () =>
         {
-            editor.ShaderProperty(toggle, "Enable Texture Mask");
-            if (toggle.floatValue < 0.5f && !toggle.hasMixedValue) return;
-
-            EditorGUI.indentLevel++;
-
-            editor.ShaderProperty(divisions, divisions.displayName);
-            editor.ShaderProperty(blend, blend.displayName);
-            EditorGUILayout.Space();
-
-            if (!divisions.hasMixedValue && colors[0] != null)
+            DrawToggleGroup(editor, toggle, "Enable Texture Mask", () =>
             {
-                EditorGUILayout.LabelField("Mask Colors", EditorStyles.boldLabel);
-                int divs = (int)divisions.floatValue;
-                int colorIndex = 0;
-                float originalLabelWidth = EditorGUIUtility.labelWidth;
-                EditorGUIUtility.labelWidth = 1f;
+                editor.ShaderProperty(divisions, divisions.displayName);
+                editor.ShaderProperty(blend, blend.displayName);
+                EditorGUILayout.Space();
 
-                for (int y = 0; y < divs; y++)
+                if (!divisions.hasMixedValue && colors[0] != null)
                 {
-                    EditorGUILayout.BeginHorizontal();
-                    for (int x = 0; x < divs; x++)
-                    {
-                        if (colorIndex < colors.Length && colors[colorIndex] != null)
-                        {
-                            editor.ColorProperty(colors[colorIndex], "");
-                        }
-                        colorIndex++;
-                    }
-                    EditorGUILayout.EndHorizontal();
-                }
-                EditorGUIUtility.labelWidth = originalLabelWidth;
-            }
+                    EditorGUILayout.LabelField("Mask Colors", EditorStyles.boldLabel);
+                    int divs = (int)divisions.floatValue;
+                    int colorIndex = 0;
+                    float originalLabelWidth = EditorGUIUtility.labelWidth;
+                    EditorGUIUtility.labelWidth = 1f;
 
-            EditorGUI.indentLevel--;
+                    for (int y = 0; y < divs; y++)
+                    {
+                        EditorGUILayout.BeginHorizontal();
+                        for (int x = 0; x < divs; x++)
+                        {
+                            if (colorIndex < colors.Length && colors[colorIndex] != null)
+                            {
+                                editor.ColorProperty(colors[colorIndex], "");
+                            }
+                            colorIndex++;
+                        }
+                        EditorGUILayout.EndHorizontal();
+                    }
+                    EditorGUIUtility.labelWidth = originalLabelWidth;
+                }
+            });
         });
     }
 
@@ -80,6 +89,26 @@ public static class ToonOpaqueDrawerUtils
 
             editor.ShaderProperty(shadowTint, "Shadow Tint");
             editor.ShaderProperty(midtoneColor, "Mid-tone Color");
+        });
+    }
+
+    public static void DrawRimLightSettings(MaterialEditor editor, MaterialProperty toggle, MaterialProperty color, MaterialProperty power)
+    {
+        DrawFoldout("Rim Light", ref showRimLightSettings, () =>
+        {
+            if (toggle != null)
+            {
+                DrawToggleGroup(editor, toggle, "Enable Rim Light", () =>
+                {
+                    editor.ShaderProperty(color, "Rim Color");
+                    editor.ShaderProperty(power, "Rim Power");
+                });
+            }
+            else
+            {
+                editor.ShaderProperty(color, "Rim Color");
+                editor.ShaderProperty(power, "Rim Power");
+            }
         });
     }
 

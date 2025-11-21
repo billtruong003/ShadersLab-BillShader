@@ -35,11 +35,13 @@ public class ToonOpaqueHullOutlineShaderGUI : ToonOpaqueShaderBase
 
     protected override void DrawMainProperties()
     {
+        // Draw Outline specific settings first
         DrawFoldout("Inverted Hull Outline", ref showHullOutlineSettings, () =>
         {
             materialEditor.ShaderProperty(outlineColorProp, "Color");
             materialEditor.ShaderProperty(outlineWidthProp, "Width");
             materialEditor.ShaderProperty(outlineScaleWithDistanceProp, "Screen-Space Scaling");
+
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("World-Space Distance Fade", EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
@@ -48,6 +50,7 @@ public class ToonOpaqueHullOutlineShaderGUI : ToonOpaqueShaderBase
             EditorGUI.indentLevel--;
         });
 
+        // Then draw all standard properties (Toon, Rim, Metallic, etc.)
         base.DrawMainProperties();
     }
 

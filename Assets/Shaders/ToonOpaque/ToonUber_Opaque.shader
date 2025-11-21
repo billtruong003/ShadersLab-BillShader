@@ -29,6 +29,11 @@ Shader "Bill's Toon/Opaque - Full URP Compatible"
         [HDR] _EmissionColor("Emission Color", Color) = (0, 0, 0, 1)
         _EmissionMap("Emission Map", 2D) = "black"{}
 
+        [Header(Rim Light)]
+        [Toggle(_RIMLIGHT_ON)] _RimLightToggle("Enable Rim Light", Float) = 0
+        [HDR] _RimColor("Rim Color", Color) = (1, 0.3, 0.3, 1)
+        _RimPower("Rim Power", Range(0, 20)) = 6
+
         [Header(Dynamic Texture Mask)]
         [Toggle(_TEXTUREMASK_ON)] _TextureMaskToggle("Enable Texture Mask", Float) = 0
         [NoScaleOffset] _MaskTexture("Mask Texture (Grayscale)", 2D) = "gray"{}
@@ -97,8 +102,6 @@ Shader "Bill's Toon/Opaque - Full URP Compatible"
         [HDR] _SpecuColor("Specular Color", Color) = (0.8, 0.45, 0.2, 1)
         _HighlightOffset("Highlight Size", Range(0, 1)) = 0.9
         [HDR] _HiColor("Highlight Color", Color) = (1, 1, 1, 1)
-        [HDR] _RimColor("Rim Color", Color) = (1, 0.3, 0.3, 1)
-        _RimPower("Rim Power", Range(0, 20)) = 6
 
         [Header(Foliage)]
         [NoScaleOffset] _WindNoiseTex("Wind Noise (Seamless, Grayscale)", 2D) = "gray"{}
@@ -173,17 +176,25 @@ Shader "Bill's Toon/Opaque - Full URP Compatible"
             #pragma shader_feature_local_fragment _TOON_STYLE_HARD
             #pragma shader_feature_local_fragment _MORPH_ON
             #pragma shader_feature_local_fragment _TEXTUREMASK_ON
+            #pragma shader_feature_local_fragment _RIMLIGHT_ON
 
             #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE
             #pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
             #pragma multi_compile_fragment _ _SHADOWS_SOFT
             #pragma multi_compile_fragment _ PROBE_VOLUMES_L1
+            #pragma multi_compile_fragment _ _SCREEN_SPACE_OCCLUSION
+            #pragma multi_compile_fragment _ _LIGHT_LAYERS
+            #pragma multi_compile_fragment _ _LIGHT_COOKIES
 
             #include "Includes/Toon/ToonUberCore.hlsl"
 
             Varyings vert(Attributes v)
             {
                 Varyings o = (Varyings)0;
+                UNITY_SETUP_INSTANCE_ID(v);
+                UNITY_TRANSFER_INSTANCE_ID(v, o);
+                UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
+
                 float3 positionOS = v.positionOS.xyz;
                 #if defined(_SURFACETYPE_FOLIAGE)
                     ApplyWind(positionOS, v.color);
@@ -205,10 +216,12 @@ Shader "Bill's Toon/Opaque - Full URP Compatible"
 
             half4 frag(Varyings i, half frontFace : VFACE) : SV_Target
             {
-                float3 viewDir = SafeNormalize(_WorldSpaceCameraPos.xyz - i.positionWS);
+                UNITY_SETUP_INSTANCE_ID(i);
 
+                float3 viewDir = SafeNormalize(GetCameraPositionWS() - i.positionWS);
                 float3 baseNormalWS = normalize(i.normalWS * sign(frontFace));
                 float3 normalWS = baseNormalWS;
+
                 #if defined(_NORMALMAP_ON)
                     normalWS = ApplyNormalMap(i.uv, baseNormalWS, i.tangentWS, i.bitangentWS);
                 #endif
@@ -224,7 +237,7 @@ Shader "Bill's Toon/Opaque - Full URP Compatible"
 
                 half3 lighting = 0;
                 #if defined(_SURFACETYPE_OPAQUE)
-                    lighting = CalculateToonLighting(normalWS, i.positionWS, mainLight);
+                    lighting = CalculateToonLighting(normalWS, i.positionWS, mainLight, viewDir);
                 #elif defined(_SURFACETYPE_METALLIC)
                     lighting = CalculateMetallicLighting(normalWS, viewDir, mainLight);
                 #elif defined(_SURFACETYPE_FOLIAGE)
@@ -263,52 +276,38 @@ Shader "Bill's Toon/Opaque - Full URP Compatible"
             HLSLPROGRAM
             #pragma vertex ShadowVert
             #pragma fragment ShadowFrag
-
             #pragma shader_feature_local_fragment _ALPHACLIP_ON
             #pragma shader_feature_local _SURFACETYPE_FOLIAGE
             #pragma shader_feature_local_fragment _MORPH_ON
             #pragma multi_compile_vertex _ _CASTING_PUNCTUAL_LIGHT_SHADOW
 
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Shadows.hlsl"
             #include "Includes/Toon/ToonUberCore.hlsl"
-
-            float3 _LightDirection;
-            float3 _LightPosition;
-
-            struct Attributes_Shadows
-            {
-                float4 positionOS : POSITION;
-                float3 normalOS : NORMAL;
-                float2 uv : TEXCOORD0;
-                float4 color : COLOR;
-                UNITY_VERTEX_INPUT_INSTANCE_ID
-            };
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Shadows.hlsl"
 
             struct Varyings_Shadows
             {
                 float4 positionCS : SV_POSITION;
                 float2 uv : TEXCOORD0;
-                UNITY_VERTEX_OUTPUT_STEREO
             };
 
-            Varyings_Shadows ShadowVert(Attributes_Shadows input)
+            Varyings_Shadows ShadowVert(Attributes input)
             {
                 Varyings_Shadows output;
-                UNITY_SETUP_INSTANCE_ID(input);
-                UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(output);
-
                 float3 positionOS = input.positionOS.xyz;
-                float3 normalOS = input.normalOS;
-
                 #if defined(_SURFACETYPE_FOLIAGE)
                     ApplyWind(positionOS, input.color);
                 #endif
 
                 float3 positionWS = TransformObjectToWorld(positionOS);
-                float3 normalWS = TransformObjectToWorldNormal(normalOS);
+                float3 normalWS = TransformObjectToWorldNormal(input.normalOS);
 
-                output.positionCS = GetShadowPositionHClip(positionWS, normalWS);
+                #if defined(_CASTING_PUNCTUAL_LIGHT_SHADOW)
+                    float3 lightDirectionWS = normalize(_MainLightPosition.xyz - positionWS);
+                #else
+                        float3 lightDirectionWS = _MainLightPosition.xyz;
+                #endif
+
+                output.positionCS = TransformWorldToHClip(ApplyShadowBias(positionWS, normalWS, lightDirectionWS));
                 output.uv = TRANSFORM_TEX(input.uv, _BaseMap);
                 return output;
             }
@@ -340,9 +339,15 @@ Shader "Bill's Toon/Opaque - Full URP Compatible"
             #pragma shader_feature_local_fragment _MORPH_ON
             #include "Includes/Toon/ToonUberCore.hlsl"
 
-            Varyings DepthVert(Attributes input)
+            struct Varyings_Depth
             {
-                Varyings output;
+                float4 positionCS : SV_POSITION;
+                float2 uv : TEXCOORD0;
+            };
+
+            Varyings_Depth DepthVert(Attributes input)
+            {
+                Varyings_Depth output;
                 float3 posOS = input.positionOS.xyz;
                 #if defined(_SURFACETYPE_FOLIAGE)
                     ApplyWind(posOS, input.color);
@@ -352,7 +357,7 @@ Shader "Bill's Toon/Opaque - Full URP Compatible"
                 return output;
             }
 
-            half4 DepthFrag(Varyings i) : SV_Target
+            half4 DepthFrag(Varyings_Depth i) : SV_Target
             {
                 ApplyAlphaClip(i.uv);
                 return 0;
@@ -400,7 +405,8 @@ Shader "Bill's Toon/Opaque - Full URP Compatible"
                 o.uv = TRANSFORM_TEX(input.uv, _BaseMap);
                 o.normalWS = TransformObjectToWorldNormal(input.normalOS);
                 #if defined(_NORMALMAP_ON)
-                    o.tangentWS = float4(TransformObjectToWorldDir(input.tangentOS.xyz), input.tangentOS.w);
+                    float3 tWS = TransformObjectToWorldDir(input.tangentOS.xyz);
+                    o.tangentWS = float4(tWS.x, tWS.y, tWS.z, input.tangentOS.w);
                 #endif
                 return o;
             }
@@ -414,8 +420,8 @@ Shader "Bill's Toon/Opaque - Full URP Compatible"
                     normalWS = ApplyNormalMap(i.uv, normalWS, i.tangentWS.xyz, bitangentWS);
                 #endif
 
-                float4 encodedNormal = PackNormalOctRectEncode(TransformWorldToViewNormal(normalWS));
-                return half4(encodedNormal.xy, 0, 0);
+                float3 viewNormal = TransformWorldToViewNormal(normalWS);
+                return half4(PackNormalOctRectEncode(viewNormal), 0, 0);
             }
             ENDHLSL
         }
@@ -427,8 +433,7 @@ Shader "Bill's Toon/Opaque - Full URP Compatible"
             {
                 "LightMode" = "MotionVectors"
             }
-            ZWrite Off Cull [_CullMode]
-            ColorMask RG
+            ZWrite Off Cull [_CullMode] ColorMask RG
 
             HLSLPROGRAM
             #pragma vertex Vert
@@ -436,32 +441,41 @@ Shader "Bill's Toon/Opaque - Full URP Compatible"
             #pragma shader_feature_local_fragment _ALPHACLIP_ON
             #pragma shader_feature_local _SURFACETYPE_FOLIAGE
             #pragma shader_feature_local_fragment _MORPH_ON
-
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
-            #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/MotionVectors.hlsl"
             #include "Includes/Toon/ToonUberCore.hlsl"
+
+            struct VaryingsMotion
+            {
+                float4 positionCS : SV_POSITION;
+                float4 positionCS_NoJitter : TEXCOORD0;
+                float4 previousPositionCS_NoJitter : TEXCOORD1;
+                float2 uv : TEXCOORD2;
+            };
 
             VaryingsMotion Vert(Attributes input)
             {
                 VaryingsMotion o;
-                UNITY_INITIALIZE_OUTPUT(VaryingsMotion, o);
-
                 float3 posOS = input.positionOS.xyz;
                 #if defined(_SURFACETYPE_FOLIAGE)
                     ApplyWind(posOS, input.color);
                 #endif
 
                 o.positionCS = TransformObjectToHClip(posOS);
-                o.previousPositionCS = TransformObjectToPreviousHClip(posOS);
-                o.uv = TRANSFORM_TEX(input.uv, _BaseMap);
+                o.positionCS_NoJitter = mul(_NonJitteredViewProjMatrix, mul(UNITY_MATRIX_M, float4(posOS, 1.0)));
 
+                float4 prevPosOS = float4(posOS, 1.0);
+                float4 prevPosWS = mul(unity_MatrixPreviousM, prevPosOS);
+                o.previousPositionCS_NoJitter = mul(unity_MatrixPreviousVP, prevPosWS);
+
+                o.uv = TRANSFORM_TEX(input.uv, _BaseMap);
                 return o;
             }
 
             half4 Frag(VaryingsMotion i) : SV_Target
             {
                 ApplyAlphaClip(i.uv);
-                return ComputeMotionVector(i.positionCS, i.previousPositionCS);
+                float2 curPos = i.positionCS_NoJitter.xy / i.positionCS_NoJitter.w;
+                float2 prevPos = i.previousPositionCS_NoJitter.xy / i.previousPositionCS_NoJitter.w;
+                return float4(curPos - prevPos, 0, 0);
             }
             ENDHLSL
         }
@@ -485,10 +499,6 @@ Shader "Bill's Toon/Opaque - Full URP Compatible"
             #pragma shader_feature_local _SURFACETYPE_FOLIAGE
             #pragma shader_feature_local_fragment _MORPH_ON
             #pragma shader_feature_local_fragment _EMISSION_ON
-
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/GBuffer.hlsl"
             #include "Includes/Toon/ToonUberCore.hlsl"
 
             struct GBufferVaryings
@@ -500,6 +510,14 @@ Shader "Bill's Toon/Opaque - Full URP Compatible"
                 #if defined(_NORMALMAP_ON)
                     float4 tangentWS : TEXCOORD3;
                 #endif
+            };
+
+            struct ManualGBufferOutput
+            {
+                half4 GBuffer0 : SV_Target0;
+                half4 GBuffer1 : SV_Target1;
+                half4 GBuffer2 : SV_Target2;
+                half4 GBuffer3 : SV_Target3;
             };
 
             GBufferVaryings GBufferVert(Attributes input)
@@ -516,12 +534,13 @@ Shader "Bill's Toon/Opaque - Full URP Compatible"
                 o.uv = TRANSFORM_TEX(input.uv, _BaseMap);
 
                 #if defined(_NORMALMAP_ON)
-                    o.tangentWS = float4(TransformObjectToWorldDir(input.tangentOS.xyz), input.tangentOS.w);
+                    float3 tWS = TransformObjectToWorldDir(input.tangentOS.xyz);
+                    o.tangentWS = float4(tWS.x, tWS.y, tWS.z, input.tangentOS.w);
                 #endif
                 return o;
             }
 
-            FragmentOutput GBufferFrag(GBufferVaryings i, half facing : VFACE)
+            ManualGBufferOutput GBufferFrag(GBufferVaryings i, half facing : VFACE)
             {
                 ApplyAlphaClip(i.uv);
 
@@ -534,7 +553,7 @@ Shader "Bill's Toon/Opaque - Full URP Compatible"
                 half4 albedo = GetAlbedoAndAlpha(i.uv);
                 half3 emission = ApplyEmission(0, i.uv);
 
-                FragmentOutput output;
+                ManualGBufferOutput output;
                 output.GBuffer0 = half4(albedo.rgb * _BaseColor.rgb, 0);
                 output.GBuffer1 = half4(0, 0, 0, 1);
                 output.GBuffer2 = half4(normalWS * 0.5 + 0.5, 0);
@@ -567,11 +586,11 @@ Shader "Bill's Toon/Opaque - Full URP Compatible"
                 float2 uv : TEXCOORD0;
             };
 
-            MetaVaryings MetaVert(AttributesMesh input)
+            MetaVaryings MetaVert(Attributes input)
             {
                 MetaVaryings o;
-                o.positionCS = UnityMetaVertexPosition(input.positionOS, input.uv1, input.uv2);
-                o.uv = TRANSFORM_TEX(input.uv0, _BaseMap);
+                o.positionCS = UnityMetaVertexPosition(input.positionOS.xyz, input.uv1, input.uv1, unity_LightmapST, unity_DynamicLightmapST);
+                o.uv = TRANSFORM_TEX(input.uv, _BaseMap);
                 return o;
             }
 
@@ -602,20 +621,10 @@ Shader "Bill's Toon/Opaque - Full URP Compatible"
             HLSLPROGRAM
             #pragma vertex Vert
             #pragma fragment Frag
-
-            #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Version.hlsl"
             #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Color.hlsl"
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Includes/Toon/ToonUberCore.hlsl"
 
-            struct AttributesLean
-            {
-                float4 positionOS : POSITION;
-                float4 color : COLOR;
-                UNITY_VERTEX_INPUT_INSTANCE_ID
-            };
-
-            float4 Vert(AttributesLean input) : SV_POSITION
+            float4 Vert(Attributes input) : SV_POSITION
             {
                 float3 posOS = input.positionOS.xyz;
                 #if defined(_SURFACETYPE_FOLIAGE)
@@ -631,6 +640,5 @@ Shader "Bill's Toon/Opaque - Full URP Compatible"
             ENDHLSL
         }
     }
-
     CustomEditor "ToonOpaqueShaderGUI"
 }

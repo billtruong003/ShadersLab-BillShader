@@ -4,6 +4,7 @@
 #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/CommonMaterial.hlsl"
+#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Shadows.hlsl"
 
 struct Attributes {
     float4 positionOS   : POSITION;
@@ -11,6 +12,7 @@ struct Attributes {
     float2 uv           : TEXCOORD0;
     float4 color        : COLOR;
     float4 tangentOS    : TANGENT;
+    float2 uv1          : TEXCOORD1; 
 };
 
 struct Varyings {
@@ -52,10 +54,9 @@ float  _AddLightRampSmoothness;
 float  _Brightness;
 float  _Offset;
 float  _HighlightOffset;
-float  _RimPower;
+float  _SpecularSmoothness;
 float4 _SpecuColor;
 float4 _HiColor;
-float4 _RimColor;
 
 float  _WindFrequency;
 float  _WindAmplitude;
@@ -126,19 +127,19 @@ float4 _HologramEmissionColor;
 float  _HologramPatternScale;
 float  _HologramFlickerSpeed;
 
-float4 _RareColor1;
-float  _RareFloat1;
-float  _RareFloat2;
-float4 _EpicColor1;
-float4 _EpicColor2;
-float  _EpicFloat1;
-float  _EpicFloat2;
-float  _EpicFloat3;
-float4 _LegendaryColor1;
-float4 _LegendaryColor2;
-float  _LegendaryFloat1;
-float  _LegendaryFloat2;
-float  _LegendaryFloat3;
+float4 _RimLightColor;
+float  _RimLightPower;
+float  _RimLightSmoothness;
+
+float  _MaskTriplanarScale;
+float  _MaskTriplanarBlend;
+float  _MaskTriplanarSharpness;
+float  _MaskDivisions;
+
+half4 _MaskColor0, _MaskColor1, _MaskColor2, _MaskColor3;
+half4 _MaskColor4, _MaskColor5, _MaskColor6, _MaskColor7;
+half4 _MaskColor8, _MaskColor9, _MaskColor10, _MaskColor11;
+half4 _MaskColor12, _MaskColor13, _MaskColor14, _MaskColor15;
 
 CBUFFER_END
 
@@ -151,7 +152,7 @@ TEXTURE2D(_HologramPatternTex); SAMPLER(sampler_HologramPatternTex);
 TEXTURE2D(_CosmicTex1);     SAMPLER(sampler_CosmicTex1);
 TEXTURE2D(_CosmicTex2);     SAMPLER(sampler_CosmicTex2);
 TEXTURE2D(_StarfieldTex);   SAMPLER(sampler_StarfieldTex);
-TEXTURE2D(_EffectTex1);     SAMPLER(sampler_EffectTex1);
+TEXTURE2D(_MaskTriplanarTex); SAMPLER(sampler_MaskTriplanarTex);
 
 #include "Includes/ToonUber_Functions_HQ.hlsl"
 
@@ -200,7 +201,6 @@ half3 ApplyFresnelOutline(half3 surfaceColor, float3 normalWS, float3 viewDir, f
 
 Light GetEffectiveMainLight(float3 positionWS) {
     Light mainLight = GetMainLight(TransformWorldToShadowCoord(positionWS));
-
 #if defined(_FAKELIGHT_ON)
     bool hasRealLight = dot(mainLight.color, mainLight.color) > 0.001;
     if (!hasRealLight) {
@@ -215,7 +215,6 @@ Light GetEffectiveMainLight(float3 positionWS) {
 float3 CalculateBlingEffect(float3 baseColor, float3 normalWS, float3 worldPos, float2 uv, Light mainLight, float3 viewDirWS, float4 positionCS) {
     float3 baseLighting = CalculateToonLighting(normalWS, worldPos, mainLight);
     float3 shadedColor = baseColor * baseLighting;
-
     float2 noiseUV;
 #if defined(_BLING_WORLDSPACE_ON)
     noiseUV = worldPos.xy * _BlingScale * 0.1h;
@@ -224,17 +223,12 @@ float3 CalculateBlingEffect(float3 baseColor, float3 normalWS, float3 worldPos, 
     noiseUV = screenPos.xy * _BlingScale;
     noiseUV.x *= _ScreenParams.x / _ScreenParams.y;
 #endif
-
     noiseUV.y += _Time.y * _BlingSpeed;
-
     half NdotV = 1.0h - saturate(dot(normalWS, viewDirWS));
     half fresnel = pow(NdotV, _BlingFresnelPower);
-
     half noise = MU_SimplexNoise(noiseUV);
     half sparkle = smoothstep(_BlingThreshold, _BlingThreshold + 0.05h, noise);
-
     half3 bling = sparkle * fresnel * _BlingColor.rgb * _BlingIntensity;
-
     return shadedColor + bling;
 }
 #endif

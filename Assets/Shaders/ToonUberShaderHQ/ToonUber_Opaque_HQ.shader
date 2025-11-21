@@ -1,19 +1,19 @@
-Shader "Bill's Toon/Opaque HQ"
+Shader "Bill's Toon/Opaque HQ Ultimate"
 {
     Properties
     {
         [Header(Render States)]
         [Enum(Opaque, 0, Cutout, 1, Transparent, 2)] _RenderMode ("Render Mode", Float) = 0
-        [Enum(UnityEngine.Rendering.BlendMode)] _SrcBlend ("Source Blend", Float) = 5
-        [Enum(UnityEngine.Rendering.BlendMode)] _DstBlend ("Destination Blend", Float) = 10
+        [Enum(UnityEngine.Rendering.BlendMode)] _SrcBlend ("Source Blend", Float) = 1
+        [Enum(UnityEngine.Rendering.BlendMode)] _DstBlend ("Destination Blend", Float) = 0
         [Toggle] _ZWrite ("ZWrite", Float) = 1
         [Enum(UnityEngine.Rendering.CompareFunction)] _ZTest("ZTest", Float) = 4
         [Enum(Off, 0, Front, 1, Back, 2)] _CullMode ("Culling Mode", Float) = 2
 
         [Header(Base Properties)]
-        _BaseMap("Albedo (RGB) Alpha (A)", 2D) = "white" {}
+        _BaseMap("Albedo (RGB) Alpha (A)", 2D) = "white"{}
         [HDR] _BaseColor("Base Color", Color) = (1, 1, 1, 1)
-        _BumpMap("Normal Map", 2D) = "bump" {}
+        _BumpMap("Normal Map", 2D) = "bump"{}
         _BumpScale("Normal Intensity", Range(0.0, 2.0)) = 1.0
 
         [Header(Alpha Clipping)]
@@ -22,14 +22,14 @@ Shader "Bill's Toon/Opaque HQ"
         [Header(Emission)]
         [Toggle(_EMISSION_ON)] _EmissionMode("Enable Emission", Float) = 0
         [HDR] _EmissionColor("Emission Color", Color) = (0, 0, 0, 1)
-        _EmissionMap("Emission Map", 2D) = "black" {}
+        _EmissionMap("Emission Map", 2D) = "black"{}
 
         [Header(Lighting)]
         [Toggle(_FAKELIGHT_ON)] _FakeLightMode("Enable Fake Light", Float) = 1
         _FakeLightColor("Fake Light Color", Color) = (0.8, 0.8, 0.8, 1)
         _FakeLightDirection("Fake Light Direction", Vector) = (0.5, 0.5, -0.5, 0)
 
-        [Header(Toon Shading HQ)]
+        [Header(Toon Shading)]
         _ShadowTint("Shadow Tint", Color) = (0.1, 0.1, 0.2, 1.0)
         _MidtoneColor("Mid-tone Color", Color) = (0.6, 0.6, 0.6, 1.0)
         _ShadowThreshold("Shadow Threshold", Range(0, 1)) = 0.4
@@ -37,22 +37,49 @@ Shader "Bill's Toon/Opaque HQ"
         _RampSmoothness("Ramp Smoothness", Range(0.001, 0.5)) = 0.05
         _AmbientColor("Ambient Color", Color) = (0.5, 0.5, 0.5, 0)
 
-        [Header(Additional Lights Toon Shading)]
+        [Header(Additional Lights)]
         _AddLightShadowTint("Shadow Tint (Additional)", Color) = (0.2, 0.2, 0.3, 1.0)
         _AddLightMidtoneColor("Mid-tone Color (Additional)", Color) = (0.7, 0.7, 0.7, 1.0)
         _AddLightShadowThreshold("Shadow Threshold (Additional)", Range(0, 1)) = 0.1
         _AddLightMidtoneThreshold("Mid-tone Threshold (Additional)", Range(0, 1)) = 0.6
         _AddLightRampSmoothness("Ramp Smoothness (Additional)", Range(0.001, 0.5)) = 0.1
 
-        [Header(Stylized Metal)]
-        _Ramp("Toon Ramp (RGB)", 2D) = "white" {}
-        _Brightness("Specular Brightness", Range(0, 2)) = 1.3
-        _Offset("Specular Size", Range(0, 1)) = 0.8
+        [Header(Stylized Specular)]
+        [Toggle(_SPECULAR_ON)] _SpecularToggle("Enable Specular", Float) = 0
         [HDR] _SpecuColor("Specular Color", Color) = (0.8, 0.45, 0.2, 1)
-        _HighlightOffset("Highlight Size", Range(0, 1)) = 0.9
-        [HDR] _HiColor("Highlight Color", Color) = (1, 1, 1, 1)
-        [HDR] _RimColor("Rim Color", Color) = (1, 0.3, 0.3, 1)
-        _RimPower("Rim Power", Range(0, 20)) = 6
+        _Brightness("Specular Intensity", Range(0, 5)) = 1.3
+        _Offset("Specular Size", Range(0.5, 1)) = 0.8
+        _SpecularSmoothness("Specular Falloff", Range(0.001, 0.5)) = 0.05
+
+        [Header(Rim Light)]
+        [Toggle(_RIMLIGHT_ON)] _RimLightToggle("Enable Rim Light", Float) = 0
+        [HDR] _RimLightColor("Rim Light Color", Color) = (1, 1, 1, 1)
+        _RimLightPower("Rim Light Power", Range(0, 20)) = 4.0
+        _RimLightSmoothness("Rim Light Smoothness", Range(0.0, 1.0)) = 0.5
+
+        [Header(Dynamic Triplanar Masking)]
+        [Toggle(_MASK_TRIPLANAR_ON)] _MaskTriplanarToggle("Enable Triplanar Masking", Float) = 0
+        _MaskTriplanarTex("Triplanar Pattern (Grayscale)", 2D) = "white"{}
+        _MaskTriplanarScale("Pattern Scale", Float) = 1.0
+        _MaskTriplanarBlend("Blend Strength", Range(0, 1)) = 1.0
+        _MaskTriplanarSharpness("Triplanar Sharpness", Range(1, 20)) = 4.0
+        [IntRange] _MaskDivisions("Mask Grid Divisions (UV)", Range(1, 4)) = 2
+        [HideInInspector] _MaskColor0("Mask Color 0", Color) = (1, 1, 1, 1)
+        [HideInInspector] _MaskColor1("Mask Color 1", Color) = (1, 1, 1, 1)
+        [HideInInspector] _MaskColor2("Mask Color 2", Color) = (1, 1, 1, 1)
+        [HideInInspector] _MaskColor3("Mask Color 3", Color) = (1, 1, 1, 1)
+        [HideInInspector] _MaskColor4("Mask Color 4", Color) = (1, 1, 1, 1)
+        [HideInInspector] _MaskColor5("Mask Color 5", Color) = (1, 1, 1, 1)
+        [HideInInspector] _MaskColor6("Mask Color 6", Color) = (1, 1, 1, 1)
+        [HideInInspector] _MaskColor7("Mask Color 7", Color) = (1, 1, 1, 1)
+        [HideInInspector] _MaskColor8("Mask Color 8", Color) = (1, 1, 1, 1)
+        [HideInInspector] _MaskColor9("Mask Color 9", Color) = (1, 1, 1, 1)
+        [HideInInspector] _MaskColor10("Mask Color 10", Color) = (1, 1, 1, 1)
+        [HideInInspector] _MaskColor11("Mask Color 11", Color) = (1, 1, 1, 1)
+        [HideInInspector] _MaskColor12("Mask Color 12", Color) = (1, 1, 1, 1)
+        [HideInInspector] _MaskColor13("Mask Color 13", Color) = (1, 1, 1, 1)
+        [HideInInspector] _MaskColor14("Mask Color 14", Color) = (1, 1, 1, 1)
+        [HideInInspector] _MaskColor15("Mask Color 15", Color) = (1, 1, 1, 1)
 
         [Header(Foliage)]
         _WindFrequency("Wind Frequency", Range(0.1, 10)) = 2.0
@@ -71,17 +98,17 @@ Shader "Bill's Toon/Opaque HQ"
         _BlingThreshold("Bling Threshold", Range(0.5, 1.0)) = 0.95
 
         [Header(Cosmic Surface)]
-        _CosmicTex1("Nebula Layer 1 (R)", 2D) = "white" {}
+        _CosmicTex1("Nebula Layer 1 (R)", 2D) = "white"{}
         [HDR] _CosmicColor1("Layer 1 Color", Color) = (0.2, 0.5, 1.0, 1)
         _CosmicScale1("Layer 1 Scale", Float) = 1.0
         _CosmicScrollSpeed1("Layer 1 Scroll Speed", Float) = 0.05
         _CosmicParallaxDepth1("Layer 1 Parallax Depth", Range(-0.2, 0.2)) = 0.02
-        _CosmicTex2("Nebula Layer 2 (R)", 2D) = "white" {}
+        _CosmicTex2("Nebula Layer 2 (R)", 2D) = "white"{}
         [HDR] _CosmicColor2("Layer 2 Color", Color) = (1.0, 0.3, 0.8, 1)
         _CosmicScale2("Layer 2 Scale", Float) = 1.5
         _CosmicScrollSpeed2("Layer 2 Scroll Speed", Float) = 0.02
         _CosmicParallaxDepth2("Layer 2 Parallax Depth", Range(-0.2, 0.2)) = 0.05
-        _StarfieldTex("Star Field (R)", 2D) = "black" {}
+        _StarfieldTex("Star Field (R)", 2D) = "black"{}
         [HDR] _StarfieldColor("Stars Color", Color) = (1.0, 1.0, 0.8, 1)
         _StarfieldScale("Stars Scale", Float) = 2.5
         _StarfieldScrollSpeed("Stars Scroll Speed", Float) = 0.01
@@ -122,7 +149,7 @@ Shader "Bill's Toon/Opaque HQ"
         _DissolveDirection ("Direction (Linear/Shatter)", Vector) = (0, 1, 0, 0)
 
         [Header(Edge Appearance)]
-        _NoiseTex ("Noise Texture (R)", 2D) = "white" {}
+        _NoiseTex ("Noise Texture (R)", 2D) = "white"{}
         _NoiseScale ("Noise Scale", Float) = 1.0
         _NoiseStrength ("Noise Strength", Range(0, 2)) = 0.1
         _DissolveEdgeWidth ("Edge Width", Range(0, 2)) = 0.05
@@ -151,32 +178,10 @@ Shader "Bill's Toon/Opaque HQ"
 
         [Header(Hologram Reveal Effect)]
         [Toggle(_HOLOGRAM_REVEAL_ON)] _EnableHologramReveal ("Enable Hologram Reveal Mode", Float) = 0
-        _HologramPatternTex ("Hologram Pattern (A)", 2D) = "white" {}
+        _HologramPatternTex ("Hologram Pattern (A)", 2D) = "white"{}
         [HDR] _HologramEmissionColor ("Hologram Emission", Color) = (0, 1, 1, 1)
         _HologramPatternScale ("Hologram Pattern Scale", Float) = 1.0
         _HologramFlickerSpeed ("Hologram Flicker Speed", Range(0, 100)) = 20
-
-        [Header(Tiered Overlay Effects)]
-        [Enum(None, 0, Rare Pulsing Glow, 1, Rare Sparkles, 2, Epic Fire Aura, 3, Epic Electric Field, 4, Legendary Cosmic Rift, 5, Legendary Holy Aura, 6)]
-        _EffectType ("Effect Type", Float) = 0
-
-        _EffectTex1 ("Effect Texture 1", 2D) = "white" {}
-
-        [HDR] _RareColor1 ("Rare Color 1", Color) = (1, 1, 1, 1)
-        _RareFloat1 ("Rare Float 1", Float) = 1
-        _RareFloat2 ("Rare Float 2", Float) = 1
-
-        [HDR] _EpicColor1 ("Epic Color 1 (RGBA)", Color) = (1, 0.5, 0, 1)
-        [HDR] _EpicColor2 ("Epic Color 2", Color) = (1, 1, 0, 1)
-        _EpicFloat1 ("Epic Float 1", Float) = 1
-        _EpicFloat2 ("Epic Float 2", Float) = 1
-        _EpicFloat3 ("Epic Float 3", Float) = 1
-
-        [HDR] _LegendaryColor1 ("Legendary Color 1", Color) = (0.5, 0, 1, 1)
-        [HDR] _LegendaryColor2 ("Legendary Color 2", Color) = (0, 1, 1, 1)
-        _LegendaryFloat1 ("Legendary Float 1", Float) = 1
-        _LegendaryFloat2 ("Legendary Float 2", Float) = 1
-        _LegendaryFloat3 ("Legendary Float 3", Float) = 1
 
         [HideInInspector] _SurfaceType("Surface Type", Float) = 0
     }
@@ -185,7 +190,9 @@ Shader "Bill's Toon/Opaque HQ"
     {
         Tags
         {
-            "RenderPipeline" = "UniversalPipeline" "RenderType" = "Opaque" "Queue" = "Geometry"
+            "RenderPipeline" = "UniversalPipeline"
+            "RenderType" = "Opaque"
+            "Queue" = "Geometry"
         }
 
         Pass
@@ -196,10 +203,8 @@ Shader "Bill's Toon/Opaque HQ"
             HLSLPROGRAM
             #pragma vertex OutlineVert
             #pragma fragment OutlineFrag
-
             #pragma shader_feature_local _OUTLINEMODE_HULL
             #pragma shader_feature_local _OUTLINE_SCALE_WITH_DISTANCE
-
             #pragma shader_feature_local _SURFACETYPE_FOLIAGE
             #pragma shader_feature_local _ _DISSOLVE_ON
             #pragma shader_feature_local _ _DISSOLVE_LOCALSPACE_ON
@@ -216,6 +221,8 @@ Shader "Bill's Toon/Opaque HQ"
                 float4 positionCS : SV_POSITION;
                 float2 uv : TEXCOORD0;
                 float dissolveValue : TEXCOORD1;
+                float3 positionWS : TEXCOORD3;
+                float3 normalWS : TEXCOORD4;
             };
 
             OutlineVaryings OutlineVert(Attributes input)
@@ -228,32 +235,32 @@ Shader "Bill's Toon/Opaque HQ"
                     ApplyWind(positionOS, input.color);
                 #endif
 
+                output.normalWS = TransformObjectToWorldNormal(normalOS);
+                output.positionWS = TransformObjectToWorld(positionOS);
+
                 #if defined(_DISSOLVE_ON)
                     float perVertexNoise = MU_Hash11(positionOS.x + positionOS.y * 10.0h + positionOS.z * 100.0h);
                     float3 positionForDissolve = positionOS;
                     #ifndef _DISSOLVE_LOCALSPACE_ON
-                        positionForDissolve = TransformObjectToWorld(positionOS);
+                        positionForDissolve = output.positionWS;
                     #endif
-                    output.dissolveValue = CalculateDissolveValue(positionForDissolve, input.uv, perVertexNoise);
+                    output.dissolveValue = CalculateDissolveValue(positionForDissolve, output.normalWS, input.uv, perVertexNoise);
                     positionOS = ApplyDissolveVertexEffects(positionOS, normalOS, output.dissolveValue, perVertexNoise);
+                    output.positionWS = TransformObjectToWorld(positionOS);
                 #else
                         output.dissolveValue = 2.0h;
                 #endif
 
                 output.uv = TRANSFORM_TEX(input.uv, _BaseMap);
-
-                float camDist = distance(TransformObjectToWorld(positionOS), _WorldSpaceCameraPos.xyz);
+                float camDist = distance(output.positionWS, _WorldSpaceCameraPos.xyz);
                 float distFade = 1.0 - saturate((camDist - _DistanceFadeStart) / (_DistanceFadeEnd - _DistanceFadeStart + 0.00001));
                 float scaledWidth = _OutlineWidth * 0.01 * distFade;
 
                 #if defined(_OUTLINE_SCALE_WITH_DISTANCE)
                     float4 positionCS = TransformObjectToHClip(positionOS);
-                    float3 normalWS = TransformObjectToWorldNormal(normalOS);
-                    float3 normalVS = TransformWorldToViewDir(normalWS);
-
+                    float3 normalVS = TransformWorldToViewDir(output.normalWS);
                     float2 screenSpaceNormal = normalize(mul((float2x3)UNITY_MATRIX_P, normalVS).xy);
                     positionCS.xy += screenSpaceNormal * scaledWidth * positionCS.w;
-
                     output.positionCS = positionCS;
                 #else
                         positionOS += normalOS * scaledWidth;
@@ -265,18 +272,12 @@ Shader "Bill's Toon/Opaque HQ"
 
             half4 OutlineFrag(OutlineVaryings input) : SV_Target
             {
-                if (_OutlineMode < 1.5h)
-                {
-                    clip(-1);
-                }
-
-                half4 finalColor = _OutlineColor;
-
+                if (_OutlineMode < 1.5h) clip(-1);
+                    half4 finalColor = _OutlineColor;
                 #if defined(_DISSOLVE_ON)
-                    finalColor = ApplyDissolveFragmentEffect(finalColor, input.dissolveValue, input.uv, float3(0, 0, 0));
+                    finalColor = ApplyDissolveFragmentEffect(finalColor, input.dissolveValue, input.uv, input.positionWS, input.normalWS);
                     clip(finalColor.a - 0.5h);
                 #endif
-
                 return finalColor;
             }
             ENDHLSL
@@ -289,7 +290,6 @@ Shader "Bill's Toon/Opaque HQ"
             {
                 "LightMode" = "UniversalForward"
             }
-
             Cull [_CullMode]
             ZWrite [_ZWrite]
             ZTest [_ZTest]
@@ -306,7 +306,9 @@ Shader "Bill's Toon/Opaque HQ"
             #pragma shader_feature_local_fragment _OUTLINEMODE_FRESNEL
             #pragma shader_feature_local_fragment _OUTLINEGLINT_ON
             #pragma shader_feature_local_fragment _BLING_WORLDSPACE_ON
-
+            #pragma shader_feature_local_fragment _MASK_TRIPLANAR_ON
+            #pragma shader_feature_local_fragment _RIMLIGHT_ON
+            #pragma shader_feature_local_fragment _SPECULAR_ON
             #pragma shader_feature_local _ _DISSOLVE_ON
             #pragma shader_feature_local _ _DISSOLVE_LOCALSPACE_ON
             #pragma shader_feature_local _ _VERTEX_DISPLACEMENT_ON
@@ -315,19 +317,12 @@ Shader "Bill's Toon/Opaque HQ"
             #pragma multi_compile_local _DISSOLVETYPE_NOISE _DISSOLVETYPE_LINEAR _DISSOLVETYPE_RADIAL _DISSOLVETYPE_PATTERN _DISSOLVETYPE_ALPHA_BLEND _DISSOLVETYPE_SHATTER
             #pragma shader_feature_local_fragment _HOLOGRAM_REVEAL_ON
 
-            #pragma shader_feature_local_fragment _EFFECT_RARE_PULSING_GLOW
-            #pragma shader_feature_local_fragment _EFFECT_RARE_SPARKLES
-            #pragma shader_feature_local_fragment _EFFECT_EPIC_FIRE_AURA
-            #pragma shader_feature_local_fragment _EFFECT_EPIC_ELECTRIC_FIELD
-            #pragma shader_feature_local_fragment _EFFECT_LEGENDARY_COSMIC_RIFT
-            #pragma shader_feature_local_fragment _EFFECT_LEGENDARY_HOLY_AURA
-
             #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE
             #pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
             #pragma multi_compile_fragment _ _SHADOWS_SOFT
+            #pragma multi_compile_fragment _ _LIGHT_COOKIES
 
             #include "Assets/Shaders/ToonUberShaderHQ/Includes/ToonUberCore_HQ.hlsl"
-            #include "Assets/Shaders/ToonUberShaderHQ/Includes/ToonUber_TieredEffects_HQ.hlsl"
 
             Varyings vert(Attributes v)
             {
@@ -338,13 +333,15 @@ Shader "Bill's Toon/Opaque HQ"
                     ApplyWind(positionOS, v.color);
                 #endif
 
+                o.normalWS = TransformObjectToWorldNormal(v.normalOS);
+
                 #if defined(_DISSOLVE_ON)
                     o.perVertexNoise = MU_Hash11(positionOS.x + positionOS.y * 10.0h + positionOS.z * 100.0h);
                     float3 positionForDissolve = positionOS;
                     #ifndef _DISSOLVE_LOCALSPACE_ON
                         positionForDissolve = TransformObjectToWorld(positionOS);
                     #endif
-                    o.dissolveValue = CalculateDissolveValue(positionForDissolve, v.uv, o.perVertexNoise);
+                    o.dissolveValue = CalculateDissolveValue(positionForDissolve, o.normalWS, v.uv, o.perVertexNoise);
                     positionOS = ApplyDissolveVertexEffects(positionOS, v.normalOS, o.dissolveValue, o.perVertexNoise);
                 #else
                         o.dissolveValue = 2.0h;
@@ -352,10 +349,8 @@ Shader "Bill's Toon/Opaque HQ"
 
                 o.positionWS = TransformObjectToWorld(positionOS);
                 o.positionCS = TransformWorldToHClip(o.positionWS);
-                o.normalWS = TransformObjectToWorldNormal(v.normalOS);
                 o.uv = TRANSFORM_TEX(v.uv, _BaseMap);
                 o.color = v.color;
-
                 o.tangentWS = TransformObjectToWorldDir(v.tangentOS.xyz);
                 o.bitangentWS = cross(o.normalWS, o.tangentWS) * v.tangentOS.w;
 
@@ -365,13 +360,10 @@ Shader "Bill's Toon/Opaque HQ"
             half4 frag(Varyings i, half frontFace : VFACE) : SV_Target
             {
                 ApplyAlphaClip(i.uv);
-
                 half4 albedo = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, i.uv) * _BaseColor;
                 float3 viewDir = SafeNormalize(_WorldSpaceCameraPos.xyz - i.positionWS);
-
                 float3 baseNormalWS = normalize(i.normalWS * sign(frontFace));
                 float3 normalWS = ApplyNormalMap(i.uv, baseNormalWS, i.tangentWS, i.bitangentWS);
-
                 Light mainLight = GetEffectiveMainLight(i.positionWS);
 
                 half3 sceneAmbient = SampleSH(normalWS);
@@ -402,18 +394,22 @@ Shader "Bill's Toon/Opaque HQ"
                         surfaceColor = albedo.rgb * (lighting + ambient);
                 #endif
 
+                surfaceColor = ApplyDynamicTriplanarMask(surfaceColor, i.uv, i.positionWS, normalWS);
+
+                #if defined(_SPECULAR_ON)
+                    surfaceColor += CalculateStylizedSpecular(normalWS, viewDir, mainLight);
+                #endif
+
                 surfaceColor = ApplyEmission(surfaceColor, i.uv);
                 surfaceColor = ApplyFresnelOutline(surfaceColor, normalWS, viewDir, i.positionWS);
-                surfaceColor += CalculateTieredEffect(i);
+                surfaceColor = ApplyRimLight(surfaceColor, normalWS, viewDir);
 
                 half4 finalPixel = half4(surfaceColor, albedo.a);
-
                 #if defined(_DISSOLVE_ON)
-                    finalPixel = ApplyDissolveFragmentEffect(finalPixel, i.dissolveValue, i.uv, i.positionWS);
+                    finalPixel = ApplyDissolveFragmentEffect(finalPixel, i.dissolveValue, i.uv, i.positionWS, normalWS);
                 #endif
 
                 clip(finalPixel.a - 0.01h);
-
                 return finalPixel;
             }
             ENDHLSL
@@ -426,20 +422,14 @@ Shader "Bill's Toon/Opaque HQ"
             {
                 "LightMode" = "ShadowCaster"
             }
-
-            ZWrite On
-            ZTest LEqual
-            ColorMask 0
-            Cull [_CullMode]
+            ZWrite On ZTest LEqual ColorMask 0 Cull [_CullMode]
 
             HLSLPROGRAM
             #pragma vertex ShadowVert
             #pragma fragment ShadowFrag
-
             #pragma shader_feature_local_fragment _ALPHACLIP_ON
             #pragma shader_feature_local _SURFACETYPE_FOLIAGE
             #pragma multi_compile_vertex _ _CASTING_PUNCTUAL_LIGHT_SHADOW
-
             #pragma shader_feature_local _ _DISSOLVE_ON
             #pragma shader_feature_local _ _DISSOLVE_LOCALSPACE_ON
             #pragma multi_compile_local _DISSOLVETYPE_NOISE _DISSOLVETYPE_LINEAR _DISSOLVETYPE_RADIAL _DISSOLVETYPE_PATTERN _DISSOLVETYPE_ALPHA_BLEND _DISSOLVETYPE_SHATTER
@@ -452,16 +442,19 @@ Shader "Bill's Toon/Opaque HQ"
                 float4 positionCS : SV_POSITION;
                 float2 uv : TEXCOORD0;
                 float dissolveValue : TEXCOORD1;
+                float3 positionWS : TEXCOORD2;
+                float3 normalWS : TEXCOORD3;
             };
 
             ShadowVaryings ShadowVert(Attributes input)
             {
                 ShadowVaryings o;
                 float3 positionOS = input.positionOS.xyz;
-
                 #if defined(_SURFACETYPE_FOLIAGE)
                     ApplyWind(positionOS, input.color);
                 #endif
+
+                o.normalWS = TransformObjectToWorldNormal(input.normalOS);
 
                 #if defined(_DISSOLVE_ON)
                     float perVertexNoise = MU_Hash11(positionOS.x + positionOS.y * 10.0h + positionOS.z * 100.0h);
@@ -469,12 +462,13 @@ Shader "Bill's Toon/Opaque HQ"
                     #ifndef _DISSOLVE_LOCALSPACE_ON
                         positionForDissolve = TransformObjectToWorld(positionOS);
                     #endif
-                    o.dissolveValue = CalculateDissolveValue(positionForDissolve, input.uv, perVertexNoise);
+                    o.dissolveValue = CalculateDissolveValue(positionForDissolve, o.normalWS, input.uv, perVertexNoise);
                 #else
                         o.dissolveValue = 2.0h;
                 #endif
 
                 o.positionCS = GetShadowCoord(GetVertexPositionInputs(positionOS));
+                o.positionWS = TransformObjectToWorld(positionOS);
                 o.uv = TRANSFORM_TEX(input.uv, _BaseMap);
                 return o;
             }
@@ -482,16 +476,399 @@ Shader "Bill's Toon/Opaque HQ"
             half4 ShadowFrag(ShadowVaryings i) : SV_Target
             {
                 ApplyAlphaClip(i.uv);
-
                 #if defined(_DISSOLVE_ON)
-                    half4 finalPixel = ApplyDissolveFragmentEffect(half4(0, 0, 0, 1), i.dissolveValue, i.uv, float3(0, 0, 0));
+                    half4 finalPixel = ApplyDissolveFragmentEffect(half4(0, 0, 0, 1), i.dissolveValue, i.uv, i.positionWS, i.normalWS);
                     clip(finalPixel.a - 0.5h);
                 #endif
-
                 return 0;
             }
             ENDHLSL
         }
+
+        Pass
+        {
+            Name "DepthOnly"
+            Tags
+            {
+                "LightMode" = "DepthOnly"
+            }
+            ZWrite On ColorMask 0 Cull [_CullMode]
+
+            HLSLPROGRAM
+            #pragma vertex DepthVert
+            #pragma fragment DepthFrag
+            #pragma shader_feature_local_fragment _ALPHACLIP_ON
+            #pragma shader_feature_local _SURFACETYPE_FOLIAGE
+            #pragma shader_feature_local _ _DISSOLVE_ON
+            #pragma shader_feature_local _ _DISSOLVE_LOCALSPACE_ON
+            #pragma multi_compile_local _DISSOLVETYPE_NOISE _DISSOLVETYPE_LINEAR _DISSOLVETYPE_RADIAL _DISSOLVETYPE_PATTERN _DISSOLVETYPE_ALPHA_BLEND _DISSOLVETYPE_SHATTER
+            #pragma shader_feature_local_fragment _HOLOGRAM_REVEAL_ON
+
+            #include "Assets/Shaders/ToonUberShaderHQ/Includes/ToonUberCore_HQ.hlsl"
+
+            struct DepthVaryings
+            {
+                float4 positionCS : SV_POSITION;
+                float2 uv : TEXCOORD0;
+                float dissolveValue : TEXCOORD1;
+                float3 positionWS : TEXCOORD2;
+                float3 normalWS : TEXCOORD3;
+            };
+
+            DepthVaryings DepthVert(Attributes input)
+            {
+                DepthVaryings o;
+                float3 positionOS = input.positionOS.xyz;
+                #if defined(_SURFACETYPE_FOLIAGE)
+                    ApplyWind(positionOS, input.color);
+                #endif
+
+                o.normalWS = TransformObjectToWorldNormal(input.normalOS);
+
+                #if defined(_DISSOLVE_ON)
+                    float perVertexNoise = MU_Hash11(positionOS.x + positionOS.y * 10.0h + positionOS.z * 100.0h);
+                    float3 positionForDissolve = positionOS;
+                    #ifndef _DISSOLVE_LOCALSPACE_ON
+                        positionForDissolve = TransformObjectToWorld(positionOS);
+                    #endif
+                    o.dissolveValue = CalculateDissolveValue(positionForDissolve, o.normalWS, input.uv, perVertexNoise);
+                #else
+                        o.dissolveValue = 2.0h;
+                #endif
+
+                o.positionCS = TransformObjectToHClip(positionOS);
+                o.positionWS = TransformObjectToWorld(positionOS);
+                o.uv = TRANSFORM_TEX(input.uv, _BaseMap);
+                return o;
+            }
+
+            half4 DepthFrag(DepthVaryings i) : SV_Target
+            {
+                ApplyAlphaClip(i.uv);
+                #if defined(_DISSOLVE_ON)
+                    half4 finalPixel = ApplyDissolveFragmentEffect(half4(0, 0, 0, 1), i.dissolveValue, i.uv, i.positionWS, i.normalWS);
+                    clip(finalPixel.a - 0.5h);
+                #endif
+                return 0;
+            }
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Name "DepthNormals"
+            Tags
+            {
+                "LightMode" = "DepthNormals"
+            }
+            ZWrite On Cull [_CullMode]
+
+            HLSLPROGRAM
+            #pragma vertex DepthNormalsVert
+            #pragma fragment DepthNormalsFrag
+            #pragma shader_feature_local_fragment _ALPHACLIP_ON
+            #pragma shader_feature_local _SURFACETYPE_FOLIAGE
+            #pragma shader_feature_local _ _DISSOLVE_ON
+            #pragma shader_feature_local _ _DISSOLVE_LOCALSPACE_ON
+            #pragma multi_compile_local _DISSOLVETYPE_NOISE _DISSOLVETYPE_LINEAR _DISSOLVETYPE_RADIAL _DISSOLVETYPE_PATTERN _DISSOLVETYPE_ALPHA_BLEND _DISSOLVETYPE_SHATTER
+            #pragma shader_feature_local_fragment _HOLOGRAM_REVEAL_ON
+
+            #include "Assets/Shaders/ToonUberShaderHQ/Includes/ToonUberCore_HQ.hlsl"
+
+            struct DepthNormalsVaryings
+            {
+                float4 positionCS : SV_POSITION;
+                float2 uv : TEXCOORD0;
+                float3 normalWS : TEXCOORD1;
+                float dissolveValue : TEXCOORD2;
+                float3 positionWS : TEXCOORD3;
+            };
+
+            DepthNormalsVaryings DepthNormalsVert(Attributes input)
+            {
+                DepthNormalsVaryings o;
+                float3 positionOS = input.positionOS.xyz;
+                #if defined(_SURFACETYPE_FOLIAGE)
+                    ApplyWind(positionOS, input.color);
+                #endif
+
+                o.normalWS = TransformObjectToWorldNormal(input.normalOS);
+
+                #if defined(_DISSOLVE_ON)
+                    float perVertexNoise = MU_Hash11(positionOS.x + positionOS.y * 10.0h + positionOS.z * 100.0h);
+                    float3 positionForDissolve = positionOS;
+                    #ifndef _DISSOLVE_LOCALSPACE_ON
+                        positionForDissolve = TransformObjectToWorld(positionOS);
+                    #endif
+                    o.dissolveValue = CalculateDissolveValue(positionForDissolve, o.normalWS, input.uv, perVertexNoise);
+                #else
+                        o.dissolveValue = 2.0h;
+                #endif
+
+                o.positionCS = TransformObjectToHClip(positionOS);
+                o.positionWS = TransformObjectToWorld(positionOS);
+                o.uv = TRANSFORM_TEX(input.uv, _BaseMap);
+                return o;
+            }
+
+            half4 DepthNormalsFrag(DepthNormalsVaryings i, half facing : VFACE) : SV_Target
+            {
+                ApplyAlphaClip(i.uv);
+                #if defined(_DISSOLVE_ON)
+                    half4 finalPixel = ApplyDissolveFragmentEffect(half4(0, 0, 0, 1), i.dissolveValue, i.uv, i.positionWS, i.normalWS);
+                    clip(finalPixel.a - 0.5h);
+                #endif
+
+                float3 normalWS = normalize(i.normalWS) * (facing * 2 - 1);
+                float3 viewNormal = TransformWorldToViewNormal(normalWS);
+                return half4(PackNormalOctRectEncode(viewNormal), 0, 0);
+            }
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Name "MotionVectors"
+            Tags
+            {
+                "LightMode" = "MotionVectors"
+            }
+            ZWrite Off Cull [_CullMode] ColorMask RG
+
+            HLSLPROGRAM
+            #pragma vertex MotionVert
+            #pragma fragment MotionFrag
+            #pragma shader_feature_local_fragment _ALPHACLIP_ON
+            #pragma shader_feature_local _SURFACETYPE_FOLIAGE
+            #pragma shader_feature_local _ _DISSOLVE_ON
+            #pragma shader_feature_local _ _DISSOLVE_LOCALSPACE_ON
+            #pragma multi_compile_local _DISSOLVETYPE_NOISE _DISSOLVETYPE_LINEAR _DISSOLVETYPE_RADIAL _DISSOLVETYPE_PATTERN _DISSOLVETYPE_ALPHA_BLEND _DISSOLVETYPE_SHATTER
+            #pragma shader_feature_local_fragment _HOLOGRAM_REVEAL_ON
+
+            #include "Assets/Shaders/ToonUberShaderHQ/Includes/ToonUberCore_HQ.hlsl"
+
+            float4x4 unity_MatrixPreviousM;
+            float4x4 unity_MatrixPreviousVP;
+
+            struct MotionVaryings
+            {
+                float4 positionCS : SV_POSITION;
+                float4 positionCS_NoJitter : TEXCOORD0;
+                float4 previousPositionCS_NoJitter : TEXCOORD1;
+                float2 uv : TEXCOORD2;
+                float dissolveValue : TEXCOORD3;
+                float3 positionWS : TEXCOORD4;
+                float3 normalWS : TEXCOORD5;
+            };
+
+            MotionVaryings MotionVert(Attributes input)
+            {
+                MotionVaryings o;
+                float3 posOS = input.positionOS.xyz;
+                #if defined(_SURFACETYPE_FOLIAGE)
+                    ApplyWind(posOS, input.color);
+                #endif
+
+                float3 normalWS = TransformObjectToWorldNormal(input.normalOS);
+
+                #if defined(_DISSOLVE_ON)
+                    float perVertexNoise = MU_Hash11(posOS.x + posOS.y * 10.0h + posOS.z * 100.0h);
+                    float3 positionForDissolve = posOS;
+                    #ifndef _DISSOLVE_LOCALSPACE_ON
+                        positionForDissolve = TransformObjectToWorld(posOS);
+                    #endif
+                    o.dissolveValue = CalculateDissolveValue(positionForDissolve, normalWS, input.uv, perVertexNoise);
+                #else
+                        o.dissolveValue = 2.0h;
+                #endif
+
+                o.positionCS = TransformObjectToHClip(posOS);
+                o.positionCS_NoJitter = mul(_NonJitteredViewProjMatrix, mul(UNITY_MATRIX_M, float4(posOS, 1.0)));
+                float4 prevPosOS = float4(posOS, 1.0);
+                float4 prevPosWS = mul(unity_MatrixPreviousM, prevPosOS);
+                o.previousPositionCS_NoJitter = mul(unity_MatrixPreviousVP, prevPosWS);
+                o.uv = TRANSFORM_TEX(input.uv, _BaseMap);
+                o.positionWS = TransformObjectToWorld(posOS);
+                o.normalWS = normalWS;
+                return o;
+            }
+
+            half4 MotionFrag(MotionVaryings i) : SV_Target
+            {
+                ApplyAlphaClip(i.uv);
+                #if defined(_DISSOLVE_ON)
+                    half4 finalPixel = ApplyDissolveFragmentEffect(half4(0, 0, 0, 1), i.dissolveValue, i.uv, i.positionWS, i.normalWS);
+                    clip(finalPixel.a - 0.5h);
+                #endif
+                float2 curPos = i.positionCS_NoJitter.xy / i.positionCS_NoJitter.w;
+                float2 prevPos = i.previousPositionCS_NoJitter.xy / i.previousPositionCS_NoJitter.w;
+                return float4(curPos - prevPos, 0, 0);
+            }
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Name "GBuffer"
+            Tags
+            {
+                "LightMode" = "UniversalGBuffer"
+            }
+            ZWrite [_ZWrite] Cull [_CullMode] Blend [_SrcBlend] [_DstBlend]
+
+            HLSLPROGRAM
+            #pragma vertex GBufferVert
+            #pragma fragment GBufferFrag
+            #pragma shader_feature_local_fragment _ALPHACLIP_ON
+            #pragma shader_feature_local _SURFACETYPE_FOLIAGE
+            #pragma shader_feature_local_fragment _EMISSION_ON
+            #pragma shader_feature_local _ _DISSOLVE_ON
+            #pragma shader_feature_local _ _DISSOLVE_LOCALSPACE_ON
+            #pragma multi_compile_local _DISSOLVETYPE_NOISE _DISSOLVETYPE_LINEAR _DISSOLVETYPE_RADIAL _DISSOLVETYPE_PATTERN _DISSOLVETYPE_ALPHA_BLEND _DISSOLVETYPE_SHATTER
+            #pragma shader_feature_local_fragment _HOLOGRAM_REVEAL_ON
+
+            #include "Assets/Shaders/ToonUberShaderHQ/Includes/ToonUberCore_HQ.hlsl"
+
+            struct GBufferVaryings
+            {
+                float4 positionCS : SV_POSITION;
+                float2 uv : TEXCOORD0;
+                float3 normalWS : TEXCOORD1;
+                float dissolveValue : TEXCOORD2;
+                float3 positionWS : TEXCOORD3;
+            };
+
+            struct ManualGBufferOutput
+            {
+                half4 GBuffer0 : SV_Target0;
+                half4 GBuffer1 : SV_Target1;
+                half4 GBuffer2 : SV_Target2;
+                half4 GBuffer3 : SV_Target3;
+            };
+
+            GBufferVaryings GBufferVert(Attributes input)
+            {
+                GBufferVaryings o;
+                float3 posOS = input.positionOS.xyz;
+                #if defined(_SURFACETYPE_FOLIAGE)
+                    ApplyWind(posOS, input.color);
+                #endif
+
+                o.normalWS = TransformObjectToWorldNormal(input.normalOS);
+
+                #if defined(_DISSOLVE_ON)
+                    float perVertexNoise = MU_Hash11(posOS.x + posOS.y * 10.0h + posOS.z * 100.0h);
+                    float3 positionForDissolve = posOS;
+                    #ifndef _DISSOLVE_LOCALSPACE_ON
+                        positionForDissolve = TransformObjectToWorld(posOS);
+                    #endif
+                    o.dissolveValue = CalculateDissolveValue(positionForDissolve, o.normalWS, input.uv, perVertexNoise);
+                #else
+                        o.dissolveValue = 2.0h;
+                #endif
+
+                o.positionCS = TransformObjectToHClip(posOS);
+                o.uv = TRANSFORM_TEX(input.uv, _BaseMap);
+                o.positionWS = TransformObjectToWorld(posOS);
+                return o;
+            }
+
+            ManualGBufferOutput GBufferFrag(GBufferVaryings i, half facing : VFACE)
+            {
+                ApplyAlphaClip(i.uv);
+                #if defined(_DISSOLVE_ON)
+                    half4 finalPixel = ApplyDissolveFragmentEffect(half4(0, 0, 0, 1), i.dissolveValue, i.uv, i.positionWS, i.normalWS);
+                    clip(finalPixel.a - 0.5h);
+                #endif
+
+                float3 normalWS = normalize(i.normalWS) * (facing * 2.0 - 1.0);
+                half4 albedo = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, i.uv) * _BaseColor;
+                half3 emission = ApplyEmission(0, i.uv);
+
+                ManualGBufferOutput output;
+                output.GBuffer0 = half4(albedo.rgb, 0);
+                output.GBuffer1 = half4(0, 0, 0, 1);
+                output.GBuffer2 = half4(normalWS * 0.5 + 0.5, 0);
+                output.GBuffer3 = half4(emission, 1);
+                return output;
+            }
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Name "Meta"
+            Tags
+            {
+                "LightMode" = "Meta"
+            }
+            Cull Off
+
+            HLSLPROGRAM
+            #pragma vertex MetaVert
+            #pragma fragment MetaFrag
+            #pragma shader_feature_local_fragment _EMISSION_ON
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/MetaInput.hlsl"
+            #include "Assets/Shaders/ToonUberShaderHQ/Includes/ToonUberCore_HQ.hlsl"
+
+            float4 unity_LightmapST;
+            float4 unity_DynamicLightmapST;
+
+            struct MetaVaryings
+            {
+                float4 positionCS : SV_POSITION;
+                float2 uv : TEXCOORD0;
+            };
+
+            MetaVaryings MetaVert(Attributes input)
+            {
+                MetaVaryings o;
+                o.positionCS = UnityMetaVertexPosition(input.positionOS.xyz, input.uv1, input.uv1, unity_LightmapST, unity_DynamicLightmapST);
+                o.uv = TRANSFORM_TEX(input.uv, _BaseMap);
+                return o;
+            }
+
+            half4 MetaFrag(MetaVaryings i) : SV_Target
+            {
+                UnityMetaInput meta;
+                UNITY_INITIALIZE_OUTPUT(UnityMetaInput, meta);
+                half4 albedo = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, i.uv) * _BaseColor;
+                meta.Albedo = albedo.rgb;
+                meta.Emission = ApplyEmission(0, i.uv);
+                return UnityMetaFragment(meta);
+            }
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Name "SceneSelectionPass"
+            Tags
+            {
+                "LightMode" = "SceneSelectionPass"
+            }
+            Cull Off ZWrite Off
+
+            HLSLPROGRAM
+            #pragma vertex Vert
+            #pragma fragment Frag
+            #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Color.hlsl"
+            #include "Assets/Shaders/ToonUberShaderHQ/Includes/ToonUberCore_HQ.hlsl"
+
+            float4 Vert(Attributes input) : SV_POSITION
+            {
+                float3 posOS = input.positionOS.xyz;
+                #if defined(_SURFACETYPE_FOLIAGE)
+                    ApplyWind(posOS, input.color);
+                #endif
+                return TransformObjectToHClip(posOS);
+            }
+            half4 Frag() : SV_Target
+            {
+                return half4(1, 1, 1, 1);
+            }
+            ENDHLSL
+        }
     }
-    CustomEditor "ToonOpaqueShaderGUI_HQ"
+    CustomEditor "ToonUber_Opaque_HQ_GUI"
 }

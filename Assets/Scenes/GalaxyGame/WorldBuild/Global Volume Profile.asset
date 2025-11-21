@@ -20,17 +20,17 @@ MonoBehaviour:
     m_OverrideState: 1
     m_Value: 0
   compareStyle:
-    m_OverrideState: 0
-    m_Value: 0
+    m_OverrideState: 1
+    m_Value: 1
   comparePanning:
     m_OverrideState: 0
-    m_Value: 0.25
+    m_Value: 0
   compareLineAngle:
-    m_OverrideState: 0
-    m_Value: 1.4
+    m_OverrideState: 1
+    m_Value: 3.14
   compareLineWidth:
-    m_OverrideState: 0
-    m_Value: 0.002
+    m_OverrideState: 1
+    m_Value: 0.0034
   flipY:
     m_OverrideState: 1
     m_Value: 0
@@ -63,7 +63,7 @@ MonoBehaviour:
     m_Value: 0
   sharpenIntensity:
     m_OverrideState: 0
-    m_Value: 0
+    m_Value: 5
   sharpenDepthThreshold:
     m_OverrideState: 0
     m_Value: 0.035
@@ -83,10 +83,10 @@ MonoBehaviour:
     m_Value: 0.45
   sharpenMotionSensibility:
     m_OverrideState: 0
-    m_Value: 0.5
+    m_Value: 1
   sharpenMotionRestoreSpeed:
     m_OverrideState: 0
-    m_Value: 0.5
+    m_Value: 5
   sharpenExclusionLayerMask:
     m_OverrideState: 0
     m_Value:
@@ -105,8 +105,8 @@ MonoBehaviour:
     m_OverrideState: 0
     m_Value: 0
   tonemap:
-    m_OverrideState: 0
-    m_Value: 0
+    m_OverrideState: 1
+    m_Value: 2
   tonemapAGXGamma:
     m_OverrideState: 0
     m_Value: 2.5
@@ -120,20 +120,20 @@ MonoBehaviour:
     m_OverrideState: 0
     m_Value: 1
   saturate:
-    m_OverrideState: 0
-    m_Value: 1
+    m_OverrideState: 1
+    m_Value: 0.75
   brightness:
-    m_OverrideState: 0
+    m_OverrideState: 1
     m_Value: 1
   contrast:
-    m_OverrideState: 0
-    m_Value: 1
+    m_OverrideState: 1
+    m_Value: 1.2
   daltonize:
     m_OverrideState: 0
     m_Value: 0
   sepia:
     m_OverrideState: 0
-    m_Value: 0
+    m_Value: 1
   tintColor:
     m_OverrideState: 0
     m_Value: {r: 1, g: 1, b: 1, a: 0}
@@ -164,7 +164,7 @@ MonoBehaviour:
     m_Value: 0
   bloomSpread:
     m_OverrideState: 1
-    m_Value: 0.384
+    m_Value: 0.289
   bloomMaxBrightness:
     m_OverrideState: 1
     m_Value: 1000
@@ -303,13 +303,13 @@ MonoBehaviour:
     m_Value: 0
   sunFlaresIntensity:
     m_OverrideState: 0
-    m_Value: 0
+    m_Value: 0.467
   sunFlaresTint:
     m_OverrideState: 0
     m_Value: {r: 1, g: 1, b: 1, a: 1}
   sunFlaresSolarWindSpeed:
     m_OverrideState: 0
-    m_Value: 0.01
+    m_Value: 0.04
   sunFlaresRotationDeadZone:
     m_OverrideState: 0
     m_Value: 0
@@ -335,7 +335,7 @@ MonoBehaviour:
     m_Value: 30
   sunFlaresSunIntensity:
     m_OverrideState: 0
-    m_Value: 0.1
+    m_Value: 0.449
   sunFlaresSunDiskSize:
     m_OverrideState: 0
     m_Value: 0.05
@@ -443,7 +443,7 @@ MonoBehaviour:
     m_OverrideState: 0
     m_Value: 0
   depthOfFieldFocusMode:
-    m_OverrideState: 0
+    m_OverrideState: 1
     m_Value: 0
   depthOfFieldAutofocusMinDistance:
     m_OverrideState: 0
@@ -470,7 +470,7 @@ MonoBehaviour:
       m_Bits: 4294967295
   depthOfFieldDistance:
     m_OverrideState: 0
-    m_Value: 10
+    m_Value: 15
   depthOfFieldCameraSettings:
     m_OverrideState: 0
     m_Value: 0
@@ -600,8 +600,8 @@ MonoBehaviour:
     m_OverrideState: 0
     m_Value: 0
   purkinjeAmount:
-    m_OverrideState: 0
-    m_Value: 1
+    m_OverrideState: 1
+    m_Value: 5
   purkinjeLuminanceThreshold:
     m_OverrideState: 0
     m_Value: 0.15

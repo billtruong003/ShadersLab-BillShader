@@ -36,6 +36,11 @@ Shader "Bill's Toon/Opaque (Hull Outline)"
         [HDR] _EmissionColor("Emission Color", Color) = (0, 0, 0, 1)
         _EmissionMap("Emission Map", 2D) = "black"{}
 
+        [Header(Rim Light)]
+        [Toggle(_RIMLIGHT_ON)] _RimLightToggle("Enable Rim Light", Float) = 0
+        [HDR] _RimColor("Rim Color", Color) = (1, 0.3, 0.3, 1)
+        _RimPower("Rim Power", Range(0, 20)) = 6
+
         [Header(Dynamic Texture Mask)]
         [Toggle(_TEXTUREMASK_ON)] _TextureMaskToggle("Enable Texture Mask", Float) = 0
         [NoScaleOffset] _MaskTexture("Mask Texture (Grayscale)", 2D) = "gray"{}
@@ -101,8 +106,6 @@ Shader "Bill's Toon/Opaque (Hull Outline)"
         [HDR] _SpecuColor("Specular Color", Color) = (0.8, 0.45, 0.2, 1)
         _HighlightOffset("Highlight Size", Range(0, 1)) = 0.9
         [HDR] _HiColor("Highlight Color", Color) = (1, 1, 1, 1)
-        [HDR] _RimColor("Rim Color", Color) = (1, 0.3, 0.3, 1)
-        _RimPower("Rim Power", Range(0, 20)) = 6
 
         [Header(Foliage)]
         [NoScaleOffset] _WindNoiseTex("Wind Noise (Seamless, Grayscale)", 2D) = "gray"{}
@@ -146,18 +149,16 @@ Shader "Bill's Toon/Opaque (Hull Outline)"
             #pragma shader_feature_local _OUTLINE_SCALE_WITH_DISTANCE
             #pragma shader_feature_local _SURFACETYPE_FOLIAGE
 
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Includes/Toon/ToonUberCore.hlsl"
 
-            CBUFFER_START(UnityPerMaterial)
-            float4 _OutlineColor;
-            float _OutlineWidth;
-            float _OutlineDistanceFadeStart;
-            float _OutlineDistanceFadeEnd;
-            CBUFFER_END
-
-            float4 OutlineVert(Attributes input) : SV_POSITION
+            struct OutlineVaryings
             {
+                float4 positionCS : SV_POSITION;
+            };
+
+            OutlineVaryings OutlineVert(Attributes input)
+            {
+                OutlineVaryings o;
                 float3 positionOS = input.positionOS.xyz;
                 float3 normalOS = input.normalOS;
 
@@ -167,23 +168,28 @@ Shader "Bill's Toon/Opaque (Hull Outline)"
 
                 float3 positionWS = TransformObjectToWorld(positionOS);
                 float camDist = distance(positionWS, _WorldSpaceCameraPos.xyz);
+
+                    // Scale outline based on distance to camera to maintain visibility
                 float distFade = 1.0 - saturate((camDist - _OutlineDistanceFadeStart) / max(0.001, _OutlineDistanceFadeEnd - _OutlineDistanceFadeStart));
                 float scaledWidth = _OutlineWidth * 0.01 * distFade;
 
                 #if defined(_OUTLINE_SCALE_WITH_DISTANCE)
-                    float4 positionCS = TransformObjectToHClip(positionOS);
+                        // Screen-space scaling logic
+                    o.positionCS = TransformObjectToHClip(positionOS);
                     float3 normalWS = TransformObjectToWorldNormal(normalOS);
                     float3 normalVS = TransformWorldToViewDir(normalWS);
                     float2 screenSpaceNormal = normalize(mul((float2x3)UNITY_MATRIX_P, normalVS).xy);
-                    positionCS.xy += screenSpaceNormal * scaledWidth * positionCS.w;
-                    return positionCS;
+                    o.positionCS.xy += screenSpaceNormal * scaledWidth * o.positionCS.w;
                 #else
-                        positionOS += normalOS * scaledWidth;
-                    return TransformObjectToHClip(positionOS);
+                            // Object-space scaling logic
+                    positionOS += normalOS * scaledWidth;
+                    o.positionCS = TransformObjectToHClip(positionOS);
                 #endif
+
+                return o;
             }
 
-            half4 OutlineFrag() : SV_Target
+            half4 OutlineFrag(OutlineVaryings i) : SV_Target
             {
                 return _OutlineColor;
             }
@@ -217,11 +223,16 @@ Shader "Bill's Toon/Opaque (Hull Outline)"
             #pragma shader_feature_local_fragment _TOON_STYLE_HARD
             #pragma shader_feature_local_fragment _MORPH_ON
             #pragma shader_feature_local_fragment _TEXTUREMASK_ON
+                // Added Rim Light Support for Body
+            #pragma shader_feature_local_fragment _RIMLIGHT_ON
 
             #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE
             #pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
             #pragma multi_compile_fragment _ _SHADOWS_SOFT
             #pragma multi_compile_fragment _ PROBE_VOLUMES_L1
+            #pragma multi_compile_fragment _ _SCREEN_SPACE_OCCLUSION
+            #pragma multi_compile_fragment _ _LIGHT_LAYERS
+            #pragma multi_compile_fragment _ _LIGHT_COOKIES
 
             #include "Includes/Toon/ToonUberCore.hlsl"
 
@@ -267,7 +278,7 @@ Shader "Bill's Toon/Opaque (Hull Outline)"
 
                 half3 lighting = 0;
                 #if defined(_SURFACETYPE_OPAQUE)
-                    lighting = CalculateToonLighting(normalWS, i.positionWS, mainLight);
+                    lighting = CalculateToonLighting(normalWS, i.positionWS, mainLight, viewDir);
                 #elif defined(_SURFACETYPE_METALLIC)
                     lighting = CalculateMetallicLighting(normalWS, viewDir, mainLight);
                 #elif defined(_SURFACETYPE_FOLIAGE)
@@ -293,6 +304,7 @@ Shader "Bill's Toon/Opaque (Hull Outline)"
             ENDHLSL
         }
 
+            // --- ShadowCaster Pass ---
         Pass
         {
             Name "ShadowCaster"
@@ -305,37 +317,42 @@ Shader "Bill's Toon/Opaque (Hull Outline)"
             HLSLPROGRAM
             #pragma vertex ShadowVert
             #pragma fragment ShadowFrag
-
             #pragma shader_feature_local_fragment _ALPHACLIP_ON
             #pragma shader_feature_local _SURFACETYPE_FOLIAGE
             #pragma shader_feature_local_fragment _MORPH_ON
             #pragma multi_compile_vertex _ _CASTING_PUNCTUAL_LIGHT_SHADOW
 
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Shadows.hlsl"
             #include "Includes/Toon/ToonUberCore.hlsl"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Shadows.hlsl"
 
-            struct Varyings
+            struct Varyings_Shadows
             {
                 float4 positionCS : SV_POSITION;
                 float2 uv : TEXCOORD0;
             };
 
-            Varyings ShadowVert(Attributes input)
+            Varyings_Shadows ShadowVert(Attributes input)
             {
-                Varyings output;
+                Varyings_Shadows output;
                 float3 positionOS = input.positionOS.xyz;
                 #if defined(_SURFACETYPE_FOLIAGE)
                     ApplyWind(positionOS, input.color);
                 #endif
                 float3 positionWS = TransformObjectToWorld(positionOS);
                 float3 normalWS = TransformObjectToWorldNormal(input.normalOS);
-                output.positionCS = GetShadowPositionHClip(positionWS, normalWS);
+
+                #if defined(_CASTING_PUNCTUAL_LIGHT_SHADOW)
+                    float3 lightDirectionWS = normalize(_MainLightPosition.xyz - positionWS);
+                #else
+                        float3 lightDirectionWS = _MainLightPosition.xyz;
+                #endif
+
+                output.positionCS = TransformWorldToHClip(ApplyShadowBias(positionWS, normalWS, lightDirectionWS));
                 output.uv = TRANSFORM_TEX(input.uv, _BaseMap);
                 return output;
             }
 
-            half4 ShadowFrag(Varyings input) : SV_Target
+            half4 ShadowFrag(Varyings_Shadows input) : SV_Target
             {
                 #if defined(_ALPHACLIP_ON)
                     ApplyAlphaClip(input.uv);
@@ -344,6 +361,8 @@ Shader "Bill's Toon/Opaque (Hull Outline)"
             }
             ENDHLSL
         }
+
+            // --- DepthOnly Pass ---
         Pass
         {
             Name "DepthOnly"
@@ -361,9 +380,15 @@ Shader "Bill's Toon/Opaque (Hull Outline)"
             #pragma shader_feature_local_fragment _MORPH_ON
             #include "Includes/Toon/ToonUberCore.hlsl"
 
-            Varyings DepthVert(Attributes input)
+            struct Varyings_Depth
             {
-                Varyings output;
+                float4 positionCS : SV_POSITION;
+                float2 uv : TEXCOORD0;
+            };
+
+            Varyings_Depth DepthVert(Attributes input)
+            {
+                Varyings_Depth output;
                 float3 posOS = input.positionOS.xyz;
                 #if defined(_SURFACETYPE_FOLIAGE)
                     ApplyWind(posOS, input.color);
@@ -373,16 +398,15 @@ Shader "Bill's Toon/Opaque (Hull Outline)"
                 return output;
             }
 
-            half4 DepthFrag(Varyings i) : SV_Target
+            half4 DepthFrag(Varyings_Depth i) : SV_Target
             {
                 ApplyAlphaClip(i.uv);
                 return 0;
             }
             ENDHLSL
         }
-            // ===================================================================
-            // 4. Depth Normals
-            // ===================================================================
+
+            // --- DepthNormals Pass ---
         Pass
         {
             Name "DepthNormals"
@@ -390,7 +414,6 @@ Shader "Bill's Toon/Opaque (Hull Outline)"
             {
                 "LightMode" = "DepthNormals"
             }
-
             ZWrite On Cull [_CullMode]
 
             HLSLPROGRAM
@@ -406,10 +429,9 @@ Shader "Bill's Toon/Opaque (Hull Outline)"
             {
                 float4 positionCS : SV_POSITION;
                 float2 uv : TEXCOORD0;
-                float4 normalWS : TEXCOORD1;
+                float3 normalWS : TEXCOORD1;
                 #if defined(_NORMALMAP_ON)
                     float4 tangentWS : TEXCOORD2;
-                    float4 bitangentWS : TEXCOORD3;
                 #endif
             };
 
@@ -421,16 +443,12 @@ Shader "Bill's Toon/Opaque (Hull Outline)"
                     ApplyWind(posOS, input.color);
                 #endif
 
-                VertexPositionInputs posInput = GetVertexPositionInputs(posOS);
-                VertexNormalInputs normInput = GetVertexNormalInputs(input.normalOS, input.tangentOS);
-
-                o.positionCS = posInput.positionCS;
+                o.positionCS = TransformObjectToHClip(posOS);
                 o.uv = TRANSFORM_TEX(input.uv, _BaseMap);
-                o.normalWS = float4(normInput.normalWS, 0);
-
+                o.normalWS = TransformObjectToWorldNormal(input.normalOS);
                 #if defined(_NORMALMAP_ON)
-                    o.tangentWS = float4(normInput.tangentWS, 0);
-                    o.bitangentWS = float4(normInput.bitangentWS, 0);
+                    float3 tWS = TransformObjectToWorldDir(input.tangentOS.xyz);
+                    o.tangentWS = float4(tWS.x, tWS.y, tWS.z, input.tangentOS.w);
                 #endif
                 return o;
             }
@@ -438,18 +456,19 @@ Shader "Bill's Toon/Opaque (Hull Outline)"
             half4 DepthNormalsFrag(DepthNormalsVaryings i, half facing : VFACE) : SV_Target
             {
                 ApplyAlphaClip(i.uv);
-                float3 normalWS = normalize(i.normalWS.xyz) * sign(facing);
+                float3 normalWS = normalize(i.normalWS) * (facing * 2 - 1);
                 #if defined(_NORMALMAP_ON)
-                    normalWS = ApplyNormalMap(i.uv, normalWS, i.tangentWS.xyz, i.bitangentWS.xyz);
+                    float3 bitangentWS = cross(i.normalWS, i.tangentWS.xyz) * i.tangentWS.w;
+                    normalWS = ApplyNormalMap(i.uv, normalWS, i.tangentWS.xyz, bitangentWS);
                 #endif
-                return half4(PackNormalOctRectEncode(TransformWorldToViewNormal(normalWS)), 0, 0);
+
+                float3 viewNormal = TransformWorldToViewNormal(normalWS);
+                return half4(PackNormalOctRectEncode(viewNormal), 0, 0);
             }
             ENDHLSL
         }
 
-            // ===================================================================
-            // Motion Vectors – Bản fix 2025 (không dùng MotionVectorsCore nữa)
-            // ===================================================================
+            // --- MotionVectors Pass ---
         Pass
         {
             Name "MotionVectors"
@@ -457,9 +476,7 @@ Shader "Bill's Toon/Opaque (Hull Outline)"
             {
                 "LightMode" = "MotionVectors"
             }
-
-            ZWrite Off Cull [_CullMode]
-            ColorMask RG
+            ZWrite Off Cull [_CullMode] ColorMask RG
 
             HLSLPROGRAM
             #pragma vertex Vert
@@ -467,40 +484,46 @@ Shader "Bill's Toon/Opaque (Hull Outline)"
             #pragma shader_feature_local_fragment _ALPHACLIP_ON
             #pragma shader_feature_local _SURFACETYPE_FOLIAGE
             #pragma shader_feature_local_fragment _MORPH_ON
-
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/MotionVectors.hlsl"
             #include "Includes/Toon/ToonUberCore.hlsl"
+
+            struct VaryingsMotion
+            {
+                float4 positionCS : SV_POSITION;
+                float4 positionCS_NoJitter : TEXCOORD0;
+                float4 previousPositionCS_NoJitter : TEXCOORD1;
+                float2 uv : TEXCOORD2;
+            };
 
             VaryingsMotion Vert(Attributes input)
             {
                 VaryingsMotion o;
-                UNITY_INITIALIZE_OUTPUT(VaryingsMotion, o);
-
                 float3 posOS = input.positionOS.xyz;
                 #if defined(_SURFACETYPE_FOLIAGE)
                     ApplyWind(posOS, input.color);
                 #endif
 
-                VertexPositionInputs pos = GetVertexPositionInputs(posOS);
-                o.positionCS = pos.positionCS;
-                o.previousPositionCS = GetPreviousPositionCS(posOS);
-                o.uv = TRANSFORM_TEX(input.uv, _BaseMap);
+                o.positionCS = TransformObjectToHClip(posOS);
+                o.positionCS_NoJitter = mul(_NonJitteredViewProjMatrix, mul(UNITY_MATRIX_M, float4(posOS, 1.0)));
 
+                float4 prevPosOS = float4(posOS, 1.0);
+                float4 prevPosWS = mul(unity_MatrixPreviousM, prevPosOS);
+                o.previousPositionCS_NoJitter = mul(unity_MatrixPreviousVP, prevPosWS);
+
+                o.uv = TRANSFORM_TEX(input.uv, _BaseMap);
                 return o;
             }
 
             half4 Frag(VaryingsMotion i) : SV_Target
             {
                 ApplyAlphaClip(i.uv);
-                return MotionVectorFragment(i.positionCS, i.previousPositionCS);
+                float2 curPos = i.positionCS_NoJitter.xy / i.positionCS_NoJitter.w;
+                float2 prevPos = i.previousPositionCS_NoJitter.xy / i.previousPositionCS_NoJitter.w;
+                return float4(curPos - prevPos, 0, 0);
             }
             ENDHLSL
         }
 
-            // ===================================================================
-            // 6. GBuffer (Deferred Rendering)
-            // ===================================================================
+            // --- GBuffer Pass ---
         Pass
         {
             Name "GBuffer"
@@ -508,7 +531,6 @@ Shader "Bill's Toon/Opaque (Hull Outline)"
             {
                 "LightMode" = "UniversalGBuffer"
             }
-
             ZWrite [_ZWrite]
             Cull [_CullMode]
             Blend [_SrcBlend] [_DstBlend]
@@ -521,7 +543,6 @@ Shader "Bill's Toon/Opaque (Hull Outline)"
             #pragma shader_feature_local _SURFACETYPE_FOLIAGE
             #pragma shader_feature_local_fragment _MORPH_ON
             #pragma shader_feature_local_fragment _EMISSION_ON
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
             #include "Includes/Toon/ToonUberCore.hlsl"
 
             struct GBufferVaryings
@@ -532,8 +553,15 @@ Shader "Bill's Toon/Opaque (Hull Outline)"
                 float3 positionWS : TEXCOORD2;
                 #if defined(_NORMALMAP_ON)
                     float4 tangentWS : TEXCOORD3;
-                    float4 bitangentWS : TEXCOORD4;
                 #endif
+            };
+
+            struct ManualGBufferOutput
+            {
+                half4 GBuffer0 : SV_Target0;
+                half4 GBuffer1 : SV_Target1;
+                half4 GBuffer2 : SV_Target2;
+                half4 GBuffer3 : SV_Target3;
             };
 
             GBufferVaryings GBufferVert(Attributes input)
@@ -544,46 +572,42 @@ Shader "Bill's Toon/Opaque (Hull Outline)"
                     ApplyWind(posOS, input.color);
                 #endif
 
-                VertexPositionInputs posInput = GetVertexPositionInputs(posOS);
-                VertexNormalInputs normInput = GetVertexNormalInputs(input.normalOS, input.tangentOS);
-
-                o.positionCS = posInput.positionCS;
-                o.positionWS = posInput.positionWS;
+                o.positionWS = TransformObjectToWorld(posOS);
+                o.positionCS = TransformWorldToHClip(o.positionWS);
+                o.normalWS = TransformObjectToWorldNormal(input.normalOS);
                 o.uv = TRANSFORM_TEX(input.uv, _BaseMap);
-                o.normalWS = normInput.normalWS;
 
                 #if defined(_NORMALMAP_ON)
-                    o.tangentWS.xyz = normInput.tangentWS;
-                    o.bitangentWS.xyz = normInput.bitangentWS;
+                    float3 tWS = TransformObjectToWorldDir(input.tangentOS.xyz);
+                    o.tangentWS = float4(tWS.x, tWS.y, tWS.z, input.tangentOS.w);
                 #endif
                 return o;
             }
 
-            GBufferOutput GBufferFrag(GBufferVaryings i, half facing : VFACE)
+            ManualGBufferOutput GBufferFrag(GBufferVaryings i, half facing : VFACE)
             {
                 ApplyAlphaClip(i.uv);
 
-                float3 normalWS = normalize(i.normalWS) * sign(facing);
+                float3 normalWS = normalize(i.normalWS) * (facing * 2.0 - 1.0);
                 #if defined(_NORMALMAP_ON)
-                    normalWS = ApplyNormalMap(i.uv, normalWS, i.tangentWS.xyz, i.bitangentWS.xyz);
+                    float3 bitangentWS = cross(i.normalWS, i.tangentWS.xyz) * i.tangentWS.w;
+                    normalWS = ApplyNormalMap(i.uv, normalWS, i.tangentWS.xyz, bitangentWS);
                 #endif
 
                 half4 albedo = GetAlbedoAndAlpha(i.uv);
                 half3 emission = ApplyEmission(0, i.uv);
 
-                GBufferOutput o;
-                o.GBuffer0 = half4(albedo.rgb * _BaseColor.rgb, 0);
-                o.GBuffer1 = half4(0, 0, 0, 0);
-                o.GBuffer2 = half4(normalWS * 0.5 + 0.5, 0);
-                o.GBuffer3 = half4(emission, 1);
-                return o;
+                ManualGBufferOutput output;
+                output.GBuffer0 = half4(albedo.rgb * _BaseColor.rgb, 0);
+                output.GBuffer1 = half4(0, 0, 0, 0);
+                output.GBuffer2 = half4(normalWS * 0.5 + 0.5, 0);
+                output.GBuffer3 = half4(emission, 1);
+                return output;
             }
             ENDHLSL
         }
 
-            // ===================================================================
-            // 7. Meta (Lightmap & Light Probe Baking)
-            // ===================================================================
+            // --- Meta Pass ---
         Pass
         {
             Name "Meta"
@@ -591,7 +615,6 @@ Shader "Bill's Toon/Opaque (Hull Outline)"
             {
                 "LightMode" = "Meta"
             }
-
             Cull Off
 
             HLSLPROGRAM
@@ -611,7 +634,7 @@ Shader "Bill's Toon/Opaque (Hull Outline)"
             MetaVaryings MetaVert(Attributes input)
             {
                 MetaVaryings o;
-                o.positionCS = UnityMetaVertexPosition(input.positionOS.xyz, input.uv0, input.uv1);
+                o.positionCS = UnityMetaVertexPosition(input.positionOS.xyz, input.uv1, input.uv1, unity_LightmapST, unity_DynamicLightmapST);
                 o.uv = TRANSFORM_TEX(input.uv, _BaseMap);
                 return o;
             }
@@ -630,9 +653,7 @@ Shader "Bill's Toon/Opaque (Hull Outline)"
             ENDHLSL
         }
 
-            // ===================================================================
-            // SceneSelection + ScenePicking – Bản inline, không cần file riêng
-            // ===================================================================
+            // --- Scene Selection ---
         Pass
         {
             Name "SceneSelectionPass"
@@ -640,28 +661,16 @@ Shader "Bill's Toon/Opaque (Hull Outline)"
             {
                 "LightMode" = "SceneSelectionPass"
             }
-
             Cull Off
             ZWrite Off
 
             HLSLPROGRAM
             #pragma vertex Vert
             #pragma fragment Frag
-
-            #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Version.hlsl"
             #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Color.hlsl"
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Includes/Toon/ToonUberCore.hlsl"
 
-            struct AttributesLean
-            {
-                float4 positionOS : POSITION;
-                float2 uv : TEXCOORD0;
-                float4 color : COLOR;
-                UNITY_VERTEX_INPUT_INSTANCE_ID
-            };
-
-            float4 Vert(AttributesLean input) : SV_POSITION
+            float4 Vert(Attributes input) : SV_POSITION
             {
                 float3 posOS = input.positionOS.xyz;
                 #if defined(_SURFACETYPE_FOLIAGE)
@@ -672,11 +681,10 @@ Shader "Bill's Toon/Opaque (Hull Outline)"
 
             half4 Frag() : SV_Target
             {
-                return half4(1, 1, 1, 1); // Unity sẽ tự override màu highlight
+                return half4(1, 1, 1, 1);
             }
             ENDHLSL
         }
     }
-
     CustomEditor "ToonOpaqueHullOutlineShaderGUI"
 }

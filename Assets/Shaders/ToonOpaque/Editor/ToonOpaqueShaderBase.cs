@@ -26,7 +26,8 @@ public abstract class ToonOpaqueShaderBase : ShaderGUI
     protected MaterialProperty toonStyleProp, shadowThresholdProp, midtoneThresholdProp, toonRampSmoothnessProp, shadowTintProp, midtoneColorProp;
     protected MaterialProperty addLightShadowTintProp, addLightMidtoneColorProp, addLightShadowThresholdProp, addLightMidtoneThresholdProp, addLightRampSmoothnessProp;
     protected MaterialProperty indirectSpecularToggleProp, indirectSpecularIntensityProp;
-    protected MaterialProperty rampProp, brightnessProp, offsetProp, specuColorProp, highlightOffsetProp, hiColorProp, rimColorProp, rimPowerProp;
+    // Added rimLightToggleProp
+    protected MaterialProperty rimLightToggleProp, rampProp, brightnessProp, offsetProp, specuColorProp, highlightOffsetProp, hiColorProp, rimColorProp, rimPowerProp;
     protected MaterialProperty windNoiseTexProp, windSpeedProp, windAmplitudeProp, windNoiseScaleProp, windDirectionProp, windFadeStartProp, windFadeEndProp, translucencyColorProp, translucencyStrengthProp;
     protected MaterialProperty noiseTexProp, blingWorldSpaceProp, blingColorProp, blingIntensityProp, blingScaleProp, blingSpeedProp, blingFresnelPowerProp, blingThresholdProp;
     protected MaterialProperty morphToggleProp, baseMapBProp, morphProp;
@@ -100,6 +101,8 @@ public abstract class ToonOpaqueShaderBase : ShaderGUI
         addLightRampSmoothnessProp = FindProperty("_AddLightRampSmoothness", properties);
         indirectSpecularToggleProp = FindProperty("_IndirectSpecular", properties);
         indirectSpecularIntensityProp = FindProperty("_IndirectSpecularIntensity", properties);
+
+        // Metallic & Rim
         rampProp = FindProperty("_Ramp", properties);
         brightnessProp = FindProperty("_Brightness", properties);
         offsetProp = FindProperty("_Offset", properties);
@@ -108,6 +111,8 @@ public abstract class ToonOpaqueShaderBase : ShaderGUI
         hiColorProp = FindProperty("_HiColor", properties);
         rimColorProp = FindProperty("_RimColor", properties);
         rimPowerProp = FindProperty("_RimPower", properties);
+        rimLightToggleProp = FindProperty("_RimLightToggle", properties, false); // Use false as it might not be in all variants
+
         windNoiseTexProp = FindProperty("_WindNoiseTex", properties);
         windSpeedProp = FindProperty("_WindSpeed", properties);
         windAmplitudeProp = FindProperty("_WindAmplitude", properties);
@@ -193,6 +198,12 @@ public abstract class ToonOpaqueShaderBase : ShaderGUI
             bool morphOn = morphToggleProp.floatValue > 0.5f && baseMapBProp != null && baseMapBProp.textureValue != null;
             SetKeyword("_MORPH_ON", morphOn);
         }
+
+        // Rim Light Keyword Logic
+        if (rimLightToggleProp != null)
+        {
+            SetKeyword("_RIMLIGHT_ON", rimLightToggleProp.floatValue > 0.5f);
+        }
     }
 
     protected abstract void DrawWorkflowSettings();
@@ -258,10 +269,6 @@ public abstract class ToonOpaqueShaderBase : ShaderGUI
                 {
                     materialEditor.TexturePropertySingleLine(new GUIContent(baseMapBProp.displayName), baseMapBProp);
                     materialEditor.ShaderProperty(morphProp, morphProp.displayName);
-                    if (baseMapBProp.textureValue == null && !baseMapBProp.hasMixedValue)
-                    {
-                        EditorGUILayout.HelpBox("Albedo B is not assigned. Morph will not be visible.", MessageType.Warning);
-                    }
                 });
             }
 
@@ -355,6 +362,11 @@ public abstract class ToonOpaqueShaderBase : ShaderGUI
         {
             case ToonOpaqueDrawerUtils.SurfaceType.Opaque:
                 ToonOpaqueDrawerUtils.DrawToonSettings(materialEditor, toonStyleProp, shadowThresholdProp, midtoneThresholdProp, toonRampSmoothnessProp, shadowTintProp, midtoneColorProp);
+                // Updated: Now draws Rim Light settings for Opaque mode
+                if (rimLightToggleProp != null)
+                {
+                    ToonOpaqueDrawerUtils.DrawRimLightSettings(materialEditor, rimLightToggleProp, rimColorProp, rimPowerProp);
+                }
                 break;
             case ToonOpaqueDrawerUtils.SurfaceType.Metallic:
                 ToonOpaqueDrawerUtils.DrawMetallicSettings(materialEditor, rampProp, brightnessProp, offsetProp, specuColorProp, highlightOffsetProp, hiColorProp, rimColorProp, rimPowerProp);

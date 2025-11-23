@@ -1,118 +1,139 @@
 using UnityEngine;
 using Sirenix.OdinInspector;
+using System.Collections;
 
-[RequireComponent(typeof(Camera))]
-public class IsometricCameraController : MonoBehaviour
+namespace Nebulanook.Core
 {
-    [Header("=== Target ===")]
-    public Transform target;                    // Kéo Player vào đây
-
-    [Header("=== Angle & Distance ===")]
-    [SerializeField] private Vector3 offset = new Vector3(0, 12, -12); // Khoảng cách + độ cao
-    [SerializeField, Range(0f, 90f)] private float pitchAngle = 35f;  // Góc nhìn xuống
-
-    [Header("=== Follow Smoothness ===")]
-    [SerializeField, Range(0.01f, 1f)] private float positionSmoothTime = 0.12f;
-    [SerializeField, Range(0.01f, 1f)] private float rotationSmoothTime = 0.2f;
-
-    [Header("=== Zoom ===")]
-    [SerializeField] private float zoomSpeed = 4f;
-    [SerializeField] private float minDistance = 6f;
-    [SerializeField] private float maxDistance = 20f;
-
-    [Header("=== Rotation (Right Mouse Button) ===")]
-    [SerializeField] private bool allowRotation = true;
-    [SerializeField] private float rotationSpeed = 120f;
-
-    private float currentZoom = 1f;
-    private float currentYaw = 45f;             // Góc xoay ngang ban đầu (45° là isometric chuẩn)
-
-    private Vector3 positionVelocity;
-    private float rotationVelocity;
-
-    private void Awake()
+    [RequireComponent(typeof(Camera))]
+    public class IsometricCameraController : MonoBehaviour
     {
-        if (target == null)
+        public static IsometricCameraController Instance { get; private set; }
+
+        [Title("Targeting")]
+        [SerializeField] private Transform target;
+        [SerializeField] private Vector3 offset = new Vector3(0, 12, -12);
+        [SerializeField, Range(0f, 90f)] private float pitchAngle = 45f;
+
+        [Title("Smoothing")]
+        [SerializeField] private float followSmoothTime = 0.12f;
+        [SerializeField] private float rotationSmoothTime = 0.2f;
+
+        [Title("Occlusion")]
+        [SerializeField] private LayerMask obstacleMask;
+        [SerializeField] private float obstacleCheckRadius = 0.5f;
+        [SerializeField] private float occlusionSmoothTime = 0.1f;
+
+        [Title("Input")]
+        [SerializeField] private float zoomSpeed = 5f;
+        [SerializeField] private float minZoom = 5f;
+        [SerializeField] private float maxZoom = 20f;
+        [SerializeField] private float rotationSpeed = 120f;
+
+        private float currentZoom;
+        private float currentYaw = 45f;
+        private Vector3 currentVelocity;
+        private float targetDistance;
+        private float occlusionVelocity;
+
+        private float shakeTimer;
+        private float shakePower;
+        private Vector3 shakeOffset;
+
+        private void Awake()
         {
-            Debug.LogError("[IsometricCamera] Không tìm thấy Player!");
-            enabled = false;
-            return;
+            Instance = this;
+            if (target == null) return;
+
+            currentZoom = offset.magnitude;
+            targetDistance = currentZoom;
+            UpdateCameraPosition(true);
         }
 
-        currentZoom = offset.magnitude;
-        ApplyZoomAndAngle();
-    }
-
-    [Button]
-    private void SetupOffset()
-    {
-        Awake();
-    }
-
-    private void LateUpdate()
-    {
-        if (target == null) return;
-
-        HandleZoom();
-        HandleRotation();
-
-        // Tính toán vị trí và góc mong muốn
-        Quaternion camRotation = Quaternion.Euler(pitchAngle, currentYaw, 0f);
-        Vector3 desiredPosition = target.position + camRotation * (Vector3.back * currentZoom);
-
-        // Smooth follow
-        transform.position = Vector3.SmoothDamp(transform.position, desiredPosition, ref positionVelocity, positionSmoothTime);
-        transform.rotation = Quaternion.Slerp(transform.rotation, camRotation, Time.deltaTime / rotationSmoothTime);
-    }
-
-    private void HandleZoom()
-    {
-        float scroll = Input.GetAxis("Mouse ScrollWheel");
-        if (Mathf.Abs(scroll) > 0.01f)
+        private void LateUpdate()
         {
-            currentZoom -= scroll * zoomSpeed * currentZoom * 0.5f;
-            currentZoom = Mathf.Clamp(currentZoom, minDistance, maxDistance);
-            ApplyZoomAndAngle();
+            if (target == null) return;
+
+            HandleInput();
+            CalculateOcclusion();
+            UpdateCameraPosition(false);
+            UpdateShake();
         }
-    }
 
-    private void HandleRotation()
-    {
-        if (!allowRotation) return;
-
-        if (Input.GetMouseButton(1)) // Chuột phải giữ
+        private void HandleInput()
         {
-            float mouseX = Input.GetAxis("Mouse X");
-            currentYaw += mouseX * rotationSpeed * Time.deltaTime;
+            float scroll = Input.GetAxis("Mouse ScrollWheel");
+            if (Mathf.Abs(scroll) > 0.001f)
+            {
+                currentZoom -= scroll * zoomSpeed;
+                currentZoom = Mathf.Clamp(currentZoom, minZoom, maxZoom);
+            }
+
+            if (Input.GetMouseButton(1))
+            {
+                currentYaw += Input.GetAxis("Mouse X") * rotationSpeed * Time.deltaTime;
+            }
         }
-    }
 
-    // Cập nhật offset theo zoom và góc pitch hiện tại
-    private void ApplyZoomAndAngle()
-    {
-        float vertical = currentZoom * Mathf.Tan(pitchAngle * Mathf.Deg2Rad);
-        offset = new Vector3(0, vertical, -currentZoom);
-    }
-
-    // Vẽ gizmo để dễ chỉnh trong Scene view
-    private void OnDrawGizmosSelected()
-    {
-        if (target != null)
+        private void CalculateOcclusion()
         {
-            Gizmos.color = new Color(0, 1, 1, 0.5f);
-            Quaternion rot = Quaternion.Euler(pitchAngle, currentYaw, 0);
-            Vector3 pos = target.position + rot * new Vector3(0, offset.y, -currentZoom);
-            Gizmos.DrawLine(target.position, pos);
-            Gizmos.DrawWireSphere(pos, 1f);
+            Vector3 targetPos = target.position + Vector3.up;
+            Quaternion rotation = Quaternion.Euler(pitchAngle, currentYaw, 0);
+            Vector3 direction = rotation * Vector3.back;
+
+            Ray ray = new Ray(targetPos, direction);
+            float desiredDist = currentZoom;
+
+            if (Physics.SphereCast(ray, obstacleCheckRadius, out RaycastHit hit, currentZoom, obstacleMask))
+            {
+                desiredDist = hit.distance - 0.5f;
+                if (desiredDist < minZoom) desiredDist = minZoom;
+            }
+
+            targetDistance = Mathf.SmoothDamp(targetDistance, desiredDist, ref occlusionVelocity, occlusionSmoothTime);
         }
-    }
 
-    // Optional: Reset góc về isometric chuẩn bằng phím R
-    private void Update()
-    {
-        if (Input.GetKeyDown(KeyCode.R))
+        private void UpdateCameraPosition(bool instant)
         {
-            currentYaw = 45f;
+            Quaternion targetRotation = Quaternion.Euler(pitchAngle, currentYaw, 0);
+            Vector3 targetPos = target.position + targetRotation * (Vector3.back * targetDistance);
+
+            if (instant)
+            {
+                transform.position = targetPos;
+                transform.rotation = targetRotation;
+            }
+            else
+            {
+                transform.position = Vector3.SmoothDamp(transform.position, targetPos + shakeOffset, ref currentVelocity, followSmoothTime);
+                transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime / rotationSmoothTime);
+            }
+        }
+
+        public void Shake(float duration, float power)
+        {
+            shakeTimer = duration;
+            shakePower = power;
+        }
+
+        private void UpdateShake()
+        {
+            if (shakeTimer > 0)
+            {
+                shakeOffset = Random.insideUnitSphere * shakePower;
+                shakeTimer -= Time.deltaTime;
+            }
+            else
+            {
+                shakeOffset = Vector3.zero;
+            }
+        }
+
+        private void OnDrawGizmosSelected()
+        {
+            if (target == null) return;
+            Gizmos.color = Color.yellow;
+            Gizmos.DrawWireSphere(transform.position, obstacleCheckRadius);
+            Gizmos.DrawLine(target.position, transform.position);
         }
     }
 }

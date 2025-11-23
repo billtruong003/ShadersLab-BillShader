@@ -26,7 +26,9 @@ Material:
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
   - _FAKELIGHT_ON
+  - _RIMLIGHT_ON
   - _SURFACETYPE_OPAQUE
+  - _TEXTUREMASK_ON
   m_InvalidKeywords:
   - _OUTLINE_SCALE_WITH_DISTANCE
   - _ZWRITE_ON
@@ -82,6 +84,10 @@ Material:
         m_Texture: {fileID: 2800000, guid: 7c9bc7f8a9a40ee478c05acd31474a21, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _MaskTexture:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - _Matcap:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
@@ -114,6 +120,10 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _WindNoiseTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - unity_Lightmaps:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
@@ -129,7 +139,7 @@ Material:
     m_Ints: []
     m_Floats:
     - _AddLightMidtoneThreshold: 1
-    - _AddLightRampSmoothness: 0.5
+    - _AddLightRampSmoothness: 0.001
     - _AddLightShadowThreshold: 0.1
     - _AddPrecomputedVelocity: 0
     - _AdditionalLightIgnoreCelShade: 0.9
@@ -188,6 +198,8 @@ Material:
     - _IndirectSpecularIntensity: 1
     - _IsFace: 0
     - _MainLightIgnoreCelShade: 0
+    - _MaskBlend: 1
+    - _MaskDivisions: 2
     - _MatcapBlendMode: 0
     - _MatcapStrength: 1
     - _MatcapToggle: 0
@@ -214,7 +226,8 @@ Material:
     - _ReceiveShadows: 1
     - _ReceiveShadowsOff: 0
     - _RenderMode: 0
-    - _RimPower: 20
+    - _RimLightToggle: 1
+    - _RimPower: 1
     - _RimStrength: 0.5
     - _ShadowSoftness: 0.01
     - _ShadowSteps: 1.9
@@ -226,7 +239,8 @@ Material:
     - _SrcBlendAlpha: 1
     - _Surface: 0
     - _SurfaceType: 0
-    - _ToonRampSmoothness: 0.001
+    - _TextureMaskToggle: 1
+    - _ToonRampSmoothness: 0.5
     - _ToonStyle: 0
     - _TranslucencyStrength: 1
     - _UVSec: 0
@@ -234,7 +248,11 @@ Material:
     - _UseEmission: 0
     - _UseOcclusion: 0
     - _WindAmplitude: 0.1
+    - _WindFadeEnd: 50
+    - _WindFadeStart: 20
     - _WindFrequency: 2
+    - _WindNoiseScale: 1
+    - _WindSpeed: 2
     - _WorkflowMode: 1
     - _XRMotionVectorsPass: 1
     - _ZWrite: 1
@@ -242,7 +260,7 @@ Material:
     - _AddLightMidtoneColor: {r: 0.7, g: 0.7, b: 0.7, a: 1}
     - _AddLightShadowTint: {r: 0, g: 0, b: 0, a: 1}
     - _AmbientColor: {r: 0.5, g: 0.5, b: 0.5, a: 0}
-    - _BaseColor: {r: 0.20754719, g: 0.20754719, b: 0.20754719, a: 1}
+    - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _BlingColor: {r: 1, g: 1, b: 1, a: 1}
     - _Color: {r: 0.8000706, g: 0.37618566, b: 0.63277036, a: 1}
     - _DitherEdgeColor: {r: 0, g: 0.7490197, b: 0.7490197, a: 1}
@@ -255,6 +273,22 @@ Material:
     - _HiColor: {r: 1, g: 1, b: 1, a: 1}
     - _HighlightColor: {r: 0.2830189, g: 0.2830189, b: 0.2830189, a: 1}
     - _IndirectLightMinColor: {r: 0.1, g: 0.1, b: 0.1, a: 1}
+    - _MaskColor0: {r: 0.4245283, g: 0.17597628, b: 0, a: 1}
+    - _MaskColor1: {r: 0.42352945, g: 0.1764706, b: 0, a: 1}
+    - _MaskColor10: {r: 1, g: 1, b: 1, a: 1}
+    - _MaskColor11: {r: 1, g: 1, b: 1, a: 1}
+    - _MaskColor12: {r: 1, g: 1, b: 1, a: 1}
+    - _MaskColor13: {r: 1, g: 1, b: 1, a: 1}
+    - _MaskColor14: {r: 1, g: 1, b: 1, a: 1}
+    - _MaskColor15: {r: 1, g: 1, b: 1, a: 1}
+    - _MaskColor2: {r: 0.06666667, g: 0.9803922, b: 0.24313727, a: 1}
+    - _MaskColor3: {r: 0.42352945, g: 0.1764706, b: 0, a: 1}
+    - _MaskColor4: {r: 1, g: 1, b: 1, a: 1}
+    - _MaskColor5: {r: 1, g: 1, b: 1, a: 1}
+    - _MaskColor6: {r: 1, g: 1, b: 1, a: 1}
+    - _MaskColor7: {r: 1, g: 1, b: 1, a: 1}
+    - _MaskColor8: {r: 1, g: 1, b: 1, a: 1}
+    - _MaskColor9: {r: 1, g: 1, b: 1, a: 1}
     - _MidtoneColor: {r: 0.5660378, g: 0.5660378, b: 0.5660378, a: 1}
     - _OcclusionMapChannelMask: {r: 1, g: 0, b: 0, a: 0}
     - _OutlineColor: {r: 0, g: 0, b: 0, a: 1}

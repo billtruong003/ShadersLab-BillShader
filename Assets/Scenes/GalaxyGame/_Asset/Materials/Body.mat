@@ -29,8 +29,9 @@ Material:
   - _DISSOLVETYPE_LINEAR
   - _DISSOLVE_LOCALSPACE_ON
   - _DISSOLVE_ON
-  - _FAKELIGHT_ON
+  - _MASK_TRIPLANAR_ON
   - _RIMLIGHT_ON
+  - _SPECULAR_ON
   - _SURFACETYPE_OPAQUE
   - _VERTEX_DISPLACEMENT_ON
   m_InvalidKeywords:
@@ -44,7 +45,7 @@ Material:
   stringTagMap:
     RenderType: Opaque
   disabledShaderPasses: []
-  m_LockedProperties: _MaskBlend
+  m_LockedProperties: _MaskBlend _ShadowTint
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
@@ -125,7 +126,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MaskTriplanarTex:
-        m_Texture: {fileID: 2800000, guid: a263718a226e54b009c0cfc63e646872, type: 3}
+        m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MatCapTex:
@@ -186,7 +187,7 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _AddLightMidtoneThreshold: 0.6
+    - _AddLightMidtoneThreshold: 0.391
     - _AddLightRampSmoothness: 0.001
     - _AddLightShadowThreshold: 0.1
     - _AddPrecomputedVelocity: 0
@@ -202,7 +203,7 @@ Material:
     - _BlingThreshold: 0.95
     - _BlingWorldSpace: 0
     - _BounceWaveWidth: 0.85
-    - _Brightness: 0
+    - _Brightness: 0.25
     - _BumpScale: 0
     - _ClearCoatMask: 0
     - _ClearCoatSmoothness: 0
@@ -242,7 +243,7 @@ Material:
     - _EpicFloat1: 1
     - _EpicFloat2: 1
     - _EpicFloat3: 1
-    - _FakeLightMode: 1
+    - _FakeLightMode: 0
     - _ForceFakeLight: 0
     - _FresnelOutlinePower: 100
     - _FresnelOutlineSharpness: 2
@@ -267,8 +268,8 @@ Material:
     - _MaskDivisions: 2
     - _MaskTriplanarBlend: 1
     - _MaskTriplanarScale: 1
-    - _MaskTriplanarSharpness: 1
-    - _MaskTriplanarToggle: 0
+    - _MaskTriplanarSharpness: 20
+    - _MaskTriplanarToggle: 1
     - _MaskingToggle: 0
     - _MatCapBlend: 0
     - _MatCapStrength: 2
@@ -280,18 +281,18 @@ Material:
     - _MaxDissolveDistance: 1
     - _MetalRimPower: 6
     - _Metallic: 0
-    - _MidtoneThreshold: 0.7
+    - _MidtoneThreshold: 0.587
     - _Mode: 0
     - _Morph: 0
     - _MorphToggle: 0
     - _NoiseScale: 5
     - _NoiseStrength: 0.131
     - _OcclusionStrength: 1
-    - _Offset: 0.8
+    - _Offset: 0.5
     - _OutlineDistanceFadeEnd: 45
     - _OutlineDistanceFadeStart: -45
     - _OutlineExtrusionToggle: 0
-    - _OutlineMode: 2
+    - _OutlineMode: 0
     - _OutlineScaleWithDistance: 0
     - _OutlineWidth: 0.56
     - _Parallax: 0.02
@@ -307,15 +308,15 @@ Material:
     - _ReceiveShadowsOff: 0
     - _RenderMode: 0
     - _RevealProgress: 0
-    - _RimLightPower: 4
-    - _RimLightSmoothness: 0.5
+    - _RimLightPower: 0.2
+    - _RimLightSmoothness: 0.862
     - _RimLightToggle: 1
     - _RimPower: 1.85
     - _RimSmoothness: 0.5
     - _RimThreshold: 0.264
     - _RimToggle: 1
     - _ShadowStrength: 1
-    - _ShadowThreshold: 0.3
+    - _ShadowThreshold: 0.116
     - _ShatterLiftSpeed: 1
     - _ShatterOffsetStrength: 0.5
     - _ShatterStrength: 1
@@ -326,8 +327,8 @@ Material:
     - _SpecularGloss: 7.1
     - _SpecularHighlights: 1
     - _SpecularSize: 0.159
-    - _SpecularSmoothness: 0.05
-    - _SpecularToggle: 0
+    - _SpecularSmoothness: 0.5
+    - _SpecularToggle: 1
     - _SrcBlend: 1
     - _SrcBlendAlpha: 1
     - _StarfieldParallaxDepth: 0.08
@@ -366,7 +367,7 @@ Material:
     - _AddLightMidtoneColor: {r: 0.7, g: 0.7, b: 0.7, a: 1}
     - _AddLightShadowTint: {r: 0.3584906, g: 0.3584906, b: 0.3584906, a: 1}
     - _AmbientColor: {r: 1, g: 1, b: 1, a: 0}
-    - _BaseColor: {r: 0.24528301, g: 0.24528301, b: 0.24528301, a: 1}
+    - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _BlingColor: {r: 1, g: 1, b: 1, a: 1}
     - _Color: {r: 0.8000706, g: 0.37618566, b: 0.63277036, a: 1}
     - _CosmicAmbientColor: {r: 0.1, g: 0.1, b: 0.2, a: 1}
@@ -389,8 +390,8 @@ Material:
     - _Layer3Color: {r: 1, g: 1, b: 1, a: 1}
     - _LegendaryColor1: {r: 0.5, g: 0, b: 1, a: 1}
     - _LegendaryColor2: {r: 0, g: 1, b: 1, a: 1}
-    - _MaskColor0: {r: 0.4009434, g: 0.6211094, b: 1, a: 1}
-    - _MaskColor1: {r: 0.4, g: 0.61960787, b: 1, a: 1}
+    - _MaskColor0: {r: 0.14524741, g: 0.31307396, b: 0.6037736, a: 1}
+    - _MaskColor1: {r: 0.14509805, g: 0.3137255, b: 0.6039216, a: 1}
     - _MaskColor10: {r: 1, g: 1, b: 1, a: 1}
     - _MaskColor11: {r: 1, g: 0, b: 0, a: 1}
     - _MaskColor12: {r: 1, g: 1, b: 1, a: 1}
@@ -399,8 +400,8 @@ Material:
     - _MaskColor15: {r: 1, g: 1, b: 1, a: 1}
     - _MaskColor2: {r: 0.1551745, g: 1, b: 0, a: 1}
     - _MaskColor3: {r: 0.2264151, g: 0.2264151, b: 0.2264151, a: 1}
-    - _MaskColor4: {r: 1, g: 0, b: 0, a: 1}
-    - _MaskColor5: {r: 1, g: 1, b: 1, a: 1}
+    - _MaskColor4: {r: 0.4575472, g: 0.656092, b: 1, a: 1}
+    - _MaskColor5: {r: 0.40000004, g: 0.61960787, b: 1, a: 1}
     - _MaskColor6: {r: 1, g: 0.06132078, b: 0.06132078, a: 1}
     - _MaskColor7: {r: 1, g: 1, b: 1, a: 1}
     - _MaskColor8: {r: 1, g: 1, b: 1, a: 1}
@@ -410,11 +411,11 @@ Material:
     - _OutlineColor: {r: 0, g: 0, b: 0, a: 1}
     - _RareColor1: {r: 1, g: 1, b: 1, a: 1}
     - _RimColor: {r: 0, g: 0, b: 0, a: 0.8862745}
-    - _RimLightColor: {r: 1, g: 1, b: 1, a: 1}
+    - _RimLightColor: {r: 0.3207547, g: 0.3207547, b: 0.3207547, a: 1}
     - _ShadowColor: {r: 0, g: 0, b: 0, a: 1}
-    - _ShadowTint: {r: 0.4509804, g: 0.4509804, b: 0.4509804, a: 1}
+    - _ShadowTint: {r: 0, g: 0, b: 0, a: 1}
     - _SpecColor: {r: 0.2, g: 0.2, b: 0.2, a: 1}
-    - _SpecuColor: {r: 0, g: 0, b: 0, a: 1}
+    - _SpecuColor: {r: 0.37892914, g: 0.37892914, b: 0.37892914, a: 1}
     - _SpecularColor: {r: 1, g: 1, b: 1, a: 1}
     - _StarfieldColor: {r: 1, g: 0.97981787, b: 0, a: 1}
     - _ToonSpecularColor: {r: 1, g: 1, b: 1, a: 1}

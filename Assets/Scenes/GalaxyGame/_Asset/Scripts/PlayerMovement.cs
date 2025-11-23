@@ -1,51 +1,47 @@
 using UnityEngine;
 using System.Collections.Generic;
 using Sirenix.OdinInspector;
+using Nebulanook.Core;
 
 namespace Nebulanook.Player
 {
     [RequireComponent(typeof(Rigidbody), typeof(PlayerInputHandler))]
     public class PlayerMovement : MonoBehaviour
     {
-        // === DEPENDENCIES ===
         private PlayerFXController fx => PlayerFXController.Instance;
         [FoldoutGroup("Components")][SerializeField] private Rigidbody playerRigidbody;
         [FoldoutGroup("Components")][SerializeField] private PlayerInputHandler playerInput;
         [FoldoutGroup("Components")][SerializeField] private PlayerStamina playerStamina;
         [FoldoutGroup("Components")][SerializeField] private Transform camTransform;
 
-        // === MOVEMENT SETTINGS ===
         [FoldoutGroup("Movement")][SerializeField] private float walkSpeed = 5f;
         [FoldoutGroup("Movement")][SerializeField] private float sprintSpeed = 9f;
         [FoldoutGroup("Movement")][SerializeField] private float rotationSpeed = 20f;
 
-        // === DASH SETTINGS ===
         [FoldoutGroup("Dash")]
-        [InfoBox("Dash Force sử dụng ForceMode.Impulse (700-1500+).")]
         [SerializeField] private List<DashTier> dashTiers = new List<DashTier>();
         [FoldoutGroup("Dash")][SerializeField] private float dashDuration = 0.3f;
         [FoldoutGroup("Dash")][SerializeField] private float dashSteeringSpeed = 8f;
-        [FoldoutGroup("Dash")][SerializeField] private float knockbackForce = 50f;
+        [FoldoutGroup("Dash")][SerializeField] private float knockbackForce = 30f;
+        [FoldoutGroup("Dash")][SerializeField] private float knockbackStunDuration = 0.5f;
         [FoldoutGroup("Dash")][SerializeField][Range(0, 1)] private float minStaminaPercentToDash = 0.2f;
+        [FoldoutGroup("Dash")][SerializeField] private LayerMask collisionLayer;
 
-        // === GROUND CHECK ===
+        [FoldoutGroup("Feedback")][SerializeField] private float collisionShakeForce = 1.5f;
+        [FoldoutGroup("Feedback")][SerializeField] private float collisionShakeDuration = 0.3f;
+
         [FoldoutGroup("Ground Check")][SerializeField] private Transform groundCheckTransform;
         [FoldoutGroup("Ground Check")][SerializeField] private float groundCheckRadius = 0.2f;
         [FoldoutGroup("Ground Check")][SerializeField] private LayerMask groundLayer;
 
-        // === FX SETTINGS ===
-        [FoldoutGroup("FX")][SerializeField] private float dashImpactKnockbackFXDelay = 1.5f;
-
-        // === STATE VARIABLES ===
         public MovementState CurrentState { get; private set; } = MovementState.Idle;
         public bool IsGrounded { get; private set; }
         public float MaxSpeed => sprintSpeed;
 
         private float currentChargeTime;
         private float dashTimer;
-
-        // Input flags
-        private bool _dashInputDown, _dashInputHeld, _dashInputUp;
+        private float stunTimer;
+        private DashTier currentTier;
 
         private void Awake()
         {
@@ -55,31 +51,44 @@ namespace Nebulanook.Player
             if (camTransform == null) camTransform = Camera.main.transform;
         }
 
-        private void Update()
-        {
-            ReadAndBufferInput();
-            HandleDashChargingInput();
-        }
-
         private void FixedUpdate()
         {
             UpdateGroundStatus();
             HandleStateUpdate();
         }
 
-        private void ReadAndBufferInput()
+        private void Update()
         {
-            _dashInputDown = playerInput.DashInputDown;
-            _dashInputHeld = playerInput.DashInputHeld;
-            _dashInputUp = playerInput.DashInputUp;
+            HandleInput();
         }
 
-        #region State Machine Core
+        private void HandleInput()
+        {
+            if (CurrentState == MovementState.Knockback) return;
+
+            bool canStartCharging = IsGrounded &&
+                                    CurrentState != MovementState.Charging &&
+                                    CurrentState != MovementState.Dashing &&
+                                    playerStamina.CurrentStamina > playerStamina.MaxStamina * minStaminaPercentToDash;
+
+            if (playerInput.DashInputDown && canStartCharging)
+            {
+                TransitionToState(MovementState.Charging);
+            }
+
+            if (CurrentState == MovementState.Charging)
+            {
+                currentChargeTime += Time.deltaTime;
+                if (playerInput.DashInputUp)
+                {
+                    ExecuteDash();
+                }
+            }
+        }
 
         private void TransitionToState(MovementState newState)
         {
             if (CurrentState == newState) return;
-
             OnExitState(CurrentState);
             CurrentState = newState;
             OnEnterState(newState);
@@ -91,11 +100,11 @@ namespace Nebulanook.Player
             {
                 case MovementState.Sprinting:
                     fx.Play(PlayerFXID.SprintTrail);
-                    fx.Stop(PlayerFXID.FootstepDust); // Đảm bảo tắt hiệu ứng đi bộ
+                    fx.Stop(PlayerFXID.FootstepDust);
                     break;
                 case MovementState.Walking:
                     fx.Play(PlayerFXID.FootstepDust);
-                    fx.Stop(PlayerFXID.SprintTrail); // Đảm bảo tắt hiệu ứng chạy nhanh
+                    fx.Stop(PlayerFXID.SprintTrail);
                     break;
                 case MovementState.Charging:
                     currentChargeTime = 0f;
@@ -107,25 +116,9 @@ namespace Nebulanook.Player
                     dashTimer = dashDuration;
                     fx.SetActive(PlayerFXID.DashTrail, true);
                     break;
-            }
-        }
-
-        private void HandleStateUpdate()
-        {
-            switch (CurrentState)
-            {
-                case MovementState.Idle:
-                case MovementState.Walking:
-                case MovementState.Sprinting:
-                    HandleLocomotion();
-                    HandleRotation();
-                    break;
-                case MovementState.Dashing:
-                    HandleDashing();
-                    break;
                 case MovementState.Knockback:
-                    if (IsGrounded && playerRigidbody.linearVelocity.sqrMagnitude < 1f)
-                        TransitionToState(MovementState.Idle);
+                    stunTimer = knockbackStunDuration;
+                    fx.PlayOneShot(PlayerFXID.KnockbackHit);
                     break;
             }
         }
@@ -149,14 +142,28 @@ namespace Nebulanook.Player
             }
         }
 
-        #endregion
-
-        #region State Logic
+        private void HandleStateUpdate()
+        {
+            switch (CurrentState)
+            {
+                case MovementState.Idle:
+                case MovementState.Walking:
+                case MovementState.Sprinting:
+                    HandleLocomotion();
+                    HandleRotation();
+                    break;
+                case MovementState.Dashing:
+                    HandleDashing();
+                    break;
+                case MovementState.Knockback:
+                    HandleKnockback();
+                    break;
+            }
+        }
 
         private void HandleLocomotion()
         {
             Vector3 moveDir = CalculateMoveDirection();
-
             if (moveDir.sqrMagnitude < 0.01f)
             {
                 TransitionToState(MovementState.Idle);
@@ -166,8 +173,8 @@ namespace Nebulanook.Player
 
             bool wantsSprint = playerInput.SprintInputHeld;
             bool canSprint = wantsSprint && playerStamina.TryDrainStaminaForSprint(Time.fixedDeltaTime);
-
             float targetSpeed = canSprint ? sprintSpeed : walkSpeed;
+
             TransitionToState(canSprint ? MovementState.Sprinting : MovementState.Walking);
 
             Vector3 velocity = moveDir * targetSpeed;
@@ -177,41 +184,17 @@ namespace Nebulanook.Player
 
         private void HandleRotation()
         {
-            if (CurrentState == MovementState.Idle) return;
             Vector3 lookDir = CalculateMoveDirection();
             if (lookDir.sqrMagnitude < 0.01f) return;
             Quaternion targetRot = Quaternion.LookRotation(lookDir);
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, rotationSpeed * Time.fixedDeltaTime);
         }
 
-        private void HandleDashChargingInput()
-        {
-            bool canStartCharging = IsGrounded &&
-                                    CurrentState != MovementState.Charging &&
-                                    CurrentState != MovementState.Dashing &&
-                                    CurrentState != MovementState.Knockback &&
-                                    playerStamina.CurrentStamina > playerStamina.MaxStamina * minStaminaPercentToDash;
-
-            if (_dashInputDown && canStartCharging)
-            {
-                TransitionToState(MovementState.Charging);
-            }
-
-            if (CurrentState == MovementState.Charging)
-            {
-                currentChargeTime += Time.deltaTime;
-                if (_dashInputUp)
-                {
-                    ExecuteDash();
-                }
-            }
-        }
-
         private void ExecuteDash()
         {
-            DashTier tier = GetDashTierForCurrentCharge();
+            currentTier = GetDashTierForCurrentCharge();
 
-            if (!playerStamina.TryConsumeStamina(tier.staminaCost))
+            if (!playerStamina.TryConsumeStamina(currentTier.staminaCost))
             {
                 fx.PlayOneShot(PlayerFXID.DashChargeEnd);
                 TransitionToState(MovementState.Idle);
@@ -219,10 +202,8 @@ namespace Nebulanook.Player
             }
 
             fx.PlayOneShot(PlayerFXID.DashExecute);
-
             playerRigidbody.linearVelocity = Vector3.zero;
-            playerRigidbody.AddForce(transform.forward * tier.dashForce, ForceMode.Impulse);
-
+            playerRigidbody.AddForce(transform.forward * currentTier.dashForce, ForceMode.Impulse);
             TransitionToState(MovementState.Dashing);
         }
 
@@ -230,30 +211,59 @@ namespace Nebulanook.Player
         {
             dashTimer -= Time.fixedDeltaTime;
             SteerWhileDashing();
-
             if (dashTimer <= 0f)
             {
-                EndDash();
+                TransitionToState(MovementState.Idle);
+                playerRigidbody.linearVelocity *= 0.5f;
             }
         }
 
-        private void EndDash()
+        private void SteerWhileDashing()
         {
-            fx.PlayOneShot(PlayerFXID.DashImpact);
-            fx.StopAndDeactivateAfterDelay(PlayerFXID.KnockbackHit, dashImpactKnockbackFXDelay);
-            playerRigidbody.linearVelocity *= 0.1f;
-            ApplyKnockback();
+            Vector3 dir = CalculateMoveDirection();
+            if (dir.sqrMagnitude > 0.1f)
+            {
+                float currentSpeed = playerRigidbody.linearVelocity.magnitude;
+                Vector3 targetVel = dir * currentSpeed;
+                playerRigidbody.linearVelocity = Vector3.Lerp(playerRigidbody.linearVelocity, targetVel, dashSteeringSpeed * Time.fixedDeltaTime);
+                transform.rotation = Quaternion.LookRotation(playerRigidbody.linearVelocity.normalized);
+            }
         }
 
-        private void ApplyKnockback()
+        private void HandleKnockback()
         {
-            playerRigidbody.AddForce(-transform.forward * knockbackForce, ForceMode.Impulse);
+            stunTimer -= Time.fixedDeltaTime;
+            if (stunTimer <= 0f && IsGrounded)
+            {
+                TransitionToState(MovementState.Idle);
+            }
+        }
+
+        private void OnCollisionEnter(Collision collision)
+        {
+            if (CurrentState != MovementState.Dashing) return;
+            if (((1 << collision.gameObject.layer) & collisionLayer) == 0) return;
+
+            IBumpable bumpable = collision.gameObject.GetComponent<IBumpable>();
+            if (bumpable != null)
+            {
+                float impactForce = currentTier.dashForce * 0.5f;
+                bumpable.OnBump(transform.forward, impactForce);
+            }
+
+            if (IsometricCameraController.Instance != null)
+            {
+                IsometricCameraController.Instance.Shake(collisionShakeDuration, collisionShakeForce);
+            }
+
+            Vector3 normal = collision.contacts[0].normal;
+            Vector3 reflection = Vector3.Reflect(transform.forward, normal);
+
+            playerRigidbody.linearVelocity = Vector3.zero;
+            playerRigidbody.AddForce(reflection * knockbackForce + Vector3.up * (knockbackForce * 0.2f), ForceMode.Impulse);
+
             TransitionToState(MovementState.Knockback);
         }
-
-        #endregion
-
-        #region Helper Methods
 
         private void UpdateGroundStatus()
         {
@@ -273,37 +283,10 @@ namespace Nebulanook.Player
         {
             for (int i = dashTiers.Count - 1; i >= 0; i--)
             {
-                if (currentChargeTime >= dashTiers[i].chargeTimeRequired)
-                    return dashTiers[i];
+                if (currentChargeTime >= dashTiers[i].chargeTimeRequired) return dashTiers[i];
             }
             return dashTiers.Count > 0 ? dashTiers[0] : default;
         }
-
-        public void ResetMovement()
-        {
-            TransitionToState(MovementState.Idle);
-            playerRigidbody.linearVelocity = Vector3.zero;
-            fx.ClearAll();
-        }
-
-        private void SteerWhileDashing()
-        {
-            Vector3 dir = CalculateMoveDirection();
-            if (dir.sqrMagnitude > 0.1f)
-            {
-                float currentSpeed = playerRigidbody.linearVelocity.magnitude;
-                Vector3 targetVel = dir * currentSpeed;
-
-                playerRigidbody.linearVelocity = Vector3.Lerp(
-                    playerRigidbody.linearVelocity,
-                    targetVel,
-                    dashSteeringSpeed * Time.fixedDeltaTime);
-
-                transform.rotation = Quaternion.LookRotation(playerRigidbody.linearVelocity.normalized);
-            }
-        }
-
-        #endregion
 
         private void OnDrawGizmosSelected()
         {
@@ -314,7 +297,6 @@ namespace Nebulanook.Player
             }
         }
     }
-
     // Enums and Structs remain the same
     public enum MovementState { Idle, Walking, Sprinting, Charging, Dashing, Knockback }
 

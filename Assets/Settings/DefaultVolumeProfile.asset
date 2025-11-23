@@ -467,6 +467,7 @@ MonoBehaviour:
   - {fileID: -1410297666881709256}
   - {fileID: 6953920795863738461}
   - {fileID: 39129432837918133}
+  - {fileID: 7884279144436701209}
 --- !u!114 &39129432837918133
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -1829,6 +1830,60 @@ MonoBehaviour:
   scale:
     m_OverrideState: 1
     m_Value: 1
+--- !u!114 &7884279144436701209
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f872fa50b848f6b4a814646ad33db0d2, type: 3}
+  m_Name: OutlineVolume
+  m_EditorClassIdentifier: Assembly-CSharp::OutlineVolume
+  active: 1
+  isActive:
+    m_OverrideState: 1
+    m_Value: 0
+  mode:
+    m_OverrideState: 1
+    m_Value: 0
+  selectionLayer:
+    m_OverrideState: 1
+    m_Value:
+      serializedVersion: 2
+      m_Bits: 4294967295
+  debugMode:
+    m_OverrideState: 1
+    m_Value: 0
+  algorithm:
+    m_OverrideState: 1
+    m_Value: 1
+  thickness:
+    m_OverrideState: 1
+    m_Value: 1
+  outlineColor:
+    m_OverrideState: 1
+    m_Value: {r: 0, g: 0, b: 0, a: 1}
+  depthThreshold:
+    m_OverrideState: 1
+    m_Value: 1.5
+  normalThreshold:
+    m_OverrideState: 1
+    m_Value: 0.4
+  colorThreshold:
+    m_OverrideState: 1
+    m_Value: 0.2
+  useDepth:
+    m_OverrideState: 1
+    m_Value: 1
+  useNormals:
+    m_OverrideState: 1
+    m_Value: 1
+  useColor:
+    m_OverrideState: 1
+    m_Value: 0
 --- !u!114 &9001657382290151224
 MonoBehaviour:
   m_ObjectHideFlags: 3

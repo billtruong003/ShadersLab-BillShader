@@ -1,136 +1,185 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Rendering;
+
+[Serializable]
+public struct LightingKeyframe
+{
+    [Range(0f, 24f)] public float timeOfDay;
+    public float intensity;
+    public Color lightColor;
+    [Range(0f, 1f)] public float shadowStrength;
+}
 
 [Serializable]
 public class CelestialBody
 {
-    public string bodyName;
-    public Transform bodyTransform;
+    public string name;
     public Light bodyLight;
-    public Gradient lightColor;
-    public AnimationCurve intensityCurve;
-    public AnimationCurve shadowStrengthCurve;
-    public Vector3 rotationOffset;
+    public List<LightingKeyframe> keyframes = new List<LightingKeyframe>();
+    public Vector3 rotationCorrection;
 
-    public void UpdateBody(float timePercent)
+    public void Evaluate(float currentTimeHours, Vector3 pivotPosition)
     {
-        if (bodyTransform == null || bodyLight == null) return;
+        if (bodyLight == null) return;
 
-        float intensity = intensityCurve.Evaluate(timePercent);
-        bodyLight.intensity = intensity;
+        UpdateLightingData(currentTimeHours);
+        UpdateTransformAlignment(pivotPosition);
+    }
 
-        bodyLight.color = lightColor.Evaluate(timePercent);
-        bodyLight.shadowStrength = shadowStrengthCurve.Evaluate(timePercent);
+    private void UpdateLightingData(float time)
+    {
+        if (keyframes == null || keyframes.Count == 0) return;
 
-        if (intensity <= 0.01f)
+        GetSurroundingKeyframes(time, out LightingKeyframe from, out LightingKeyframe to, out float t);
+
+        bodyLight.color = Color.Lerp(from.lightColor, to.lightColor, t);
+        bodyLight.intensity = Mathf.Lerp(from.intensity, to.intensity, t);
+        bodyLight.shadowStrength = Mathf.Lerp(from.shadowStrength, to.shadowStrength, t);
+
+        bool shouldEnable = bodyLight.intensity > 0.001f;
+        if (bodyLight.enabled != shouldEnable) bodyLight.enabled = shouldEnable;
+    }
+
+    private void UpdateTransformAlignment(Vector3 targetPosition)
+    {
+        if (bodyLight.transform.parent == null) return;
+
+        Vector3 directionToPivot = targetPosition - bodyLight.transform.position;
+
+        if (directionToPivot != Vector3.zero)
         {
-            if (bodyLight.enabled) bodyLight.enabled = false;
+            Quaternion lookRotation = Quaternion.LookRotation(directionToPivot);
+            bodyLight.transform.rotation = lookRotation * Quaternion.Euler(rotationCorrection);
+        }
+    }
+
+    private void GetSurroundingKeyframes(float time, out LightingKeyframe from, out LightingKeyframe to, out float t)
+    {
+        int count = keyframes.Count;
+        if (count == 1)
+        {
+            from = to = keyframes[0];
+            t = 0f;
+            return;
+        }
+
+        keyframes.Sort((a, b) => a.timeOfDay.CompareTo(b.timeOfDay));
+
+        int fromIndex = -1;
+        for (int i = 0; i < count; i++)
+        {
+            if (keyframes[i].timeOfDay <= time) fromIndex = i;
+        }
+
+        if (fromIndex == -1)
+        {
+            from = keyframes[count - 1];
+            to = keyframes[0];
+            float duration = (24f - from.timeOfDay) + to.timeOfDay;
+            float elapsed = (24f - from.timeOfDay) + time;
+            t = Mathf.Clamp01(elapsed / duration);
+        }
+        else if (fromIndex == count - 1)
+        {
+            from = keyframes[fromIndex];
+            to = keyframes[0];
+            float duration = (24f - from.timeOfDay) + to.timeOfDay;
+            float elapsed = time - from.timeOfDay;
+            t = Mathf.Clamp01(elapsed / duration);
         }
         else
         {
-            if (!bodyLight.enabled) bodyLight.enabled = true;
+            from = keyframes[fromIndex];
+            to = keyframes[fromIndex + 1];
+            float duration = to.timeOfDay - from.timeOfDay;
+            float elapsed = time - from.timeOfDay;
+            t = Mathf.Clamp01(elapsed / duration);
         }
-
-        bodyTransform.localRotation = Quaternion.Euler(rotationOffset);
     }
 }
 
+[ExecuteAlways]
 public class DayNightManager : MonoBehaviour
 {
     public static DayNightManager Instance { get; private set; }
 
     [Header("Time Settings")]
-    [SerializeField, Range(0f, 1f)] private float timeOfDay = 0.25f;
-    [SerializeField] private float dayDurationInSeconds = 120f;
+    [SerializeField, Range(0f, 24f)] private float currentTime = 6f;
+    [SerializeField] private float dayDurationSeconds = 120f;
     [SerializeField] private bool isPaused = false;
+    [SerializeField] private bool debugMode = false;
 
     [Header("Orbit Settings")]
     [SerializeField] private Transform orbitPivot;
-    [SerializeField] private Vector3 orbitAxis = new Vector3(1, 0, 0);
+    [SerializeField] private Vector3 orbitAxis = new Vector3(1f, 0f, 0f);
 
     [Header("Celestial Bodies")]
     [SerializeField] private List<CelestialBody> celestialBodies = new List<CelestialBody>();
 
-    public float CurrentTimeNormalized => timeOfDay;
-    public float DayDuration => dayDurationInSeconds;
-
     private void Awake()
     {
-        if (Instance == null)
+        if (Application.isPlaying)
         {
-            Instance = this;
-        }
-        else
-        {
-            Destroy(gameObject);
+            if (Instance == null) Instance = this;
+            else Destroy(gameObject);
         }
     }
 
     private void Update()
     {
-        if (!isPaused)
+        if (Application.isPlaying && !isPaused && !debugMode)
         {
             AdvanceTime();
         }
+        ProcessDayNightCycle();
+    }
 
-        UpdateOrbit();
-        UpdateCelestialBodies();
+    private void OnValidate()
+    {
+        ProcessDayNightCycle();
     }
 
     private void AdvanceTime()
     {
-        timeOfDay += Time.deltaTime / dayDurationInSeconds;
-        if (timeOfDay >= 1f) timeOfDay = 0f;
+        if (dayDurationSeconds <= 0f) return;
+        float timeIncrement = (Time.deltaTime / dayDurationSeconds) * 24f;
+        currentTime = (currentTime + timeIncrement) % 24f;
     }
 
-    private void UpdateOrbit()
+    private void ProcessDayNightCycle()
     {
-        if (orbitPivot != null)
-        {
-            float angle = timeOfDay * 360f;
-            orbitPivot.localRotation = Quaternion.Euler(orbitAxis * angle);
-        }
+        if (orbitPivot == null) return;
+
+        UpdateOrbitRotation();
+        UpdateCelestialBodies();
+    }
+
+    private void UpdateOrbitRotation()
+    {
+        float normalizedTime = currentTime / 24f;
+        float angle = normalizedTime * 360f;
+        orbitPivot.localRotation = Quaternion.Euler(orbitAxis * angle);
     }
 
     private void UpdateCelestialBodies()
     {
+        Vector3 targetPivotPos = orbitPivot.position;
         foreach (var body in celestialBodies)
         {
-            body.UpdateBody(timeOfDay);
+            body.Evaluate(currentTime, targetPivotPos);
         }
     }
 
-    public void SetTime(float normalizedTime)
+    public void SetTime(float hour)
     {
-        timeOfDay = Mathf.Clamp01(normalizedTime);
-    }
-
-    public void SetDuration(float durationInSeconds)
-    {
-        if (durationInSeconds > 0)
-            dayDurationInSeconds = durationInSeconds;
-    }
-
-    public void Pause(bool pause)
-    {
-        isPaused = pause;
+        currentTime = Mathf.Repeat(hour, 24f);
+        ProcessDayNightCycle();
     }
 
     public string GetDigitalClock()
     {
-        float totalHours = timeOfDay * 24f;
-        int hours = (int)totalHours;
-        int minutes = (int)((totalHours - hours) * 60f);
-        return $"{hours:D2}:{minutes:D2}";
-    }
-
-    public Vector2 GetTimeVector()
-    {
-        float totalHours = timeOfDay * 24f;
-        int hours = (int)totalHours;
-        int minutes = (int)((totalHours - hours) * 60f);
-        return new Vector2(hours, minutes);
+        TimeSpan ts = TimeSpan.FromHours(currentTime);
+        return $"{ts.Hours:D2}:{ts.Minutes:D2}";
     }
 }

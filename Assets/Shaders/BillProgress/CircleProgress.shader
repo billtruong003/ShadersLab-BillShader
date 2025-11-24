@@ -14,14 +14,18 @@ Shader "Unlit/ProductionReadyCircularHealthBar_V2"
         [HDR] _LowColor ("Low Progress Color", Color) = (0.8, 0.1, 0.1, 1)
 
         [Header(Rendering Options)]
-        [Enum(UnityEngine.Rendering.CompareFunction)] _ZTest ("ZTest", Float) = 4// LessEqual
-        [Enum(Off, 0, On, 1)] _ZWrite ("ZWrite", Float) = 0// Off
+        [Enum(UnityEngine.Rendering.CompareFunction)] _ZTest ("ZTest", Float) = 8
+        [Enum(Off, 0, On, 1)] _ZWrite ("ZWrite", Float) = 0
     }
     SubShader
     {
         Tags
         {
-            "Queue" = "Transparent" "RenderType" = "Transparent" "IgnoreProjector" = "True" "PreviewType" = "Plane"
+            "Queue" = "Overlay"
+            "RenderType" = "Overlay"
+            "IgnoreProjector" = "True"
+            "PreviewType" = "Plane"
+            "LightMode" = "Overlay"
         }
 
         Pass
@@ -98,5 +102,5 @@ Shader "Unlit/ProductionReadyCircularHealthBar_V2"
             ENDCG
         }
     }
-    FallBack "Transparent/VertexLit"
+    FallBack Off
 }

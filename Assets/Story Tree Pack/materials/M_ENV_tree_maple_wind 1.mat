@@ -8,21 +8,20 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: M_ENV_tree_maple_wind 1
-  m_Shader: {fileID: 4800000, guid: e59e1e651fcd84f6098709d6252b9213, type: 3}
+  m_Shader: {fileID: 4800000, guid: 64d53bf4fe8e94c648d9aecfd0d890d6, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
-  m_ValidKeywords:
+  m_ValidKeywords: []
+  m_InvalidKeywords:
   - _ALPHACLIP_ON
   - _FAKELIGHT_ON
   - _SURFACETYPE_FOLIAGE
-  m_InvalidKeywords:
   - _ZWRITE_ON
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
-  m_CustomRenderQueue: 2450
-  stringTagMap:
-    RenderType: TransparentCutout
+  m_CustomRenderQueue: 3000
+  stringTagMap: {}
   disabledShaderPasses: []
   m_LockedProperties: 
   m_SavedProperties:
@@ -73,7 +72,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _WindNoiseTex:
-        m_Texture: {fileID: 0}
+        m_Texture: {fileID: 2800000, guid: d001ca09e9b3cc54c9c2614df50f795c, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _texcoord:
@@ -108,7 +107,7 @@ Material:
     - Vector1_FBDC2864: 1
     - Vector1_FF361FD1: 0
     - _AddLightMidtoneThreshold: 0.6
-    - _AddLightRampSmoothness: 0.1
+    - _AddLightRampSmoothness: 0.123
     - _AddLightShadowThreshold: 0.1
     - _AlphaClipThreshold: 0.819
     - _AlphaCutoff: 0.5
@@ -121,7 +120,7 @@ Material:
     - _Brightness: 1.3
     - _BumpScale: 1
     - _CullMode: 2
-    - _Cutoff: 0.5
+    - _Cutoff: 0.6
     - _DistanceFadeEnd: 50
     - _DistanceFadeOpacity: 0.494
     - _DistanceFadeStart: 20
@@ -149,7 +148,7 @@ Material:
     - _IndirectSpecularIntensity: 1
     - _MaskBlend: 1
     - _MaskDivisions: 2
-    - _MaxBrightness: 1.76
+    - _MaxBrightness: 1.5
     - _MidtoneThreshold: 0.8
     - _Morph: 0
     - _MorphToggle: 0
@@ -158,23 +157,25 @@ Material:
     - _QueueOffset: 0
     - _ReceiveShadows: 1
     - _RenderMode: 1
+    - _RimLightToggle: 0
     - _RimPower: 6
     - _ShadowRecievedStrength: 1
     - _ShadowThreshold: 0.4
+    - _Softness: 0.3
     - _SrcBlend: 1
     - _SurfaceType: 2
     - _TextureMaskToggle: 0
     - _ToonRampSmoothness: 0.05
     - _ToonStyle: 0
-    - _TranslucencyStrength: 1.73
-    - _WindAmplitude: 0.1
+    - _TranslucencyStrength: 5
+    - _WindAmplitude: 0.5
     - _WindFadeEnd: 50
     - _WindFadeStart: 20
-    - _WindFrequency: 2
-    - _WindNoiseScale: 1
+    - _WindFrequency: 0.5
+    - _WindNoiseScale: 2
     - _WindScale: 0.4
-    - _WindSpeed: 2
-    - _WindStrength: 0.4
+    - _WindSpeed: 0.5
+    - _WindStrength: 0.5
     - _WindTintContrast: 1
     - _WindTintOpacity: 0.25
     - _WindTintScale: 0.12
@@ -184,15 +185,15 @@ Material:
     - Vector2_C9ABB48D: {r: 2, g: 0, b: 0, a: 0}
     - _AddLightMidtoneColor: {r: 0.7, g: 0.7, b: 0.7, a: 1}
     - _AddLightShadowTint: {r: 0.2, g: 0.2, b: 0.3, a: 1}
-    - _AmbientColor: {r: 0.5, g: 0.5, b: 0.5, a: 0}
-    - _BaseColor: {r: 1, g: 0.6537613, b: 0, a: 1}
+    - _AmbientColor: {r: 0, g: 0, b: 0, a: 1}
+    - _BaseColor: {r: 0, g: 2.327146, b: 2.828427, a: 1}
     - _BaseTexColorTint: {r: 0.7504005, g: 0.7924528, b: 0.13830544, a: 0}
     - _BlingColor: {r: 1, g: 1, b: 1, a: 1}
     - _DistanceFadeColor: {r: 0.46342114, g: 0.7735849, b: 0.61323637, a: 1}
     - _DitherEdgeColor: {r: 0.5, g: 0.8, b: 1, a: 1}
     - _EmissionColor: {r: 1, g: 1, b: 1, a: 1}
     - _FakeLightColor: {r: 1, g: 1, b: 1, a: 1}
-    - _FakeLightDirection: {r: 0.5, g: 0.5, b: -0.5, a: 0}
+    - _FakeLightDirection: {r: 5, g: 5, b: -5, a: 0}
     - _FresnelOutlineColor: {r: 0, g: 0, b: 0, a: 1}
     - _GlintColor: {r: 1, g: 1, b: 0.5, a: 1}
     - _GroundFadeColor: {r: 0.31372547, g: 0.39607847, b: 0.11372546, a: 1}
@@ -215,9 +216,10 @@ Material:
     - _MaskColor9: {r: 1, g: 1, b: 1, a: 1}
     - _MidtoneColor: {r: 0.6, g: 0.6, b: 0.6, a: 1}
     - _RimColor: {r: 1, g: 0.3, b: 0.3, a: 1}
+    - _ShadowColor: {r: 0, g: 0.26995292, b: 0.4627451, a: 1}
     - _ShadowTint: {r: 0.1, g: 0.1, b: 0.2, a: 1}
     - _SpecuColor: {r: 0.8, g: 0.45, b: 0.2, a: 1}
-    - _TranslucencyColor: {r: 1, g: 0.16996826, b: 0, a: 1}
+    - _TranslucencyColor: {r: 1, g: 1, b: 1, a: 1}
     - _WindDirection: {r: 1, g: 1, b: 1, a: 0}
     - _WindSpeed: {r: 2, g: 1, b: 0, a: 0}
     - _WindTintSpeed: {r: -3, g: 1, b: 0, a: 0}

@@ -2,17 +2,20 @@ Shader "Hidden/Outline/SelectionMask"
 {
     Properties
     {
-        _BaseMap("Base Map", 2D) = "white" {}
+        _BaseMap("Base Map", 2D) = "white"{}
         _Cutoff("Alpha Cutoff", Range(0.0, 1.0)) = 0.5
     }
 
     SubShader
     {
-        Tags { "RenderType" = "Opaque" "RenderPipeline" = "UniversalPipeline" }
+        Tags
+        {
+            "RenderType" = "Opaque" "RenderPipeline" = "UniversalPipeline"
+        }
         LOD 100
-        ColorMask R 
-        ZWrite Off 
-        ZTest LEqual 
+        ColorMask R
+        ZWrite Off
+        ZTest LEqual
 
         Pass
         {

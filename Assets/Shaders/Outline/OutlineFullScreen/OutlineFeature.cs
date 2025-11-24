@@ -2,10 +2,10 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
 using UnityEngine.Rendering.Universal;
+using CleanCode.EnvironmentTools;
 
 public class OutlineFeature : ScriptableRendererFeature
 {
-    // --- PASS 1: RENDER SELECTION MASK ---
     class SelectionMaskPass : ScriptableRenderPass
     {
         private Material maskMaterial;
@@ -24,7 +24,8 @@ public class OutlineFeature : ScriptableRendererFeature
                 new ShaderTagId("UniversalForward"),
                 new ShaderTagId("UniversalForwardOnly"),
                 new ShaderTagId("LightweightForward"),
-                new ShaderTagId("SRPDefaultUnlit")
+                new ShaderTagId("SRPDefaultUnlit"),
+                new ShaderTagId("FoliageForward")
             };
             filteringSettings = new FilteringSettings(RenderQueueRange.all);
         }
@@ -44,7 +45,7 @@ public class OutlineFeature : ScriptableRendererFeature
 
         public override void RecordRenderGraph(RenderGraph renderGraph, ContextContainer frameData)
         {
-            MaskTexture = TextureHandle.nullHandle; // Reset mỗi frame
+            MaskTexture = TextureHandle.nullHandle;
 
             if (maskMaterial == null || layerMask == 0) return;
 
@@ -52,13 +53,11 @@ public class OutlineFeature : ScriptableRendererFeature
             UniversalCameraData cameraData = frameData.Get<UniversalCameraData>();
             UniversalRenderingData renderingData = frameData.Get<UniversalRenderingData>();
 
-            // 1. Tạo Texture Mask an toàn
             RenderTextureDescriptor desc = cameraData.cameraTargetDescriptor;
             desc.colorFormat = RenderTextureFormat.R8;
             desc.depthBufferBits = 0;
             desc.msaaSamples = 1;
 
-            // FIX: Tạo TextureDesc bằng constructor
             TextureDesc texDesc = new TextureDesc(desc);
             texDesc.name = "_SelectionMaskTexture";
             texDesc.clearBuffer = true;
@@ -66,11 +65,9 @@ public class OutlineFeature : ScriptableRendererFeature
 
             MaskTexture = renderGraph.CreateTexture(texDesc);
 
-            // FIX CRITICAL: Kiểm tra Depth Texture có tồn tại không trước khi dùng
             TextureHandle depthTexture = resourceData.activeDepthTexture;
             bool useDepth = depthTexture.IsValid();
 
-            // 2. Tạo RendererList
             RendererListParams rlParams = new RendererListParams(
                 renderingData.cullResults,
                 new DrawingSettings(shaderTags[0], new SortingSettings(cameraData.camera))
@@ -94,7 +91,6 @@ public class OutlineFeature : ScriptableRendererFeature
                 builder.UseRendererList(passData.rendererList);
                 builder.SetRenderAttachment(passData.maskDest, 0, AccessFlags.Write);
 
-                // FIX CRITICAL: Chỉ gắn Depth nếu nó hợp lệ. Nếu không hệ thống sẽ Crash.
                 if (useDepth)
                 {
                     builder.SetRenderAttachmentDepth(depthTexture, AccessFlags.Read);
@@ -110,7 +106,6 @@ public class OutlineFeature : ScriptableRendererFeature
         public void Dispose() { CoreUtils.Destroy(maskMaterial); }
     }
 
-    // --- PASS 2: FULL SCREEN OUTLINE COMPOSITION ---
     class OutlinePass : ScriptableRenderPass
     {
         private Material material;
@@ -124,6 +119,7 @@ public class OutlineFeature : ScriptableRendererFeature
         private static readonly int ColorThresholdID = Shader.PropertyToID("_ColorThreshold");
         private static readonly int DebugModeID = Shader.PropertyToID("_DebugMode");
         private static readonly int SelectionMaskID = Shader.PropertyToID("_SelectionMaskTexture");
+        private static readonly int FadeParamsID = Shader.PropertyToID("_FadeParams");
 
         private SelectionMaskPass selectionMaskPass;
 
@@ -135,7 +131,7 @@ public class OutlineFeature : ScriptableRendererFeature
             public TextureHandle mask;
         }
 
-        public OutlinePass() { renderPassEvent = RenderPassEvent.AfterRenderingPostProcessing; }
+        public OutlinePass() { renderPassEvent = RenderPassEvent.AfterRenderingTransparents; }
 
         public void SetupReference(SelectionMaskPass maskPass) { this.selectionMaskPass = maskPass; }
 
@@ -154,11 +150,21 @@ public class OutlineFeature : ScriptableRendererFeature
             material.SetFloat(ColorThresholdID, volumeSettings.colorThreshold.value);
             material.SetInt(DebugModeID, (int)volumeSettings.debugMode.value);
 
+            material.SetVector(FadeParamsID, new Vector4(
+                volumeSettings.fadeDistanceStart.value,
+                volumeSettings.fadeDistanceEnd.value,
+                volumeSettings.fadeHeightMin.value,
+                volumeSettings.fadeHeightMax.value
+            ));
+
             SetKeyword("USE_DEPTH", volumeSettings.useDepth.value);
             SetKeyword("USE_NORMALS", volumeSettings.useNormals.value);
             SetKeyword("USE_COLOR", volumeSettings.useColor.value);
             SetKeyword("ALGO_SOBEL", volumeSettings.algorithm.value == OutlineVolume.OutlineAlgorithm.Sobel);
             SetKeyword("ALGO_ROBERTS", volumeSettings.algorithm.value == OutlineVolume.OutlineAlgorithm.RobertsCross);
+
+            SetKeyword("USE_DISTANCE_FADE", volumeSettings.useDistanceFade.value);
+            SetKeyword("USE_HEIGHT_FADE", volumeSettings.useHeightFade.value);
 
             var mode = volumeSettings.mode.value;
             SetKeyword("OUTLINE_FULL", mode == OutlineVolume.OutlineMode.FullScreen);
@@ -180,11 +186,9 @@ public class OutlineFeature : ScriptableRendererFeature
 
             TextureHandle source = resourceData.activeColorTexture;
 
-            // Tạo Temp Texture
             RenderTextureDescriptor desc = cameraData.cameraTargetDescriptor;
             desc.depthBufferBits = 0;
 
-            // FIX: Constructor TextureDesc
             TextureDesc texDesc = new TextureDesc(desc);
             texDesc.name = "OutlineTemp";
             texDesc.clearBuffer = true;
@@ -228,13 +232,133 @@ public class OutlineFeature : ScriptableRendererFeature
         public void Dispose() { CoreUtils.Destroy(material); }
     }
 
+    class FoliageRenderPass : ScriptableRenderPass
+    {
+        private FilteringSettings filteringSettings;
+        private ShaderTagId foliageTag;
+
+        public FoliageRenderPass()
+        {
+            renderPassEvent = RenderPassEvent.AfterRenderingTransparents + 2;
+            foliageTag = new ShaderTagId("FoliageForward");
+            filteringSettings = new FilteringSettings(RenderQueueRange.all);
+        }
+
+        private class PassData
+        {
+            public RendererListHandle rendererList;
+        }
+
+        public override void RecordRenderGraph(RenderGraph renderGraph, ContextContainer frameData)
+        {
+            UniversalResourceData resourceData = frameData.Get<UniversalResourceData>();
+            UniversalCameraData cameraData = frameData.Get<UniversalCameraData>();
+            UniversalRenderingData renderingData = frameData.Get<UniversalRenderingData>();
+
+            TextureHandle colorTarget = resourceData.activeColorTexture;
+            TextureHandle depthTarget = resourceData.activeDepthTexture;
+
+            DrawingSettings drawingSettings = new DrawingSettings(foliageTag, new SortingSettings(cameraData.camera))
+            {
+                perObjectData = PerObjectData.LightData | PerObjectData.LightIndices | PerObjectData.ShadowMask | PerObjectData.LightProbe | PerObjectData.OcclusionProbe
+            };
+
+            RendererListParams rlParams = new RendererListParams(
+                renderingData.cullResults,
+                drawingSettings,
+                filteringSettings
+            );
+
+            RendererListHandle rendererList = renderGraph.CreateRendererList(rlParams);
+
+            using (var builder = renderGraph.AddRasterRenderPass<PassData>("Draw Foliage Overlay", out var passData))
+            {
+                passData.rendererList = rendererList;
+                builder.UseRendererList(passData.rendererList);
+
+                builder.SetRenderAttachment(colorTarget, 0, AccessFlags.Write);
+                if (depthTarget.IsValid())
+                {
+                    builder.SetRenderAttachmentDepth(depthTarget, AccessFlags.ReadWrite);
+                }
+
+                builder.SetRenderFunc((PassData data, RasterGraphContext context) =>
+                {
+                    context.cmd.DrawRendererList(data.rendererList);
+
+                    foreach (var manager in FoliageManager.ActiveManagers)
+                    {
+                        if (manager != null) manager.RenderFoliage(context.cmd);
+                    }
+                });
+            }
+        }
+    }
+
+    class OverlayPass : ScriptableRenderPass
+    {
+        private FilteringSettings filteringSettings;
+        private ShaderTagId overlayTag;
+
+        public OverlayPass()
+        {
+            renderPassEvent = RenderPassEvent.AfterRenderingPostProcessing + 1;
+            overlayTag = new ShaderTagId("Overlay");
+            filteringSettings = new FilteringSettings(RenderQueueRange.all);
+        }
+
+        private class PassData
+        {
+            public RendererListHandle rendererList;
+        }
+
+        public override void RecordRenderGraph(RenderGraph renderGraph, ContextContainer frameData)
+        {
+            UniversalResourceData resourceData = frameData.Get<UniversalResourceData>();
+            UniversalCameraData cameraData = frameData.Get<UniversalCameraData>();
+            UniversalRenderingData renderingData = frameData.Get<UniversalRenderingData>();
+
+            TextureHandle colorTarget = resourceData.activeColorTexture;
+            TextureHandle depthTarget = resourceData.activeDepthTexture;
+
+            RendererListParams rlParams = new RendererListParams(
+                renderingData.cullResults,
+                new DrawingSettings(overlayTag, new SortingSettings(cameraData.camera)),
+                filteringSettings
+            );
+
+            RendererListHandle rendererList = renderGraph.CreateRendererList(rlParams);
+
+            using (var builder = renderGraph.AddRasterRenderPass<PassData>("Draw Overlays", out var passData))
+            {
+                passData.rendererList = rendererList;
+                builder.UseRendererList(passData.rendererList);
+
+                builder.SetRenderAttachment(colorTarget, 0, AccessFlags.Write);
+                if (depthTarget.IsValid())
+                {
+                    builder.SetRenderAttachmentDepth(depthTarget, AccessFlags.Read);
+                }
+
+                builder.SetRenderFunc((PassData data, RasterGraphContext context) =>
+                {
+                    context.cmd.DrawRendererList(data.rendererList);
+                });
+            }
+        }
+    }
+
     private SelectionMaskPass maskPass;
     private OutlinePass outlinePass;
+    private FoliageRenderPass foliagePass;
+    private OverlayPass overlayPass;
 
     public override void Create()
     {
         maskPass = new SelectionMaskPass();
         outlinePass = new OutlinePass();
+        foliagePass = new FoliageRenderPass();
+        overlayPass = new OverlayPass();
         outlinePass.ConfigureInput(ScriptableRenderPassInput.Color | ScriptableRenderPassInput.Depth | ScriptableRenderPassInput.Normal);
     }
 
@@ -252,6 +376,12 @@ public class OutlineFeature : ScriptableRendererFeature
                 renderer.EnqueuePass(maskPass);
             }
             renderer.EnqueuePass(outlinePass);
+            renderer.EnqueuePass(foliagePass);
+            renderer.EnqueuePass(overlayPass);
+        }
+        else
+        {
+            renderer.EnqueuePass(foliagePass);
         }
     }
 

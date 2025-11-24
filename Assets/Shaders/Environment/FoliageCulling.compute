@@ -1,0 +1,49 @@
+#pragma kernel CSMain
+
+struct IndirectData
+{
+    float4x4 objectToWorld;
+    float4x4 worldToObject;
+};
+
+StructuredBuffer<IndirectData> _AllInstances;
+AppendStructuredBuffer<IndirectData> _LOD0_Instances;
+AppendStructuredBuffer<IndirectData> _LOD1_Instances;
+AppendStructuredBuffer<IndirectData> _LOD2_Instances;
+
+float3 _CameraPosition;
+float4 _LODDistances;
+float4 _FrustumPlanes[6];
+uint _InstanceCount;
+float _CullingBound;
+
+bool IsInFrustum(float3 position, float radius)
+{
+    [unroll]
+    for (int i = 0; i < 6; i++)
+    {
+        if (dot(_FrustumPlanes[i].xyz, position) + _FrustumPlanes[i].w + radius < 0)
+            return false;
+    }
+    return true;
+}
+
+[numthreads(64, 1, 1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= _InstanceCount) return;
+
+    IndirectData instance = _AllInstances[id.x];
+    float3 pos = float3(instance.objectToWorld[0][3], instance.objectToWorld[1][3], instance.objectToWorld[2][3]);
+
+    if (!IsInFrustum(pos, _CullingBound)) return;
+
+    float distSq = dot(pos - _CameraPosition, pos - _CameraPosition);
+
+    if (distSq < _LODDistances.x * _LODDistances.x)
+        _LOD0_Instances.Append(instance);
+    else if (distSq < _LODDistances.y * _LODDistances.y)
+        _LOD1_Instances.Append(instance);
+    else if (distSq < _LODDistances.z * _LODDistances.z)
+        _LOD2_Instances.Append(instance);
+}

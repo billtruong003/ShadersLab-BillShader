@@ -2,29 +2,28 @@ Shader "Custom/Outline/InvisibleOccluder"
 {
     Properties
     {
-        [MainTexture] _BaseMap("Alpha Map (Optional)", 2D) = "white" {}
+        [MainTexture] _BaseMap("Alpha Map (Optional)", 2D) = "white"{}
         _Cutoff("Alpha Cutoff", Range(0.0, 1.0)) = 0.5
         [Toggle(_ALPHATEST_ON)] _AlphaClip("Enable Alpha Clip", Float) = 0.0
     }
 
     SubShader
     {
-        Tags 
-        { 
-            "RenderType" = "Opaque" 
-            "RenderPipeline" = "UniversalPipeline" 
-            "Queue" = "Geometry+1" // Vẽ sau Opaque một chút để đảm bảo depth ghi đè chuẩn
+        Tags
+        {
+            "RenderType" = "Opaque"
+            "RenderPipeline" = "UniversalPipeline"
+            "Queue" = "Geometry+1"
         }
 
-        // ------------------------------------------------------------------
-        // PASS 1: UNIVERSAL FORWARD (Vẽ tàng hình)
-        // ------------------------------------------------------------------
         Pass
         {
             Name "UniversalForward"
-            Tags { "LightMode" = "UniversalForward" }
+            Tags
+            {
+                "LightMode" = "UniversalForward"
+            }
 
-            // QUAN TRỌNG NHẤT: Tắt ghi màu, nhưng bật ghi chiều sâu
             ColorMask 0
             ZWrite On
             ZTest LEqual
@@ -67,20 +66,18 @@ Shader "Custom/Outline/InvisibleOccluder"
                     half alpha = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.uv).a;
                     clip(alpha - _Cutoff);
                 #endif
-
-                // Trả về rỗng vì ColorMask 0 sẽ chặn không cho ghi vào màn hình
                 return 0;
             }
             ENDHLSL
         }
 
-        // ------------------------------------------------------------------
-        // PASS 2: SHADOW CASTER (Vẫn đổ bóng dù tàng hình - Tuỳ chọn)
-        // ------------------------------------------------------------------
         Pass
         {
             Name "ShadowCaster"
-            Tags { "LightMode" = "ShadowCaster" }
+            Tags
+            {
+                "LightMode" = "ShadowCaster"
+            }
 
             ZWrite On
             ZTest LEqual
@@ -94,7 +91,6 @@ Shader "Custom/Outline/InvisibleOccluder"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Shadows.hlsl"
 
-            // Fake struct để tái sử dụng hàm shadow có sẵn
             float3 _LightDirection;
             float3 _Position;
 
@@ -125,7 +121,7 @@ Shader "Custom/Outline/InvisibleOccluder"
                 #if UNITY_REVERSED_Z
                     output.positionCS.z = min(output.positionCS.z, output.positionCS.w * UNITY_NEAR_CLIP_VALUE);
                 #else
-                    output.positionCS.z = max(output.positionCS.z, output.positionCS.w * UNITY_NEAR_CLIP_VALUE);
+                        output.positionCS.z = max(output.positionCS.z, output.positionCS.w * UNITY_NEAR_CLIP_VALUE);
                 #endif
                 output.uv = TRANSFORM_TEX(input.uv, _BaseMap);
                 return output;
@@ -142,13 +138,13 @@ Shader "Custom/Outline/InvisibleOccluder"
             ENDHLSL
         }
 
-        // ------------------------------------------------------------------
-        // PASS 3: DEPTH ONLY (Cực quan trọng cho Outline Depth)
-        // ------------------------------------------------------------------
         Pass
         {
             Name "DepthOnly"
-            Tags { "LightMode" = "DepthOnly" }
+            Tags
+            {
+                "LightMode" = "DepthOnly"
+            }
 
             ZWrite On
             ColorMask 0
@@ -196,13 +192,13 @@ Shader "Custom/Outline/InvisibleOccluder"
             ENDHLSL
         }
 
-        // ------------------------------------------------------------------
-        // PASS 4: DEPTH NORMALS (Cực quan trọng cho Outline Normals)
-        // ------------------------------------------------------------------
         Pass
         {
             Name "DepthNormals"
-            Tags { "LightMode" = "DepthNormals" }
+            Tags
+            {
+                "LightMode" = "DepthNormals"
+            }
 
             ZWrite On
 
@@ -247,8 +243,6 @@ Shader "Custom/Outline/InvisibleOccluder"
                     half alpha = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.uv).a;
                     clip(alpha - _Cutoff);
                 #endif
-
-                // Ghi Normal vào Texture để Shader Outline đọc được
                 return float4(NormalizeNormalPerPixel(input.normalWS), 0.0);
             }
             ENDHLSL

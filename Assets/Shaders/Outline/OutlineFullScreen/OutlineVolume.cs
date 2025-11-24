@@ -18,7 +18,6 @@ public class OutlineVolume : VolumeComponent, IPostProcessComponent
     public EnumParameter<OutlineAlgorithm> algorithm = new EnumParameter<OutlineAlgorithm>(OutlineAlgorithm.Sobel);
 
     public ClampedIntParameter thickness = new ClampedIntParameter(2, 1, 10);
-    [Tooltip("Use HDR Color for Luminous/Glow Effect")]
     public ColorParameter outlineColor = new ColorParameter(new Color(0, 1, 0, 1), true, false, true);
 
     public ClampedFloatParameter depthThreshold = new ClampedFloatParameter(1.5f, 0f, 10f);
@@ -28,6 +27,14 @@ public class OutlineVolume : VolumeComponent, IPostProcessComponent
     public BoolParameter useDepth = new BoolParameter(true);
     public BoolParameter useNormals = new BoolParameter(true);
     public BoolParameter useColor = new BoolParameter(false);
+
+    public BoolParameter useDistanceFade = new BoolParameter(false);
+    public FloatParameter fadeDistanceStart = new FloatParameter(0f);
+    public FloatParameter fadeDistanceEnd = new FloatParameter(50f);
+
+    public BoolParameter useHeightFade = new BoolParameter(false);
+    public FloatParameter fadeHeightMin = new FloatParameter(0f);
+    public FloatParameter fadeHeightMax = new FloatParameter(10f);
 
     public bool IsActive() => isActive.value;
     public bool IsTileCompatible() => false;

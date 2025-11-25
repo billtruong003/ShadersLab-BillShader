@@ -1,4 +1,4 @@
-Shader "Unlit/ProductionReadyCircularHealthBar_V2"
+Shader "Unlit/URP_CircularHealthBar_Occluder"
 {
     Properties
     {
@@ -6,6 +6,7 @@ Shader "Unlit/ProductionReadyCircularHealthBar_V2"
         _FillAmount ("Fill Amount", Range(0.0, 1.0)) = 0.5
         _BorderThickness ("Border Thickness", Range(0.0, 0.5)) = 0.05
         _RotationStart("Rotation Start (Degrees)", Range(0, 360)) = 90
+        _Cutoff("Alpha Cutoff (For Occlusion)", Range(0.0, 1.0)) = 0.1
 
         [Header(Colors)]
         _BackgroundColor ("Background Color", Color) = (0.1, 0.1, 0.1, 1)
@@ -14,93 +15,184 @@ Shader "Unlit/ProductionReadyCircularHealthBar_V2"
         [HDR] _LowColor ("Low Progress Color", Color) = (0.8, 0.1, 0.1, 1)
 
         [Header(Rendering Options)]
-        [Enum(UnityEngine.Rendering.CompareFunction)] _ZTest ("ZTest", Float) = 8
+        [Enum(UnityEngine.Rendering.CompareFunction)] _ZTest ("ZTest", Float) = 4
         [Enum(Off, 0, On, 1)] _ZWrite ("ZWrite", Float) = 0
     }
+
     SubShader
     {
         Tags
         {
-            "Queue" = "Overlay"
-            "RenderType" = "Overlay"
+            "RenderType" = "TransparentCutout"
+            "Queue" = "AlphaTest"
+            "RenderPipeline" = "UniversalPipeline"
             "IgnoreProjector" = "True"
             "PreviewType" = "Plane"
-            "LightMode" = "Overlay"
         }
 
         Pass
         {
+            Name "UniversalForward"
+            Tags
+            {
+                "LightMode" = "UniversalForward"
+            }
+
             Blend SrcAlpha OneMinusSrcAlpha
             Cull Off
             ZWrite [_ZWrite]
             ZTest [_ZTest]
 
-            CGPROGRAM
+            HLSLPROGRAM
             #pragma vertex vert
             #pragma fragment frag
-            #include "UnityCG.cginc"
+            #pragma multi_compile_instancing
+
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
             #define PI 3.14159265359
 
-            struct appdata
+            struct Attributes
             {
-                float4 vertex : POSITION;
+                float4 positionOS : POSITION;
                 float2 uv : TEXCOORD0;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
-            struct v2f
+            struct Varyings
             {
+                float4 positionCS : SV_POSITION;
                 float2 uv : TEXCOORD0;
-                float4 vertex : SV_POSITION;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
+            CBUFFER_START(UnityPerMaterial)
             half _FillAmount;
             half _BorderThickness;
             float _RotationStart;
+            half _Cutoff;
+            half4 _BackgroundColor;
+            half4 _BorderColor;
+            half4 _FullColor;
+            half4 _LowColor;
+            CBUFFER_END
 
-            fixed4 _BackgroundColor;
-            fixed4 _BorderColor;
-            fixed4 _FullColor;
-            fixed4 _LowColor;
-
-            v2f vert(appdata v)
+            Varyings vert(Attributes input)
             {
-                v2f o;
-                o.vertex = UnityObjectToClipPos(v.vertex);
-                o.uv = v.uv;
-                return o;
+                Varyings output;
+                UNITY_SETUP_INSTANCE_ID(input);
+                UNITY_TRANSFER_INSTANCE_ID(input, output);
+
+                VertexPositionInputs vertexInput = GetVertexPositionInputs(input.positionOS.xyz);
+                output.positionCS = vertexInput.positionCS;
+                output.uv = input.uv;
+                return output;
             }
 
-            fixed4 frag(v2f i) : SV_Target
+            half4 frag(Varyings input) : SV_Target
             {
-                float2 centeredUV = (i.uv - 0.5) * 2.0;
-                float distance = length(centeredUV);
-                float antialiasWidth = fwidth(distance);
+                UNITY_SETUP_INSTANCE_ID(input);
 
-                float shapeMask = 1.0 - smoothstep(1.0 - antialiasWidth, 1.0, distance);
-                float contentRadius = 1.0 - _BorderThickness;
-                float contentMask = 1.0 - smoothstep(contentRadius - antialiasWidth, contentRadius, distance);
+                float2 centeredUV = (input.uv - 0.5) * 2.0;
+                float dist = length(centeredUV);
+
+                    // Anti-aliasing width based on screen derivatives
+                float aaWidth = fwidth(dist);
+
+                    // Shape Masks
+                float outerRadius = 1.0;
+                float innerRadius = 1.0 - _BorderThickness;
+
+                float shapeMask = 1.0 - smoothstep(outerRadius - aaWidth, outerRadius, dist);
+                float contentMask = 1.0 - smoothstep(innerRadius - aaWidth, innerRadius, dist);
                 float borderMask = shapeMask - contentMask;
 
+                    // Angle Calculation
                 float angle = atan2(centeredUV.y, centeredUV.x);
-                float rotationInRadians = _RotationStart * PI / 180.0;
-                float angleZeroToOne = (angle + rotationInRadians) / (2.0 * PI);
-                angleZeroToOne = frac(angleZeroToOne);
+                float rotationRad = _RotationStart * PI / 180.0;
 
-                float fillMask = smoothstep(0.0, antialiasWidth * 2.0, _FillAmount - angleZeroToOne);
+                    // Normalize angle to 0-1 range based on rotation
+                float angleNorm = frac((angle + rotationRad) / (2.0 * PI));
 
-                fixed4 progressColor = lerp(_LowColor, _FullColor, saturate(_FillAmount * 1.2));
+                    // Fill Mask
+                float fillMask = smoothstep(0.0, aaWidth * 2.0, _FillAmount - angleNorm);
 
-                fixed4 contentColor = lerp(_BackgroundColor, progressColor, fillMask);
+                    // Color Logic
+                half4 progressColor = lerp(_LowColor, _FullColor, saturate(_FillAmount * 1.2));
+                half4 contentColor = lerp(_BackgroundColor, progressColor, fillMask);
 
-                fixed4 finalColor = contentColor * contentMask;
+                half4 finalColor = contentColor * contentMask;
                 finalColor = lerp(finalColor, _BorderColor, borderMask);
-                finalColor.a = shapeMask;
+                finalColor.a *= shapeMask;
+
+                    // Clipping for Outline Occlusion
+                    // This ensures only the visible ring writes to the occlusion mask/depth
+                clip(finalColor.a - _Cutoff);
 
                 return finalColor;
             }
-            ENDCG
+            ENDHLSL
+        }
+
+            // Support for DepthOnly pass ensures this object writes correct depth
+            // if ZWrite is On, further helping with sorting and occlusion.
+        Pass
+        {
+            Name "DepthOnly"
+            Tags
+            {
+                "LightMode" = "DepthOnly"
+            }
+
+            ZWrite On
+            ColorMask 0
+            Cull Off
+
+            HLSLPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+
+            struct Attributes
+            {
+                float4 positionOS : POSITION;
+                float2 uv : TEXCOORD0;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
+            };
+
+            struct Varyings
+            {
+                float4 positionCS : SV_POSITION;
+                float2 uv : TEXCOORD0;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
+            };
+
+            CBUFFER_START(UnityPerMaterial)
+            half _FillAmount;
+            half _BorderThickness;
+            half _Cutoff;
+            CBUFFER_END
+
+            Varyings vert(Attributes input)
+            {
+                Varyings output;
+                UNITY_SETUP_INSTANCE_ID(input);
+                VertexPositionInputs vertexInput = GetVertexPositionInputs(input.positionOS.xyz);
+                output.positionCS = vertexInput.positionCS;
+                output.uv = input.uv;
+                return output;
+            }
+
+            half4 frag(Varyings input) : SV_Target
+            {
+                UNITY_SETUP_INSTANCE_ID(input);
+                float2 centeredUV = (input.uv - 0.5) * 2.0;
+                float dist = length(centeredUV);
+                float shapeMask = 1.0 - smoothstep(0.99, 1.0, dist);
+                clip(shapeMask - _Cutoff);
+                return 0;
+            }
+            ENDHLSL
         }
     }
-    FallBack Off
 }

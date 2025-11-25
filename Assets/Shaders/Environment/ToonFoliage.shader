@@ -20,33 +20,28 @@ Shader "CleanCode/ToonFoliage"
     {
         Tags
         {
-            "RenderType" = "Opaque"
-            "Queue" = "AlphaTest"
-            "RenderPipeline" = "UniversalPipeline"
+            "RenderType" = "Opaque" "Queue" = "AlphaTest" "RenderPipeline" = "UniversalPipeline"
         }
         LOD 100
         Cull Off
-        ZTest LEqual
         ZWrite On
+        ZTest LEqual
 
         Pass
         {
             Name "ForwardLit"
             Tags
             {
-                "LightMode" = "FoliageForward"
+                "LightMode" = "UniversalForward"
             }
 
             HLSLPROGRAM
             #pragma vertex Vertex
             #pragma fragment Fragment
             #pragma multi_compile_instancing
-            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS
-            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS_CASCADE
+            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE
             #pragma multi_compile _ _SHADOWS_SOFT
-
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+            #include "FoliageInput.hlsl"
 
             struct Attributes
             {
@@ -65,33 +60,20 @@ Shader "CleanCode/ToonFoliage"
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
-            CBUFFER_START(UnityPerMaterial)
-            float4 _BaseMap_ST;
-            half4 _BaseColor;
-            half4 _ShadowColor;
-            half _Cutoff;
-            half _WindSpeed;
-            half _WindStrength;
-            half _WindFrequency;
-            half _Softness;
-            CBUFFER_END
-
-            TEXTURE2D(_BaseMap);
-            SAMPLER(sampler_BaseMap);
+            float3 ApplySimpleWind(float3 positionWS, float2 uv)
+            {
+                float windWave = sin(_Time.y * _WindSpeed + positionWS.x * _WindFrequency + positionWS.z * _WindFrequency);
+                float3 windOffset = float3(windWave * _WindStrength, 0, windWave * _WindStrength * 0.5);
+                return positionWS + windOffset * uv.y;
+            }
 
             Varyings Vertex(Attributes input)
             {
                 Varyings output;
                 UNITY_SETUP_INSTANCE_ID(input);
                 UNITY_TRANSFER_INSTANCE_ID(input, output);
-
                 float3 positionWS = TransformObjectToWorld(input.positionOS.xyz);
-
-                float windWave = sin(_Time.y * _WindSpeed + positionWS.x * _WindFrequency + positionWS.z * _WindFrequency);
-                float3 windOffset = float3(windWave * _WindStrength, 0, windWave * _WindStrength * 0.5);
-
-                positionWS += windOffset * input.uv.y;
-
+                positionWS = ApplySimpleWind(positionWS, input.uv);
                 output.positionWS = positionWS;
                 output.positionCS = TransformWorldToHClip(positionWS);
                 output.normalWS = TransformObjectToWorldNormal(input.normalOS);
@@ -102,24 +84,15 @@ Shader "CleanCode/ToonFoliage"
             half4 Fragment(Varyings input) : SV_Target
             {
                 UNITY_SETUP_INSTANCE_ID(input);
-
                 half4 texColor = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.uv);
                 clip(texColor.a - _Cutoff);
 
                 Light mainLight = GetMainLight(TransformWorldToShadowCoord(input.positionWS));
-                half3 lightDir = normalize(mainLight.direction);
-                half3 normal = normalize(input.normalWS);
-
-                half NdotL = dot(normal, lightDir);
-                half lightIntensity = smoothstep(0.0, _Softness, NdotL * 0.5 + 0.5);
-
-                half shadowAtten = mainLight.shadowAttenuation;
-                lightIntensity *= shadowAtten;
-
+                half NdotL = dot(normalize(input.normalWS), normalize(mainLight.direction));
+                half lightIntensity = smoothstep(0.0, _Softness, NdotL * 0.5 + 0.5) * mainLight.shadowAttenuation;
                 half3 finalColor = lerp(_ShadowColor.rgb, _BaseColor.rgb, lightIntensity);
-                finalColor *= texColor.rgb * mainLight.color;
 
-                return half4(finalColor, 1.0);
+                return half4(finalColor * texColor.rgb * mainLight.color, 1.0);
             }
             ENDHLSL
         }
@@ -131,21 +104,19 @@ Shader "CleanCode/ToonFoliage"
             {
                 "LightMode" = "ShadowCaster"
             }
-
             HLSLPROGRAM
-            #pragma vertex VertexShadow
-            #pragma fragment FragmentShadow
+            #pragma vertex Vertex
+            #pragma fragment Fragment
             #pragma multi_compile_instancing
-
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "FoliageInput.hlsl"
 
             struct Attributes
             {
                 float4 positionOS : POSITION;
+                float3 normalOS : NORMAL;
                 float2 uv : TEXCOORD0;
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
-
             struct Varyings
             {
                 float4 positionCS : SV_POSITION;
@@ -153,40 +124,116 @@ Shader "CleanCode/ToonFoliage"
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
-            CBUFFER_START(UnityPerMaterial)
-            float4 _BaseMap_ST;
-            half _Cutoff;
-            half _WindSpeed;
-            half _WindStrength;
-            half _WindFrequency;
-            CBUFFER_END
-
-            TEXTURE2D(_BaseMap);
-            SAMPLER(sampler_BaseMap);
-
-            Varyings VertexShadow(Attributes input)
+            Varyings Vertex(Attributes input)
             {
                 Varyings output;
                 UNITY_SETUP_INSTANCE_ID(input);
                 UNITY_TRANSFER_INSTANCE_ID(input, output);
-
                 float3 positionWS = TransformObjectToWorld(input.positionOS.xyz);
-
                 float windWave = sin(_Time.y * _WindSpeed + positionWS.x * _WindFrequency + positionWS.z * _WindFrequency);
-                float3 windOffset = float3(windWave * _WindStrength, 0, windWave * _WindStrength * 0.5);
-                positionWS += windOffset * input.uv.y;
+                positionWS += float3(windWave * _WindStrength, 0, windWave * _WindStrength * 0.5) * input.uv.y;
+                output.positionCS = TransformWorldToHClip(ApplyShadowBias(positionWS, TransformObjectToWorldNormal(input.normalOS), _MainLightPosition.xyz));
+                output.uv = TRANSFORM_TEX(input.uv, _BaseMap);
+                return output;
+            }
+            half4 Fragment(Varyings input) : SV_Target
+            {
+                UNITY_SETUP_INSTANCE_ID(input);
+                clip(SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.uv).a - _Cutoff);
+                return 0;
+            }
+            ENDHLSL
+        }
 
+        Pass
+        {
+            Name "DepthOnly"
+            Tags
+            {
+                "LightMode" = "DepthOnly"
+            }
+            HLSLPROGRAM
+            #pragma vertex Vertex
+            #pragma fragment Fragment
+            #pragma multi_compile_instancing
+            #include "FoliageInput.hlsl"
+            struct Attributes
+            {
+                float4 positionOS : POSITION;
+                float2 uv : TEXCOORD0;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
+            };
+            struct Varyings
+            {
+                float4 positionCS : SV_POSITION;
+                float2 uv : TEXCOORD0;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
+            };
+            Varyings Vertex(Attributes input)
+            {
+                Varyings output;
+                UNITY_SETUP_INSTANCE_ID(input);
+                UNITY_TRANSFER_INSTANCE_ID(input, output);
+                float3 positionWS = TransformObjectToWorld(input.positionOS.xyz);
+                float windWave = sin(_Time.y * _WindSpeed + positionWS.x * _WindFrequency + positionWS.z * _WindFrequency);
+                positionWS += float3(windWave * _WindStrength, 0, windWave * _WindStrength * 0.5) * input.uv.y;
                 output.positionCS = TransformWorldToHClip(positionWS);
                 output.uv = TRANSFORM_TEX(input.uv, _BaseMap);
                 return output;
             }
-
-            half4 FragmentShadow(Varyings input) : SV_Target
+            half4 Fragment(Varyings input) : SV_Target
             {
                 UNITY_SETUP_INSTANCE_ID(input);
-                half alpha = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.uv).a;
-                clip(alpha - _Cutoff);
+                clip(SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.uv).a - _Cutoff);
                 return 0;
+            }
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Name "DepthNormals"
+            Tags
+            {
+                "LightMode" = "DepthNormals"
+            }
+            HLSLPROGRAM
+            #pragma vertex Vertex
+            #pragma fragment Fragment
+            #pragma multi_compile_instancing
+            #include "FoliageInput.hlsl"
+            struct Attributes
+            {
+                float4 positionOS : POSITION;
+                float3 normalOS : NORMAL;
+                float2 uv : TEXCOORD0;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
+            };
+            struct Varyings
+            {
+                float4 positionCS : SV_POSITION;
+                float3 normalWS : TEXCOORD1;
+                float2 uv : TEXCOORD0;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
+            };
+            Varyings Vertex(Attributes input)
+            {
+                Varyings output;
+                UNITY_SETUP_INSTANCE_ID(input);
+                UNITY_TRANSFER_INSTANCE_ID(input, output);
+                float3 positionWS = TransformObjectToWorld(input.positionOS.xyz);
+                float windWave = sin(_Time.y * _WindSpeed + positionWS.x * _WindFrequency + positionWS.z * _WindFrequency);
+                positionWS += float3(windWave * _WindStrength, 0, windWave * _WindStrength * 0.5) * input.uv.y;
+                output.positionCS = TransformWorldToHClip(positionWS);
+                output.normalWS = TransformObjectToWorldNormal(input.normalOS);
+                output.uv = TRANSFORM_TEX(input.uv, _BaseMap);
+                return output;
+            }
+            float4 Fragment(Varyings input) : SV_Target
+            {
+                UNITY_SETUP_INSTANCE_ID(input);
+                clip(SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.uv).a - _Cutoff);
+                return float4(NormalizeNormalPerPixel(input.normalWS), 0.0);
             }
             ENDHLSL
         }

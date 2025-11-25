@@ -27,6 +27,14 @@ Material:
         m_Texture: {fileID: 2800000, guid: e8db8c67174796f47a243610e0b1db4d, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _FoamTexture:
+        m_Texture: {fileID: 2800000, guid: 110f790ede0f24e01b9fc4c0ebcf54f5, type: 3}
+        m_Scale: {x: 0.5, y: 0.5}
+        m_Offset: {x: 0, y: 0}
+    - _NormalMap:
+        m_Texture: {fileID: 2800000, guid: 681676c925eee2c4e8d024407e34096f, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - _NormalMapA:
         m_Texture: {fileID: 2800000, guid: 8bb4a5f6203cd984287d2cffc82be54d, type: 3}
         m_Scale: {x: 1, y: 1}
@@ -39,6 +47,10 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _SparkleNoise:
+        m_Texture: {fileID: 2800000, guid: 66f9765a93404ff4eb9f67bbe62995b5, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - _SurfaceFoamDistortionMap:
         m_Texture: {fileID: 2800000, guid: b24b0f961a0d9834aab1f2a53ddabc1f, type: 3}
         m_Scale: {x: 1, y: 1}
@@ -49,34 +61,55 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _BlingFresnelPower: 20
-    - _BlingIntensity: 10
-    - _BlingScale: 2
-    - _BlingSpeed: 4.7
-    - _BlingThreshold: 0.99
+    - _BlingFresnelPower: 1
+    - _BlingIntensity: 1
+    - _BlingScale: 1
+    - _BlingSpeed: 1
+    - _BlingThreshold: 0.5
     - _DepthMaxDistance: 10
-    - _FoamIntersectionDepth: 0.25
+    - _FoamCutoff: 1
+    - _FoamDistortion: 0.05
+    - _FoamIntersectionDepth: 0.42
     - _FoamIntersectionSoftness: 0.01
-    - _NormalTilingA: 0.01
+    - _NormalTiling: 4.78
+    - _NormalTilingA: 2.4
     - _NormalTilingB: 1
-    - _RefractionStrength: 0.025
+    - _RefractionStrength: 0.1
+    - _Smoothness: 0.9
     - _SparkleIntensity: 0.6
+    - _SparkleScale: 2.97
+    - _SparkleSpeed: 0.5
+    - _SparkleThreshold: 0.6
     - _SparkleTiling: 100
+    - _StencilComp: 8
+    - _StencilPass: 2
+    - _StencilRef: 64
     - _SurfaceFoamCutoff: 1
-    - _SurfaceFoamDistortionStrength: 0.0788
-    - _SurfaceFoamTiling: -0.1
+    - _SurfaceFoamDistortionStrength: 0.188
+    - _SurfaceFoamTiling: 0.2
     - _WaveAmplitude: 0.006
     - _WaveFrequency: 1
+    - _WaveLength: 10
     - _WaveSpeed: 1
+    - _WaveSteepness: 0.1
     m_Colors:
-    - _BlingColor: {r: 23.968624, g: 23.968624, b: 23.968624, a: 1}
-    - _DeepColor: {r: 0, g: 1, b: 0.7911868, a: 1}
+    - _BlingColor: {r: 5.992157, g: 5.992157, b: 5.992157, a: 1}
+    - _BlingParams: {r: 2, g: 10, b: 8, a: 0.98}
+    - _DeepColor: {r: 0, g: 1.0196079, b: 1.0196079, a: 1}
     - _FoamColor: {r: 1, g: 1, b: 1, a: 1}
+    - _FoamIntersectionParams: {r: 0.5, g: 1, b: 0, a: 0}
+    - _NormalScroll: {r: 0.01, g: 0.01, b: -0.012, a: 0.008}
     - _NormalScrollA: {r: 0.01, g: 0.01, b: 0, a: 0}
     - _NormalScrollB: {r: -0.012, g: 0.008, b: 0, a: 0}
-    - _ShallowColor: {r: 0.35702205, g: 0.48735094, b: 0.6698113, a: 1}
+    - _NormalSpeed: {r: 0.05, g: 0.05, b: 0, a: 0}
+    - _NormalTiling: {r: 0.8, g: 1.2, b: 0, a: 0}
+    - _ShallowColor: {r: 0.42172483, g: 0.48790807, b: 0.764151, a: 1}
     - _SparkleColor: {r: 1, g: 1, b: 1, a: 1}
     - _SparkleScroll: {r: 1, g: 1, b: 0, a: 0}
-    - _SurfaceFoamScroll: {r: -0.1, g: -0.1, b: 0, a: 0}
+    - _SpecularColor: {r: 1, g: 1, b: 1, a: 1}
+    - _SurfaceFoamParams: {r: 0.1, g: 0.1, b: 0.1, a: 0}
+    - _SurfaceFoamScroll: {r: 0.1, g: 0.1, b: 0, a: 0}
+    - _WaveDirection: {r: 1, g: 0, b: 0, a: 0}
+    - _WaveParams: {r: 0.00025, g: 0.00025, b: 0.00025, a: 0}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

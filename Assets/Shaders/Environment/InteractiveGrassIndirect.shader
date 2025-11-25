@@ -8,6 +8,7 @@ Shader "CleanCode/InteractiveGrass_Indirect"
         [HDR] _BottomColor("Bottom Color", Color) = (0.1, 0.3, 0.1, 1)
         _Cutoff("Alpha Cutoff", Range(0.0, 1.0)) = 0.5
         _GroundBlend("Ground Blend Height", Range(0.001, 1.0)) = 0.2
+        _SSAONormalFlatten("SSAO/Outline Normal Flatten", Range(0.0, 1.0)) = 0.5
 
         [Header(Translucency)]
         [HDR] _TranslucencyColor("Translucency Color", Color) = (0.8, 1.0, 0.2, 1)
@@ -41,10 +42,10 @@ Shader "CleanCode/InteractiveGrass_Indirect"
 
         Pass
         {
-            Name "ForwardLit"
+            Name "FoliageForward"
             Tags
             {
-                "LightMode" = "FoliageForward"
+                "LightMode" = "UniversalForward"
             }
 
             HLSLPROGRAM
@@ -52,12 +53,11 @@ Shader "CleanCode/InteractiveGrass_Indirect"
             #pragma fragment Fragment
             #pragma multi_compile_instancing
             #pragma instancing_options procedural : SetupIndirect
-            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS
+            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE
             #pragma multi_compile _ _SHADOWS_SOFT
 
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
             #include "IndirectIncludes.hlsl"
+            #include "FoliageInput.hlsl"
 
             struct Attributes
             {
@@ -76,28 +76,6 @@ Shader "CleanCode/InteractiveGrass_Indirect"
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
-            CBUFFER_START(UnityPerMaterial)
-            float4 _BaseMap_ST;
-            half4 _TopColor;
-            half4 _BottomColor;
-            half4 _TranslucencyColor;
-            half4 _EmissionColor;
-            half _Cutoff;
-            half _GroundBlend;
-            half _TranslucencyGain;
-            half _TranslucencyDistortion;
-            half _TranslucencyPower;
-            half _WindSpeed;
-            half _WindStrength;
-            half _InteractionRadius;
-            half _InteractionStrength;
-            CBUFFER_END
-
-            float3 _GlobalInteractorPos;
-            TEXTURE2D(_BaseMap);
-            SAMPLER(sampler_BaseMap);
-            TEXTURE2D(_AlphaMask);
-
             Varyings Vertex(Attributes input)
             {
                 Varyings output;
@@ -105,17 +83,7 @@ Shader "CleanCode/InteractiveGrass_Indirect"
                 UNITY_TRANSFER_INSTANCE_ID(input, output);
 
                 float3 positionWS = TransformObjectToWorld(input.positionOS.xyz);
-
-                float wind = sin(_Time.y * _WindSpeed + positionWS.x + positionWS.z) * _WindStrength * input.uv.y;
-                positionWS.x += wind;
-                positionWS.z += wind;
-
-                float3 dir = positionWS - _GlobalInteractorPos;
-                dir.y = 0;
-                float influence = saturate(1.0 - length(dir) / _InteractionRadius);
-                float3 push = normalize(dir) * influence * influence * _InteractionStrength * input.uv.y;
-                positionWS += push;
-                positionWS.y -= length(push) * 0.5;
+                positionWS = ApplyWindAndInteraction(positionWS, input.uv);
 
                 output.positionWS = positionWS;
                 output.positionCS = TransformWorldToHClip(positionWS);
@@ -127,6 +95,7 @@ Shader "CleanCode/InteractiveGrass_Indirect"
             half4 Fragment(Varyings input) : SV_Target
             {
                 UNITY_SETUP_INSTANCE_ID(input);
+
                 half4 baseMap = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.uv);
                 half mask = SAMPLE_TEXTURE2D(_AlphaMask, sampler_BaseMap, input.uv).r;
                 half blend = smoothstep(0.0, _GroundBlend, input.uv.y);
@@ -138,13 +107,10 @@ Shader "CleanCode/InteractiveGrass_Indirect"
                 half3 V = GetWorldSpaceNormalizeViewDir(input.positionWS);
 
                 half NdotL = saturate(dot(N, L));
-
-                half3 backLitDir = L + (N * _TranslucencyDistortion);
-                half transDot = saturate(dot(V, -backLitDir));
-                half3 translucency = _TranslucencyGain * pow(transDot, _TranslucencyPower) * _TranslucencyColor.rgb;
-
+                half3 translucency = CalculateTranslucency(L, N, V);
                 half3 ambient = SampleSH(N);
                 half3 baseColor = lerp(_BottomColor.rgb, _TopColor.rgb, input.uv.y);
+
                 half3 diffuse = baseColor * (ambient + (mainLight.color * (NdotL + translucency) * mainLight.shadowAttenuation));
 
                 return half4(diffuse + _EmissionColor.rgb, 1.0);
@@ -161,19 +127,22 @@ Shader "CleanCode/InteractiveGrass_Indirect"
             }
 
             HLSLPROGRAM
-            #pragma vertex VertexShadow
-            #pragma fragment FragmentShadow
+            #pragma vertex Vertex
+            #pragma fragment Fragment
             #pragma multi_compile_instancing
             #pragma instancing_options procedural : SetupIndirect
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+
             #include "IndirectIncludes.hlsl"
+            #include "FoliageInput.hlsl"
 
             struct Attributes
             {
                 float4 positionOS : POSITION;
+                float3 normalOS : NORMAL;
                 float2 uv : TEXCOORD0;
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
+
             struct Varyings
             {
                 float4 positionCS : SV_POSITION;
@@ -181,46 +150,140 @@ Shader "CleanCode/InteractiveGrass_Indirect"
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
-            CBUFFER_START(UnityPerMaterial)
-            float4 _BaseMap_ST;
-            half _Cutoff;
-            half _GroundBlend;
-            half _WindSpeed;
-            half _WindStrength;
-            half _InteractionRadius;
-            half _InteractionStrength;
-            CBUFFER_END
-
-            float3 _GlobalInteractorPos;
-            TEXTURE2D(_BaseMap);
-            SAMPLER(sampler_BaseMap);
-            TEXTURE2D(_AlphaMask);
-
-            Varyings VertexShadow(Attributes input)
+            Varyings Vertex(Attributes input)
             {
                 Varyings output;
                 UNITY_SETUP_INSTANCE_ID(input);
                 UNITY_TRANSFER_INSTANCE_ID(input, output);
+
                 float3 positionWS = TransformObjectToWorld(input.positionOS.xyz);
-                float wind = sin(_Time.y * _WindSpeed + positionWS.x + positionWS.z) * _WindStrength * input.uv.y;
-                positionWS.x += wind;
-                positionWS.z += wind;
-                float3 dir = positionWS - _GlobalInteractorPos;
-                dir.y = 0;
-                float influence = saturate(1.0 - length(dir) / _InteractionRadius);
-                float3 push = normalize(dir) * influence * influence * _InteractionStrength * input.uv.y;
-                positionWS += push;
+                positionWS = ApplyWindAndInteraction(positionWS, input.uv);
+
+                output.positionCS = TransformWorldToHClip(ApplyShadowBias(positionWS, TransformObjectToWorldNormal(input.normalOS), _MainLightPosition.xyz));
+                output.uv = TRANSFORM_TEX(input.uv, _BaseMap);
+                return output;
+            }
+
+            half4 Fragment(Varyings input) : SV_Target
+            {
+                UNITY_SETUP_INSTANCE_ID(input);
+                clip((SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.uv).a * smoothstep(0, _GroundBlend, input.uv.y)) - _Cutoff);
+                return 0;
+            }
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Name "DepthNormals"
+            Tags
+            {
+                "LightMode" = "DepthNormals"
+            }
+
+            HLSLPROGRAM
+            #pragma vertex Vertex
+            #pragma fragment Fragment
+            #pragma multi_compile_instancing
+            #pragma instancing_options procedural : SetupIndirect
+
+            #include "IndirectIncludes.hlsl"
+            #include "FoliageInput.hlsl"
+
+            struct Attributes
+            {
+                float4 positionOS : POSITION;
+                float3 normalOS : NORMAL;
+                float2 uv : TEXCOORD0;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
+            };
+
+            struct Varyings
+            {
+                float4 positionCS : SV_POSITION;
+                float3 normalWS : TEXCOORD1;
+                float2 uv : TEXCOORD0;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
+            };
+
+            Varyings Vertex(Attributes input)
+            {
+                Varyings output;
+                UNITY_SETUP_INSTANCE_ID(input);
+                UNITY_TRANSFER_INSTANCE_ID(input, output);
+
+                float3 positionWS = TransformObjectToWorld(input.positionOS.xyz);
+                positionWS = ApplyWindAndInteraction(positionWS, input.uv);
+
+                output.positionCS = TransformWorldToHClip(positionWS);
+                output.normalWS = TransformObjectToWorldNormal(input.normalOS);
+                output.uv = TRANSFORM_TEX(input.uv, _BaseMap);
+                return output;
+            }
+
+            float4 Fragment(Varyings input) : SV_Target
+            {
+                UNITY_SETUP_INSTANCE_ID(input);
+                clip((SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.uv).a * smoothstep(0, _GroundBlend, input.uv.y)) - _Cutoff);
+
+                float3 normal = normalize(input.normalWS);
+                    // Flatten normal towards world up based on slider
+                normal = normalize(lerp(normal, float3(0, 1, 0), _SSAONormalFlatten));
+
+                return float4(NormalizeNormalPerPixel(normal), 0.0);
+            }
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Name "DepthOnly"
+            Tags
+            {
+                "LightMode" = "DepthOnly"
+            }
+
+            HLSLPROGRAM
+            #pragma vertex Vertex
+            #pragma fragment Fragment
+            #pragma multi_compile_instancing
+            #pragma instancing_options procedural : SetupIndirect
+
+            #include "IndirectIncludes.hlsl"
+            #include "FoliageInput.hlsl"
+
+            struct Attributes
+            {
+                float4 positionOS : POSITION;
+                float2 uv : TEXCOORD0;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
+            };
+
+            struct Varyings
+            {
+                float4 positionCS : SV_POSITION;
+                float2 uv : TEXCOORD0;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
+            };
+
+            Varyings Vertex(Attributes input)
+            {
+                Varyings output;
+                UNITY_SETUP_INSTANCE_ID(input);
+                UNITY_TRANSFER_INSTANCE_ID(input, output);
+
+                float3 positionWS = TransformObjectToWorld(input.positionOS.xyz);
+                positionWS = ApplyWindAndInteraction(positionWS, input.uv);
+
                 output.positionCS = TransformWorldToHClip(positionWS);
                 output.uv = TRANSFORM_TEX(input.uv, _BaseMap);
                 return output;
             }
 
-            half4 FragmentShadow(Varyings input) : SV_Target
+            half4 Fragment(Varyings input) : SV_Target
             {
                 UNITY_SETUP_INSTANCE_ID(input);
-                half alpha = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.uv).a;
-                half blend = smoothstep(0.0, _GroundBlend, input.uv.y);
-                clip((alpha * blend) - _Cutoff);
+                clip((SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.uv).a * smoothstep(0, _GroundBlend, input.uv.y)) - _Cutoff);
                 return 0;
             }
             ENDHLSL

@@ -115,7 +115,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MainTexSide:
-        m_Texture: {fileID: 2800000, guid: b47b1de5e61af3943a2d7d52c2496462, type: 3}
+        m_Texture: {fileID: 2800000, guid: 0048d67e351d04da6b831bde0a1c0b2b, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MetallicGlossMap:
@@ -131,7 +131,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _Normal:
-        m_Texture: {fileID: 2800000, guid: 56f1619329eb866408de84c6f9074726, type: 3}
+        m_Texture: {fileID: 2800000, guid: 3d17d983a79854333bbb7a67fb6ef9bc, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _NormalMapBottom:
@@ -266,11 +266,13 @@ Material:
     - _BlendContrast: 10
     - _BlendModePreserveSpecular: 1
     - _BlendOffset: 0.5
-    - _BlendSharpness: 16
+    - _BlendSharpness: 64
     - _BottomNormalScale: 1
     - _BottomScale: 1
     - _BottomSmoothness: 0.5
     - _BumpScale: 1
+    - _BumpScaleSide: 1
+    - _BumpScaleTop: 1
     - _ClearCoatMask: 0
     - _ClearCoatSmoothness: 0
     - _Cull: 2
@@ -279,7 +281,7 @@ Material:
     - _DetailNormalMapScale: 1
     - _DstBlend: 0
     - _DstBlendAlpha: 0
-    - _EdgeWidth: 0.775
+    - _EdgeWidth: 1
     - _EnableBottomNormal: 0
     - _EnableTopNormal: 0
     - _EnvironmentReflections: 1
@@ -304,7 +306,7 @@ Material:
     - _ProjectionSpace: 1
     - _QueueOffset: 0
     - _ReceiveShadows: 1
-    - _RimPower: 6.5
+    - _RimPower: 0.25
     - _RockNormalStrength: 1
     - _RockScale: 1
     - _RockSmoothness: 0.2
@@ -312,7 +314,8 @@ Material:
     - _Scale: 0.1
     - _ShadowThreshold: 0.5
     - _Shininess: 32
-    - _SideScale: 0.1
+    - _SideNormalScale: 1
+    - _SideScale: 0.2
     - _Smoothness: 0
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
@@ -325,10 +328,10 @@ Material:
     - _TextureScale: 1
     - _Tiling: 5.33
     - _TopLayerBlendSharpness: 8.47
-    - _TopNormalScale: 0.06
+    - _TopNormalScale: 1
     - _TopScale: 0.5
     - _TopSmoothness: 0.5
-    - _TopSpread: 1.25
+    - _TopSpread: 1.27
     - _TriplanarBlend: 19.5
     - _TriplanarBlendSharpness: 10.65
     - _TriplanarScale: 10
@@ -337,7 +340,7 @@ Material:
     - _XRMotionVectorsPass: 1
     - _ZWrite: 1
     m_Colors:
-    - _AmbientColor: {r: 0.1860466, g: 0, b: 1, a: 1}
+    - _AmbientColor: {r: 0.26157427, g: 0, b: 1, a: 1}
     - _BakedPosition: {r: 0, g: -21, b: 0, a: 0}
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _BottomBaseColor: {r: 1, g: 1, b: 1, a: 1}
@@ -346,14 +349,14 @@ Material:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EdgeColor: {r: 0.3584906, g: 0.3584906, b: 0.3584906, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
-    - _RimColor: {r: 0.3301887, g: 0.1455903, b: 0.076317206, a: 1}
-    - _RimColor2: {r: 0, g: 0, b: 0, a: 1}
+    - _RimColor: {r: 0.41509432, g: 0.30653116, b: 0, a: 1}
+    - _RimColor2: {r: 0.745283, g: 0.25244156, b: 0, a: 1}
     - _RimColorSide: {r: 0.5, g: 0.38636005, b: 0.36084905, a: 1}
     - _RimColorTop: {r: 0.37450978, g: 0.37450978, b: 0.37450978, a: 1}
     - _ShadowColor: {r: 0.1, g: 0.1, b: 0.2, a: 1}
     - _SpecColor: {r: 1, g: 1, b: 1, a: 1}
     - _SpecularColor: {r: 1, g: 1, b: 1, a: 1}
-    - _Tint: {r: 1, g: 0.7877358, b: 0.7877358, a: 1}
+    - _Tint: {r: 0.5566038, g: 0.28625163, b: 0.21266466, a: 1}
     - _TopBaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _TopColor: {r: 1, g: 1, b: 1, a: 1}
     - _TopEmissionColor: {r: 1, g: 1, b: 1, a: 1}

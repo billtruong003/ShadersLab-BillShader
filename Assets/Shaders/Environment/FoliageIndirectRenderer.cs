@@ -3,12 +3,12 @@ using UnityEngine.Rendering;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Linq;
+using UnityEngine.Rendering.RenderGraphModule;
 
 namespace CleanCode.EnvironmentTools
 {
     public class FoliageManager : MonoBehaviour
     {
-        // Global list to allow RenderPasses to find active managers
         public static readonly List<FoliageManager> ActiveManagers = new List<FoliageManager>();
 
         private struct IndirectData
@@ -80,7 +80,6 @@ namespace CleanCode.EnvironmentTools
 
             Dictionary<string, FoliageTypeBatch> batchMap = new Dictionary<string, FoliageTypeBatch>();
 
-            // Process LODGroups
             var lodGroups = GetComponentsInChildren<LODGroup>();
             foreach (var group in lodGroups)
             {
@@ -88,7 +87,6 @@ namespace CleanCode.EnvironmentTools
                 group.gameObject.SetActive(false);
             }
 
-            // Process Single MeshRenderers
             var renderers = GetComponentsInChildren<MeshRenderer>();
             foreach (var r in renderers)
             {
@@ -130,7 +128,7 @@ namespace CleanCode.EnvironmentTools
                     Material = r0.sharedMaterial,
                     MatProps = new MaterialPropertyBlock(),
                     BoundingRadius = mf0.sharedMesh.bounds.extents.magnitude,
-                    PassIndex = r0.sharedMaterial.FindPass("FoliageForward") // Adjusted to match shader tags
+                    PassIndex = r0.sharedMaterial.FindPass("FoliageForward")
                 };
                 if (batch.PassIndex == -1) batch.PassIndex = r0.sharedMaterial.FindPass("ForwardLit");
 
@@ -256,7 +254,6 @@ namespace CleanCode.EnvironmentTools
             }
         }
 
-        // Standard CommandBuffer support (for Built-in or older URP contexts if needed)
         public void RenderFoliage(CommandBuffer cmd)
         {
             foreach (var batch in _batches)
@@ -282,7 +279,6 @@ namespace CleanCode.EnvironmentTools
             }
         }
 
-        // RenderGraph RasterCommandBuffer support (Fixes CS1503)
         public void RenderFoliage(RasterCommandBuffer cmd)
         {
             foreach (var batch in _batches)

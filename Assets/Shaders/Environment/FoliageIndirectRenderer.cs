@@ -29,6 +29,7 @@ namespace CleanCode.EnvironmentTools
             public MaterialPropertyBlock MatProps;
             public float BoundingRadius;
             public int PassIndex;
+            public int MaskPassIndex;
         }
 
         [Header("Settings")]
@@ -56,19 +57,20 @@ namespace CleanCode.EnvironmentTools
 
         private void OnEnable()
         {
-            if (!ActiveManagers.Contains(this))
-                ActiveManagers.Add(this);
-        }
-
-        private void Start()
-        {
-            if (bakeOnStart) Bake();
+            if (!ActiveManagers.Contains(this)) ActiveManagers.Add(this);
+            OutlineFeature.OnRenderFoliageMask += OnRenderMask;
         }
 
         private void OnDisable()
         {
             ActiveManagers.Remove(this);
+            OutlineFeature.OnRenderFoliageMask -= OnRenderMask;
             Cleanup();
+        }
+
+        private void Start()
+        {
+            if (bakeOnStart) Bake();
         }
 
         [ContextMenu("Scan & Bake All Children")]
@@ -77,42 +79,22 @@ namespace CleanCode.EnvironmentTools
             Cleanup();
             _batches.Clear();
             _trashBuffer = new ComputeBuffer(1, Marshal.SizeOf<IndirectData>(), ComputeBufferType.Append);
-
             Dictionary<string, FoliageTypeBatch> batchMap = new Dictionary<string, FoliageTypeBatch>();
 
             var lodGroups = GetComponentsInChildren<LODGroup>();
-            foreach (var group in lodGroups)
-            {
-                ProcessLODGroup(group, batchMap);
-                group.gameObject.SetActive(false);
-            }
-
+            foreach (var group in lodGroups) { ProcessLODGroup(group, batchMap); group.gameObject.SetActive(false); }
             var renderers = GetComponentsInChildren<MeshRenderer>();
-            foreach (var r in renderers)
-            {
-                if (r.gameObject.activeSelf)
-                {
-                    ProcessSingleRenderer(r, batchMap);
-                    r.enabled = false;
-                }
-            }
+            foreach (var r in renderers) { if (r.gameObject.activeSelf) { ProcessSingleRenderer(r, batchMap); r.enabled = false; } }
 
-            foreach (var batch in batchMap.Values)
-            {
-                if (batch.Instances.Count == 0) continue;
-                SetupBatchBuffers(batch);
-                _batches.Add(batch);
-            }
+            foreach (var batch in batchMap.Values) { if (batch.Instances.Count > 0) { SetupBatchBuffers(batch); _batches.Add(batch); } }
         }
 
         private void ProcessLODGroup(LODGroup group, Dictionary<string, FoliageTypeBatch> map)
         {
             LOD[] lods = group.GetLODs();
             if (lods.Length == 0) return;
-
             Renderer r0 = lods[0].renderers.FirstOrDefault();
             if (r0 == null || !(r0 is MeshRenderer)) return;
-
             MeshFilter mf0 = r0.GetComponent<MeshFilter>();
             if (mf0 == null || mf0.sharedMesh == null) return;
 
@@ -122,64 +104,43 @@ namespace CleanCode.EnvironmentTools
 
             if (!map.TryGetValue(key, out FoliageTypeBatch batch))
             {
-                batch = new FoliageTypeBatch
-                {
-                    ID = r0.gameObject.name,
-                    Material = r0.sharedMaterial,
-                    MatProps = new MaterialPropertyBlock(),
-                    BoundingRadius = mf0.sharedMesh.bounds.extents.magnitude,
-                    PassIndex = r0.sharedMaterial.FindPass("FoliageForward")
-                };
-                if (batch.PassIndex == -1) batch.PassIndex = r0.sharedMaterial.FindPass("ForwardLit");
-
-                for (int i = 0; i < 3; i++)
-                {
-                    if (i < lods.Length && lods[i].renderers.Length > 0)
-                    {
-                        var mr = lods[i].renderers[0].GetComponent<MeshFilter>();
-                        if (mr != null) batch.Meshes[i] = mr.sharedMesh;
-                    }
-                }
+                batch = CreateBatch(r0.gameObject.name, r0.sharedMaterial, mf0.sharedMesh.bounds.extents.magnitude);
+                for (int i = 0; i < 3; i++) { if (i < lods.Length && lods[i].renderers.Length > 0) { var mr = lods[i].renderers[0].GetComponent<MeshFilter>(); if (mr != null) batch.Meshes[i] = mr.sharedMesh; } }
                 map.Add(key, batch);
             }
-
-            batch.Instances.Add(new IndirectData
-            {
-                objectToWorld = group.transform.localToWorldMatrix,
-                worldToObject = group.transform.worldToLocalMatrix
-            });
+            batch.Instances.Add(new IndirectData { objectToWorld = group.transform.localToWorldMatrix, worldToObject = group.transform.worldToLocalMatrix });
         }
 
         private void ProcessSingleRenderer(MeshRenderer r, Dictionary<string, FoliageTypeBatch> map)
         {
             MeshFilter mf = r.GetComponent<MeshFilter>();
             if (mf == null || mf.sharedMesh == null) return;
-
             int meshID = mf.sharedMesh.GetInstanceID();
             int matID = r.sharedMaterial.GetInstanceID();
             string key = $"{meshID}_{matID}";
 
             if (!map.TryGetValue(key, out FoliageTypeBatch batch))
             {
-                batch = new FoliageTypeBatch
-                {
-                    ID = r.gameObject.name,
-                    Material = r.sharedMaterial,
-                    MatProps = new MaterialPropertyBlock(),
-                    BoundingRadius = mf.sharedMesh.bounds.extents.magnitude,
-                    PassIndex = r.sharedMaterial.FindPass("FoliageForward")
-                };
-                if (batch.PassIndex == -1) batch.PassIndex = r.sharedMaterial.FindPass("ForwardLit");
-
+                batch = CreateBatch(r.gameObject.name, r.sharedMaterial, mf.sharedMesh.bounds.extents.magnitude);
                 batch.Meshes[0] = mf.sharedMesh;
                 map.Add(key, batch);
             }
+            batch.Instances.Add(new IndirectData { objectToWorld = r.transform.localToWorldMatrix, worldToObject = r.transform.worldToLocalMatrix });
+        }
 
-            batch.Instances.Add(new IndirectData
+        private FoliageTypeBatch CreateBatch(string name, Material mat, float bounds)
+        {
+            var batch = new FoliageTypeBatch
             {
-                objectToWorld = r.transform.localToWorldMatrix,
-                worldToObject = r.transform.worldToLocalMatrix
-            });
+                ID = name,
+                Material = mat,
+                MatProps = new MaterialPropertyBlock(),
+                BoundingRadius = bounds,
+                PassIndex = mat.FindPass("FoliageForward"),
+                MaskPassIndex = mat.FindPass("SelectionMask")
+            };
+            if (batch.PassIndex == -1) batch.PassIndex = mat.FindPass("ForwardLit");
+            return batch;
         }
 
         private void SetupBatchBuffers(FoliageTypeBatch batch)
@@ -187,7 +148,6 @@ namespace CleanCode.EnvironmentTools
             int count = batch.Instances.Count;
             batch.AllInstancesBuffer = new ComputeBuffer(count, Marshal.SizeOf<IndirectData>());
             batch.AllInstancesBuffer.SetData(batch.Instances);
-
             for (int i = 0; i < 3; i++)
             {
                 if (batch.Meshes[i] != null)
@@ -203,7 +163,6 @@ namespace CleanCode.EnvironmentTools
         private void Update()
         {
             if (_batches.Count == 0 || cullingCompute == null) return;
-
             Camera cam = Camera.main;
             if (cam == null) return;
 
@@ -219,24 +178,16 @@ namespace CleanCode.EnvironmentTools
             cullingCompute.SetVector(ID_LODDistances, new Vector4(lod0Distance, lod1Distance, lod2Distance, 0));
             cullingCompute.SetVectorArray(ID_FrustumPlanes, _planeNormals);
 
-            foreach (var batch in _batches)
-            {
-                PerformCulling(batch, kernel);
-            }
+            foreach (var batch in _batches) PerformCulling(batch, kernel);
         }
 
         private void PerformCulling(FoliageTypeBatch batch, int kernel)
         {
-            for (int i = 0; i < 3; i++)
-            {
-                if (batch.VisibleBuffers[i] != null)
-                    batch.VisibleBuffers[i].SetCounterValue(0);
-            }
+            for (int i = 0; i < 3; i++) if (batch.VisibleBuffers[i] != null) batch.VisibleBuffers[i].SetCounterValue(0);
 
             cullingCompute.SetInt(ID_InstanceCount, batch.Instances.Count);
             cullingCompute.SetFloat(ID_CullingBound, batch.BoundingRadius);
             cullingCompute.SetBuffer(kernel, ID_AllInstances, batch.AllInstancesBuffer);
-
             _trashBuffer.SetCounterValue(0);
             cullingCompute.SetBuffer(kernel, ID_LOD0_Instances, batch.VisibleBuffers[0] ?? _trashBuffer);
             cullingCompute.SetBuffer(kernel, ID_LOD1_Instances, batch.VisibleBuffers[1] ?? _trashBuffer);
@@ -245,60 +196,45 @@ namespace CleanCode.EnvironmentTools
             int threadGroups = Mathf.CeilToInt(batch.Instances.Count / 64f);
             cullingCompute.Dispatch(kernel, threadGroups, 1, 1);
 
-            for (int i = 0; i < 3; i++)
-            {
-                if (batch.Meshes[i] != null && batch.VisibleBuffers[i] != null)
-                {
-                    ComputeBuffer.CopyCount(batch.VisibleBuffers[i], batch.ArgsBuffers[i], 4);
-                }
-            }
+            for (int i = 0; i < 3; i++) if (batch.Meshes[i] != null && batch.VisibleBuffers[i] != null) ComputeBuffer.CopyCount(batch.VisibleBuffers[i], batch.ArgsBuffers[i], 4);
         }
 
-        public void RenderFoliage(CommandBuffer cmd)
+        private void OnRenderMask(RasterCommandBuffer cmd, LayerMask mask)
+        {
+            if (((1 << gameObject.layer) & mask) == 0) return;
+            RenderFoliage(cmd, true);
+        }
+
+        public void RenderFoliage(RasterCommandBuffer cmd, bool isMask = false)
         {
             foreach (var batch in _batches)
             {
+                int pass = isMask ? batch.MaskPassIndex : (batch.PassIndex != -1 ? batch.PassIndex : 0);
+                if (pass == -1) continue;
+
                 for (int i = 0; i < 3; i++)
                 {
                     if (batch.Meshes[i] != null && batch.VisibleBuffers[i] != null)
                     {
                         batch.MatProps.SetBuffer(ID_IndirectInstanceData, batch.VisibleBuffers[i]);
-                        int pass = batch.PassIndex != -1 ? batch.PassIndex : 0;
-
-                        cmd.DrawMeshInstancedIndirect(
-                            batch.Meshes[i],
-                            0,
-                            batch.Material,
-                            pass,
-                            batch.ArgsBuffers[i],
-                            0,
-                            batch.MatProps
-                        );
+                        cmd.DrawMeshInstancedIndirect(batch.Meshes[i], 0, batch.Material, pass, batch.ArgsBuffers[i], 0, batch.MatProps);
                     }
                 }
             }
         }
 
-        public void RenderFoliage(RasterCommandBuffer cmd)
+        // Overload for standard Camera render if needed
+        public void RenderFoliage(CommandBuffer cmd)
         {
             foreach (var batch in _batches)
             {
+                int pass = batch.PassIndex != -1 ? batch.PassIndex : 0;
                 for (int i = 0; i < 3; i++)
                 {
                     if (batch.Meshes[i] != null && batch.VisibleBuffers[i] != null)
                     {
                         batch.MatProps.SetBuffer(ID_IndirectInstanceData, batch.VisibleBuffers[i]);
-                        int pass = batch.PassIndex != -1 ? batch.PassIndex : 0;
-
-                        cmd.DrawMeshInstancedIndirect(
-                            batch.Meshes[i],
-                            0,
-                            batch.Material,
-                            pass,
-                            batch.ArgsBuffers[i],
-                            0,
-                            batch.MatProps
-                        );
+                        cmd.DrawMeshInstancedIndirect(batch.Meshes[i], 0, batch.Material, pass, batch.ArgsBuffers[i], 0, batch.MatProps);
                     }
                 }
             }

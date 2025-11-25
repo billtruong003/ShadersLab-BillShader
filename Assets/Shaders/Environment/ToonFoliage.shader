@@ -237,5 +237,50 @@ Shader "CleanCode/ToonFoliage"
             }
             ENDHLSL
         }
+
+        Pass
+        {
+            Name "SelectionMask"
+            Tags { "LightMode" = "SelectionMask" }
+            
+            HLSLPROGRAM
+            #pragma vertex Vertex
+            #pragma fragment Fragment
+            #pragma multi_compile_instancing
+            #include "FoliageInput.hlsl"
+
+            struct Attributes
+            {
+                float4 positionOS : POSITION;
+                float3 normalOS : NORMAL;
+                float2 uv : TEXCOORD0;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
+            };
+            struct Varyings
+            {
+                float4 positionCS : SV_POSITION;
+                float2 uv : TEXCOORD0;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
+            };
+            Varyings Vertex(Attributes input)
+            {
+                Varyings output;
+                UNITY_SETUP_INSTANCE_ID(input);
+                UNITY_TRANSFER_INSTANCE_ID(input, output);
+                float3 positionWS = TransformObjectToWorld(input.positionOS.xyz);
+                float windWave = sin(_Time.y * _WindSpeed + positionWS.x * _WindFrequency + positionWS.z * _WindFrequency);
+                positionWS += float3(windWave * _WindStrength, 0, windWave * _WindStrength * 0.5) * input.uv.y;
+                output.positionCS = TransformWorldToHClip(positionWS);
+                output.uv = TRANSFORM_TEX(input.uv, _BaseMap);
+                return output;
+            }
+            half4 Fragment(Varyings input) : SV_Target
+            {
+                UNITY_SETUP_INSTANCE_ID(input);
+                clip(SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.uv).a - _Cutoff);
+                return half4(1, 0, 0, 1);
+            }
+            ENDHLSL
+        }
     }
 }

@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
@@ -5,7 +6,9 @@ using UnityEngine.Rendering.Universal;
 
 public class OutlineFeature : ScriptableRendererFeature
 {
-    // Reuse SelectionMaskPass logic strictly for generic masking
+    // Static Event để các hệ thống render thủ công (như Foliage) đăng ký vẽ vào Mask
+    public static event Action<RasterCommandBuffer, LayerMask> OnRenderFoliageMask;
+
     class LayerMaskPass : ScriptableRenderPass
     {
         private Material maskMaterial;
@@ -21,10 +24,8 @@ public class OutlineFeature : ScriptableRendererFeature
         {
             profilerTag = tag;
             textureName = texName;
-            renderPassEvent = RenderPassEvent.AfterRenderingOpaques; // Render before Transparents usually, but for water occluding transparents, we might need adjustments.
+            renderPassEvent = RenderPassEvent.AfterRenderingOpaques;
 
-            // To mask outlines behind water, we need to know where the water IS.
-            // Water usually renders in Transparent queue.
             shaderTags = new ShaderTagId[]
             {
                 new ShaderTagId("UniversalForward"),
@@ -69,7 +70,6 @@ public class OutlineFeature : ScriptableRendererFeature
 
             MaskTexture = renderGraph.CreateTexture(texDesc);
 
-            // Need depth to handle occlusion correctly within the mask itself
             UniversalResourceData resourceData = frameData.Get<UniversalResourceData>();
             TextureHandle depthTexture = resourceData.activeDepthTexture;
 
@@ -98,9 +98,15 @@ public class OutlineFeature : ScriptableRendererFeature
 
                 if (depthTexture.IsValid()) builder.SetRenderAttachmentDepth(depthTexture, AccessFlags.Read);
 
+                // Copy LayerMask to local variable to avoid closure capture issues
+                LayerMask currentMask = layerMask;
+
                 builder.SetRenderFunc((MaskData data, RasterGraphContext context) =>
                 {
                     context.cmd.DrawRendererList(data.rendererList);
+
+                    // Trigger Foliage Rendering
+                    OnRenderFoliageMask?.Invoke(context.cmd, currentMask);
                 });
             }
         }
@@ -248,8 +254,6 @@ public class OutlineFeature : ScriptableRendererFeature
     private LayerMaskPass selectionPass;
     private LayerMaskPass occlusionPass;
     private OutlinePass outlinePass;
-
-    // Keeping original foliage/overlay logic if needed, simplified for focus
 
     public override void Create()
     {

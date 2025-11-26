@@ -1,3 +1,4 @@
+
 Shader "BillWater/URPWaterBlingSparkle"
 {
     Properties
@@ -6,7 +7,6 @@ Shader "BillWater/URPWaterBlingSparkle"
         _ShallowColor("Shallow Color", Color) = (0.3, 0.8, 0.9, 0.7)
         [HDR] _DeepColor("Deep Color", Color) = (0.0, 0.2, 0.4, 0.8)
         _DepthMaxDistance("Depth Max Distance", Range(0, 10)) = 3.0
-
         [Header(Surface Normals and Refraction)]
         _NormalMapA("Normal A", 2D) = "bump"{}
         _NormalTilingA("Normal Tiling A", Float) = 0.8
@@ -25,13 +25,13 @@ Shader "BillWater/URPWaterBlingSparkle"
         _SurfaceFoamDistortionStrength("Foam Distortion Strength", Range(0, 0.2)) = 0.05
 
         [Header(Bling Sparkle)]
-        _BlingNoiseMap("Bling Noise Map", 2D) = "white"{}
-        [HDR] _BlingColor("Bling Color", Color) = (1.5, 1.5, 1.5, 1.0)
-        _BlingIntensity("Bling Intensity", Range(0, 10)) = 2.0
-        _BlingScale("Bling Scale", Float) = 2.0
-        _BlingSpeed("Bling Speed", Range(0, 20)) = 10.0
-        _BlingFresnelPower("Bling Fresnel Power", Range(1, 20)) = 8.0
-        _BlingThreshold("Bling Threshold", Range(0.5, 1.0)) = 0.98
+        _BlingNoiseMap("Bling Noise Map", 2D) = "black"{}
+        [HDR] _BlingColor("Bling Color", Color) = (5.0, 5.0, 5.0, 1.0)
+        _BlingIntensity("Bling Intensity", Range(0, 50)) = 10.0
+        _BlingScale("Bling Scale", Float) = 5.0
+        _BlingSpeed("Bling Speed", Range(0, 5)) = 0.5
+        _BlingGloss("Bling Gloss (Spec Size)", Range(10, 500)) = 128.0
+        _BlingThreshold("Bling Threshold", Range(0.0, 1.0)) = 0.85
 
         [Header(Intersection Foam)]
         _FoamColor("Intersection Foam Color", Color) = (1.0, 1.0, 1.0, 1.0)
@@ -74,8 +74,10 @@ Shader "BillWater/URPWaterBlingSparkle"
             #pragma multi_compile _ _MAIN_LIGHT_SHADOWS_CASCADE
             #pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
             #pragma multi_compile_fragment _ _SHADOWS_SOFT
+            #pragma multi_compile_fragment _ _SCREEN_SPACE_OCCLUSION
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareOpaqueTexture.hlsl"
 
@@ -99,7 +101,7 @@ Shader "BillWater/URPWaterBlingSparkle"
             float4 _NormalScrollA, _NormalScrollB, _SurfaceFoamScroll;
             float _DepthMaxDistance, _NormalTilingA, _NormalTilingB, _RefractionStrength;
             float _SurfaceFoamTiling, _SurfaceFoamCutoff, _SurfaceFoamDistortionStrength;
-            float _BlingScale, _BlingSpeed, _BlingFresnelPower, _BlingThreshold, _BlingIntensity;
+            float _BlingScale, _BlingSpeed, _BlingGloss, _BlingThreshold, _BlingIntensity;
             float _FoamIntersectionDepth, _FoamIntersectionSoftness;
             float _WaveAmplitude, _WaveFrequency, _WaveSpeed;
             CBUFFER_END
@@ -121,8 +123,8 @@ Shader "BillWater/URPWaterBlingSparkle"
                 UNITY_SETUP_INSTANCE_ID(input);
                 UNITY_TRANSFER_INSTANCE_ID(input, output);
 
-                float time = _Time.y * _WaveSpeed;
-                float wave = sin(time + (input.positionOS.x + input.positionOS.z) * _WaveFrequency) * _WaveAmplitude;
+                float wavePhase = _Time.y * _WaveSpeed;
+                float wave = sin(wavePhase + (input.positionOS.x + input.positionOS.z) * _WaveFrequency) * _WaveAmplitude;
                 float3 posOS = input.positionOS.xyz;
                 posOS.y += wave;
 
@@ -139,14 +141,15 @@ Shader "BillWater/URPWaterBlingSparkle"
                 float2 screenUV = input.screenPos.xy / input.screenPos.w;
                 float rawDepth = SampleSceneDepth(screenUV);
                 float sceneDepth = LinearEyeDepth(rawDepth, _ZBufferParams);
-                float surfaceDepth = input.screenPos.w;
+                float surfaceDepth = LinearEyeDepth(input.screenPos.z / input.screenPos.w, _ZBufferParams);
                 float depthDiff = max(0.0, sceneDepth - surfaceDepth);
 
-                float2 uvA = input.positionWS.xz * _NormalTilingA + _Time.y * _NormalScrollA.xy;
-                float2 uvB = input.positionWS.xz * _NormalTilingB + _Time.y * _NormalScrollB.xy;
-                half3 nA = UnpackNormal(SAMPLE_TEXTURE2D(_NormalMapA, sampler_NormalMapA, uvA));
-                half3 nB = UnpackNormal(SAMPLE_TEXTURE2D(_NormalMapB, sampler_NormalMapB, uvB));
-                half3 normalWS = normalize(half3(nA.xy + nB.xy, 2.0));
+                float2 normalUvA = input.positionWS.xz * _NormalTilingA + _Time.y * _NormalScrollA.xy;
+                float2 normalUvB = input.positionWS.xz * _NormalTilingB + _Time.y * _NormalScrollB.xy;
+
+                half3 nA = UnpackNormal(SAMPLE_TEXTURE2D(_NormalMapA, sampler_NormalMapA, normalUvA));
+                half3 nB = UnpackNormal(SAMPLE_TEXTURE2D(_NormalMapB, sampler_NormalMapB, normalUvB));
+                half3 normalWS = normalize(half3(nA.xy + nB.xy, nA.z * nB.z));
 
                 float2 refractUV = screenUV + normalWS.xy * _RefractionStrength * saturate(depthDiff);
                 half3 sceneColor = SampleSceneColor(refractUV);
@@ -155,31 +158,37 @@ Shader "BillWater/URPWaterBlingSparkle"
                 half3 finalColor = lerp(waterColor, sceneColor, 1.0 - _ShallowColor.a);
 
                 float2 distUV = input.positionWS.xz * 0.25 + _Time.y * 0.01;
-                float2 distOffset = (SAMPLE_TEXTURE2D(_SurfaceFoamDistortionMap, sampler_SurfaceFoamDistortionMap, distUV).xy * 2.0 - 1.0) * _SurfaceFoamDistortionStrength;
+                half2 distortion = (SAMPLE_TEXTURE2D(_SurfaceFoamDistortionMap, sampler_SurfaceFoamDistortionMap, distUV).xy * 2.0 - 1.0) * _SurfaceFoamDistortionStrength;
 
-                float2 foamUV = input.positionWS.xz * _SurfaceFoamTiling + _Time.y * _SurfaceFoamScroll.xy + distOffset;
-                float foamNoise = SAMPLE_TEXTURE2D(_SurfaceFoamTexture, sampler_SurfaceFoamTexture, foamUV).r;
-                float surfFoam = step(_SurfaceFoamCutoff, foamNoise);
+                float2 foamUV = input.positionWS.xz * _SurfaceFoamTiling + _Time.y * _SurfaceFoamScroll.xy + distortion;
+                half foamNoise = SAMPLE_TEXTURE2D(_SurfaceFoamTexture, sampler_SurfaceFoamTexture, foamUV).r;
+                half surfaceFoam = step(_SurfaceFoamCutoff, foamNoise);
 
                 float intersectFoam = 1.0 - saturate(depthDiff / _FoamIntersectionDepth);
                 intersectFoam = smoothstep(0.0, _FoamIntersectionSoftness, intersectFoam);
 
-                half foamAmount = saturate(intersectFoam + surfFoam);
+                half foamAmount = saturate(intersectFoam + surfaceFoam);
                 finalColor = lerp(finalColor, _FoamColor.rgb, foamAmount);
 
-                half3 viewDir = normalize(GetCameraPositionWS() - input.positionWS);
-                half NdotV = 1.0 - saturate(dot(normalWS, viewDir));
-                half fresnel = pow(NdotV, _BlingFresnelPower);
+                Light mainLight = GetMainLight();
+                float3 lightDir = normalize(mainLight.direction);
+                float3 viewDir = normalize(GetCameraPositionWS() - input.positionWS);
+                float3 halfVec = normalize(lightDir + viewDir);
 
-                float2 blingUV = input.screenPos.xy / input.screenPos.w * _BlingScale;
-                blingUV.x *= _ScreenParams.x / _ScreenParams.y;
-                float2 blingScroll = _Time.y * _BlingSpeed * 0.05;
+                float NdotH = saturate(dot(normalWS, halfVec));
+                float specular = pow(NdotH, _BlingGloss);
 
-                half noise1 = SAMPLE_TEXTURE2D(_BlingNoiseMap, sampler_BlingNoiseMap, blingUV + blingScroll).r;
-                half noise2 = SAMPLE_TEXTURE2D(_BlingNoiseMap, sampler_BlingNoiseMap, blingUV * 1.5 - blingScroll).r;
-                half sparkle = smoothstep(_BlingThreshold, 1.0, noise1 * noise2);
+                float2 blingUV = input.positionWS.xz * _BlingScale;
+                float2 blingScroll = _Time.y * _BlingSpeed * float2(0.5, 0.5);
 
-                finalColor += sparkle * fresnel * _BlingColor.rgb * _BlingIntensity;
+                half sparkleNoiseA = SAMPLE_TEXTURE2D(_BlingNoiseMap, sampler_BlingNoiseMap, blingUV + blingScroll).r;
+                half sparkleNoiseB = SAMPLE_TEXTURE2D(_BlingNoiseMap, sampler_BlingNoiseMap, blingUV * 0.7 - blingScroll * 0.8).r;
+                half sparkleMask = saturate(sparkleNoiseA * sparkleNoiseB);
+
+                sparkleMask = smoothstep(_BlingThreshold, 1.0, sparkleMask);
+
+                half3 blingResult = specular * sparkleMask * _BlingColor.rgb * _BlingIntensity * mainLight.shadowAttenuation;
+                finalColor += blingResult;
 
                 return half4(finalColor, _ShallowColor.a);
             }
@@ -226,8 +235,8 @@ Shader "BillWater/URPWaterBlingSparkle"
                 UNITY_SETUP_INSTANCE_ID(input);
                 UNITY_TRANSFER_INSTANCE_ID(input, output);
 
-                float time = _Time.y * _WaveSpeed;
-                float wave = sin(time + (input.positionOS.x + input.positionOS.z) * _WaveFrequency) * _WaveAmplitude;
+                float wavePhase = _Time.y * _WaveSpeed;
+                float wave = sin(wavePhase + (input.positionOS.x + input.positionOS.z) * _WaveFrequency) * _WaveAmplitude;
                 float3 posOS = input.positionOS.xyz;
                 posOS.y += wave;
 
@@ -235,7 +244,7 @@ Shader "BillWater/URPWaterBlingSparkle"
                 return output;
             }
 
-            half4 frag(Varyings input) : SV_Target
+            half4 frag() : SV_Target
             {
                 return 0;
             }
@@ -286,8 +295,8 @@ Shader "BillWater/URPWaterBlingSparkle"
                 UNITY_SETUP_INSTANCE_ID(input);
                 UNITY_TRANSFER_INSTANCE_ID(input, output);
 
-                float time = _Time.y * _WaveSpeed;
-                float wave = sin(time + (input.positionOS.x + input.positionOS.z) * _WaveFrequency) * _WaveAmplitude;
+                float wavePhase = _Time.y * _WaveSpeed;
+                float wave = sin(wavePhase + (input.positionOS.x + input.positionOS.z) * _WaveFrequency) * _WaveAmplitude;
                 float3 posOS = input.positionOS.xyz;
                 posOS.y += wave;
 
@@ -295,6 +304,7 @@ Shader "BillWater/URPWaterBlingSparkle"
                 float3 normalWS = TransformObjectToWorldNormal(input.normalOS);
 
                 output.positionCS = TransformWorldToHClip(ApplyShadowBias(positionWS, normalWS, _LightDirection));
+
                 #if UNITY_REVERSED_Z
                     output.positionCS.z = min(output.positionCS.z, output.positionCS.w * UNITY_NEAR_CLIP_VALUE);
                 #else
@@ -304,7 +314,7 @@ Shader "BillWater/URPWaterBlingSparkle"
                 return output;
             }
 
-            half4 frag(Varyings input) : SV_Target
+            half4 frag() : SV_Target
             {
                 return 0;
             }

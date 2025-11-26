@@ -1,7 +1,6 @@
 using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEditorInternal;
 
 namespace CleanCode.EnvironmentTools
@@ -14,16 +13,14 @@ namespace CleanCode.EnvironmentTools
         private ToolMode _currentMode = ToolMode.Paint;
         private List<GameObject> _prefabs = new List<GameObject>();
         private Transform _parentContainer;
+        private const string DEFAULT_CONTAINER_NAME = "Environment_Container";
 
-        // Brush Settings
         private float _brushRadius = 3.0f;
         private int _density = 5;
 
-        // Filters
         private LayerMask _layerMask = ~0;
         private float _maxSlopeAngle = 45f;
 
-        // Alignment & Transforms
         private AlignmentMode _alignmentMode = AlignmentMode.AlignToSurface;
         private bool _randomizeRotationY = true;
         private bool _lockRotationX = false;
@@ -33,7 +30,6 @@ namespace CleanCode.EnvironmentTools
         private Vector2 _scaleRange = new Vector2(0.8f, 1.2f);
         private Vector3 _positionOffset = Vector3.zero;
 
-        // Internal State
         private bool _isActive = false;
         private Vector2 _scrollPosition;
         private double _lastEraseTime;
@@ -41,24 +37,15 @@ namespace CleanCode.EnvironmentTools
         [MenuItem("Tools/CleanCode/Environment Placer")]
         public static void ShowWindow()
         {
-            EnvironmentPlacerWindow window = GetWindow<EnvironmentPlacerWindow>("Env Placer");
-            window.Show();
+            GetWindow<EnvironmentPlacerWindow>("Env Placer").Show();
         }
 
-        private void OnEnable()
-        {
-            SceneView.duringSceneGui += OnSceneGUI;
-        }
-
-        private void OnDisable()
-        {
-            SceneView.duringSceneGui -= OnSceneGUI;
-        }
+        private void OnEnable() => SceneView.duringSceneGui += OnSceneGUI;
+        private void OnDisable() => SceneView.duringSceneGui -= OnSceneGUI;
 
         private void OnGUI()
         {
             DrawHeader();
-
             _scrollPosition = EditorGUILayout.BeginScrollView(_scrollPosition);
 
             DrawToolModeSelection();
@@ -70,7 +57,6 @@ namespace CleanCode.EnvironmentTools
             DrawFilters();
             EditorGUILayout.Space();
             DrawPrefabManagement();
-
             EditorGUILayout.Space();
             DrawShortcutsInfo();
 
@@ -99,14 +85,9 @@ namespace CleanCode.EnvironmentTools
         {
             EditorGUILayout.LabelField("Brush Settings", EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
-
             _brushRadius = EditorGUILayout.Slider("Brush Radius", _brushRadius, 0.1f, 20f);
-
             if (_currentMode == ToolMode.Paint)
-            {
-                _density = EditorGUILayout.IntSlider("Density / Flow", _density, 1, 50);
-            }
-
+                _density = EditorGUILayout.IntSlider("Density", _density, 1, 50);
             EditorGUI.indentLevel--;
         }
 
@@ -124,21 +105,15 @@ namespace CleanCode.EnvironmentTools
             _alignmentMode = (AlignmentMode)EditorGUILayout.EnumPopup("Base Orientation", _alignmentMode);
 
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField("Lock Axis (Fix Vertical):", GUILayout.Width(150));
+            EditorGUILayout.LabelField("Lock Axis:", GUILayout.Width(150));
             _lockRotationX = EditorGUILayout.ToggleLeft("Lock X", _lockRotationX, GUILayout.Width(70));
             _lockRotationZ = EditorGUILayout.ToggleLeft("Lock Z", _lockRotationZ, GUILayout.Width(70));
             EditorGUILayout.EndHorizontal();
 
-            EditorGUILayout.Space(5);
-            EditorGUILayout.LabelField("Randomization", EditorStyles.miniBoldLabel);
             _randomizeRotationY = EditorGUILayout.Toggle("Randomize Yaw (Y)", _randomizeRotationY);
 
-            Vector3 rotMin = _randomRotationMin;
-            Vector3 rotMax = _randomRotationMax;
-            EditorGUILayout.BeginHorizontal();
-            rotMin = EditorGUILayout.Vector3Field("Min Rot Offset", rotMin);
-            rotMax = EditorGUILayout.Vector3Field("Max Rot Offset", rotMax);
-            EditorGUILayout.EndHorizontal();
+            Vector3 rotMin = EditorGUILayout.Vector3Field("Min Rot Offset", _randomRotationMin);
+            Vector3 rotMax = EditorGUILayout.Vector3Field("Max Rot Offset", _randomRotationMax);
             _randomRotationMin = rotMin;
             _randomRotationMax = rotMax;
 
@@ -147,9 +122,7 @@ namespace CleanCode.EnvironmentTools
             EditorGUILayout.MinMaxSlider("Scale Variation", ref minScale, ref maxScale, 0.1f, 5f);
             _scaleRange = new Vector2(minScale, maxScale);
             EditorGUILayout.LabelField($"Scale: {minScale:F2} - {maxScale:F2}");
-
             _positionOffset = EditorGUILayout.Vector3Field("Position Offset", _positionOffset);
-
             EditorGUI.indentLevel--;
         }
 
@@ -157,12 +130,9 @@ namespace CleanCode.EnvironmentTools
         {
             EditorGUILayout.LabelField("Placement Filters", EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
-
             LayerMask tempMask = EditorGUILayout.MaskField("Hit Layer Mask", InternalEditorUtility.LayerMaskToConcatenatedLayersMask(_layerMask), InternalEditorUtility.layers);
             _layerMask = InternalEditorUtility.ConcatenatedLayersMaskToLayerMask(tempMask);
-
             _maxSlopeAngle = EditorGUILayout.Slider("Max Slope Angle", _maxSlopeAngle, 0f, 90f);
-
             EditorGUI.indentLevel--;
         }
 
@@ -179,33 +149,26 @@ namespace CleanCode.EnvironmentTools
             Rect dropArea = GUILayoutUtility.GetRect(0.0f, 50.0f, GUILayout.ExpandWidth(true));
             GUI.Box(dropArea, "Drag & Drop Prefabs Here", EditorStyles.helpBox);
 
-            switch (evt.type)
+            if (evt.type == EventType.DragUpdated || evt.type == EventType.DragPerform)
             {
-                case EventType.DragUpdated:
-                case EventType.DragPerform:
-                    if (!dropArea.Contains(evt.mousePosition)) return;
+                if (!dropArea.Contains(evt.mousePosition)) return;
+                DragAndDrop.visualMode = DragAndDropVisualMode.Copy;
 
-                    DragAndDrop.visualMode = DragAndDropVisualMode.Copy;
-
-                    if (evt.type == EventType.DragPerform)
+                if (evt.type == EventType.DragPerform)
+                {
+                    DragAndDrop.AcceptDrag();
+                    foreach (Object draggedObject in DragAndDrop.objectReferences)
                     {
-                        DragAndDrop.AcceptDrag();
-                        foreach (Object draggedObject in DragAndDrop.objectReferences)
-                        {
-                            if (draggedObject is GameObject go && !_prefabs.Contains(go))
-                            {
-                                _prefabs.Add(go);
-                            }
-                        }
+                        if (draggedObject is GameObject go && !_prefabs.Contains(go))
+                            _prefabs.Add(go);
                     }
-                    break;
+                }
             }
         }
 
         private void DrawPrefabList()
         {
             if (_prefabs.Count == 0) return;
-
             if (GUILayout.Button("Clear List")) _prefabs.Clear();
 
             for (int i = 0; i < _prefabs.Count; i++)
@@ -223,11 +186,7 @@ namespace CleanCode.EnvironmentTools
 
         private void DrawShortcutsInfo()
         {
-            EditorGUILayout.HelpBox(
-                "[ ] : Adjust Brush Size\n" +
-                "Shift : Hold to Erase (Paint Mode)\n" +
-                "Ctrl + Scroll : Adjust Density",
-                MessageType.Info);
+            EditorGUILayout.HelpBox("[ ] : Size | Shift : Erase | Ctrl+Scroll : Density", MessageType.Info);
         }
 
         private void FocusSceneView()
@@ -246,13 +205,16 @@ namespace CleanCode.EnvironmentTools
             HandleUtility.AddDefaultControl(controlID);
 
             Ray ray = HandleUtility.GUIPointToWorldRay(e.mousePosition);
-            if (Physics.Raycast(ray, out RaycastHit hit, 1000f, _layerMask))
+            bool isEraser = _currentMode == ToolMode.Erase || (_currentMode == ToolMode.Paint && e.shift);
+            LayerMask castMask = isEraser ? ~0 : _layerMask;
+
+            if (Physics.Raycast(ray, out RaycastHit hit, 1000f, castMask))
             {
-                DrawBrushVisuals(hit.point, hit.normal);
+                DrawBrushVisuals(hit.point, hit.normal, isEraser);
 
                 if ((e.type == EventType.MouseDrag || e.type == EventType.MouseDown) && e.button == 0 && !e.alt)
                 {
-                    ExecuteTool(hit);
+                    ExecuteTool(hit, isEraser);
                     e.Use();
                 }
             }
@@ -263,84 +225,102 @@ namespace CleanCode.EnvironmentTools
         private void HandleInput()
         {
             Event e = Event.current;
-
             if (e.type == EventType.KeyDown)
             {
-                if (e.keyCode == KeyCode.Escape)
-                {
-                    _isActive = false;
-                    Repaint();
-                }
-                if (e.keyCode == KeyCode.RightBracket)
-                {
-                    _brushRadius += 0.5f;
-                    Repaint();
-                }
-                if (e.keyCode == KeyCode.LeftBracket)
-                {
-                    _brushRadius = Mathf.Max(0.1f, _brushRadius - 0.5f);
-                    Repaint();
-                }
+                if (e.keyCode == KeyCode.Escape) { _isActive = false; Repaint(); }
+                if (e.keyCode == KeyCode.RightBracket) { _brushRadius += 0.5f; Repaint(); }
+                if (e.keyCode == KeyCode.LeftBracket) { _brushRadius = Mathf.Max(0.1f, _brushRadius - 0.5f); Repaint(); }
             }
-
             if (e.type == EventType.ScrollWheel && e.control)
             {
-                _density -= (int)e.delta.y;
-                _density = Mathf.Clamp(_density, 1, 50);
-                e.Use();
-                Repaint();
+                _density = Mathf.Clamp(_density - (int)e.delta.y, 1, 50);
+                e.Use(); Repaint();
             }
         }
 
-        private void DrawBrushVisuals(Vector3 point, Vector3 normal)
+        private void DrawBrushVisuals(Vector3 point, Vector3 normal, bool isEraser)
         {
-            Color brushColor = (_currentMode == ToolMode.Erase || Event.current.shift) ? Color.red : Color.green;
-            brushColor.a = 0.5f;
-            Handles.color = brushColor;
-
+            Handles.color = isEraser ? new Color(1, 0, 0, 0.5f) : new Color(0, 1, 0, 0.5f);
             Handles.DrawWireDisc(point, normal, _brushRadius);
-
-            Color solidColor = brushColor;
-            solidColor.a = 0.1f;
+            Handles.color = new Color(Handles.color.r, Handles.color.g, Handles.color.b, 0.1f);
             Handles.DrawSolidDisc(point, normal, _brushRadius);
-
-            Handles.ArrowHandleCap(0, point, Quaternion.LookRotation(normal), 1f, EventType.Repaint);
+            if (!isEraser) Handles.ArrowHandleCap(0, point, Quaternion.LookRotation(normal), 1f, EventType.Repaint);
         }
 
-        private void ExecuteTool(RaycastHit hit)
+        private void ExecuteTool(RaycastHit hit, bool isEraser)
         {
-            bool isErasing = _currentMode == ToolMode.Erase || (_currentMode == ToolMode.Paint && Event.current.shift);
+            if (isEraser) PerformEraseSimple(hit.point);
+            else if (_currentMode == ToolMode.Paint) PerformPaint(hit);
+            else if (_currentMode == ToolMode.Single && Event.current.type == EventType.MouseDown) SpawnSingle(hit);
+        }
 
-            if (isErasing)
+        private Transform GetContainer()
+        {
+            if (_parentContainer != null) return _parentContainer;
+            GameObject found = GameObject.Find(DEFAULT_CONTAINER_NAME);
+            if (found == null)
             {
-                PerformErase(hit.point);
+                found = new GameObject(DEFAULT_CONTAINER_NAME);
+                Undo.RegisterCreatedObjectUndo(found, "Create Container");
             }
-            else if (_currentMode == ToolMode.Paint)
+            _parentContainer = found.transform;
+            return _parentContainer;
+        }
+
+        private void PerformEraseSimple(Vector3 brushCenter)
+        {
+            if (EditorApplication.timeSinceStartup - _lastEraseTime < 0.1f) return;
+            _lastEraseTime = EditorApplication.timeSinceStartup;
+
+            Transform container = GetContainer();
+            if (container.childCount == 0) return;
+
+            float radiusSq = _brushRadius * _brushRadius;
+            List<GameObject> toDelete = new List<GameObject>();
+
+            for (int i = 0; i < container.childCount; i++)
             {
-                PerformPaint(hit);
+                Transform child = container.GetChild(i);
+
+                if (Vector3.SqrMagnitude(child.position - brushCenter) <= radiusSq)
+                {
+                    if (IsMatchingActivePrefab(child.gameObject))
+                    {
+                        toDelete.Add(child.gameObject);
+                    }
+                }
             }
-            else if (_currentMode == ToolMode.Single && Event.current.type == EventType.MouseDown)
+
+            foreach (GameObject obj in toDelete)
             {
-                SpawnSingle(hit);
+                Undo.DestroyObjectImmediate(obj);
             }
+        }
+
+        private bool IsMatchingActivePrefab(GameObject instance)
+        {
+            if (_prefabs == null || _prefabs.Count == 0) return true;
+
+            GameObject source = PrefabUtility.GetCorrespondingObjectFromSource(instance);
+            if (source == null) return false;
+
+            return _prefabs.Contains(source);
         }
 
         private void PerformPaint(RaycastHit centerHit)
         {
             if (_prefabs.Count == 0) return;
+            Transform container = GetContainer();
 
             for (int i = 0; i < _density; i++)
             {
-                Vector2 randomPoint = UnityEngine.Random.insideUnitCircle * _brushRadius;
-                Vector3 origin = centerHit.point + new Vector3(randomPoint.x, 0, randomPoint.y) + Vector3.up * 20f;
+                Vector2 rnd = UnityEngine.Random.insideUnitCircle * _brushRadius;
+                Vector3 origin = centerHit.point + new Vector3(rnd.x, 0, rnd.y) + Vector3.up * 50f;
 
-                if (Physics.Raycast(origin, Vector3.down, out RaycastHit hit, 50f, _layerMask))
+                if (Physics.Raycast(origin, Vector3.down, out RaycastHit hit, 100f, _layerMask))
                 {
-                    float distanceToCenter = Vector3.Distance(new Vector3(hit.point.x, 0, hit.point.z), new Vector3(centerHit.point.x, 0, centerHit.point.z));
-                    if (distanceToCenter <= _brushRadius)
-                    {
-                        SpawnObject(hit);
-                    }
+                    if (Vector3.Distance(hit.point, centerHit.point) <= _brushRadius)
+                        SpawnObject(hit, container);
                 }
             }
         }
@@ -348,10 +328,10 @@ namespace CleanCode.EnvironmentTools
         private void SpawnSingle(RaycastHit hit)
         {
             if (_prefabs.Count == 0) return;
-            SpawnObject(hit);
+            SpawnObject(hit, GetContainer());
         }
 
-        private void SpawnObject(RaycastHit hit)
+        private void SpawnObject(RaycastHit hit, Transform container)
         {
             if (Vector3.Angle(Vector3.up, hit.normal) > _maxSlopeAngle) return;
 
@@ -359,88 +339,31 @@ namespace CleanCode.EnvironmentTools
             if (prefab == null) return;
 
             GameObject instance = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
-            Undo.RegisterCreatedObjectUndo(instance, "Place Environment Object");
+            Undo.RegisterCreatedObjectUndo(instance, "Place Object");
 
-            // 1. Position
-            Vector3 finalPosition = hit.point + _positionOffset;
-            instance.transform.position = finalPosition;
+            instance.transform.position = hit.point + _positionOffset;
 
-            // 2. Base Alignment
-            Quaternion orientation = Quaternion.identity;
-            if (_alignmentMode == AlignmentMode.AlignToSurface)
-            {
-                orientation = Quaternion.FromToRotation(Vector3.up, hit.normal);
-            }
-            else
-            {
-                orientation = Quaternion.identity; // World Up
-            }
+            Quaternion orient = (_alignmentMode == AlignmentMode.AlignToSurface)
+                ? Quaternion.FromToRotation(Vector3.up, hit.normal)
+                : Quaternion.identity;
 
-            // 3. Random Y Rotation
-            if (_randomizeRotationY)
-            {
-                orientation *= Quaternion.Euler(0, UnityEngine.Random.Range(0, 360f), 0);
-            }
+            if (_randomizeRotationY) orient *= Quaternion.Euler(0, UnityEngine.Random.Range(0, 360f), 0);
 
-            // 4. Random Offset Rotation (Tilt)
-            orientation *= Quaternion.Euler(
+            orient *= Quaternion.Euler(
                 UnityEngine.Random.Range(_randomRotationMin.x, _randomRotationMax.x),
                 UnityEngine.Random.Range(_randomRotationMin.y, _randomRotationMax.y),
                 UnityEngine.Random.Range(_randomRotationMin.z, _randomRotationMax.z)
             );
 
-            // 5. Apply Lock Axis (Fix Alignment)
-            // This ensures grass stands straight up even if aligned to slope originally, 
-            // or simply prevents unwanted tilting.
-            Vector3 finalEuler = orientation.eulerAngles;
-            if (_lockRotationX) finalEuler.x = 0;
-            if (_lockRotationZ) finalEuler.z = 0;
+            Vector3 euler = orient.eulerAngles;
+            if (_lockRotationX) euler.x = 0;
+            if (_lockRotationZ) euler.z = 0;
+            instance.transform.rotation = Quaternion.Euler(euler);
 
-            instance.transform.rotation = Quaternion.Euler(finalEuler);
-
-            // 6. Scale
             float scale = UnityEngine.Random.Range(_scaleRange.x, _scaleRange.y);
             instance.transform.localScale = Vector3.one * scale;
 
-            // 7. Parenting
-            if (_parentContainer == null)
-            {
-                GameObject autoParent = GameObject.Find("Environment_Container");
-                if (autoParent == null)
-                {
-                    autoParent = new GameObject("Environment_Container");
-                    Undo.RegisterCreatedObjectUndo(autoParent, "Create Container");
-                }
-                _parentContainer = autoParent.transform;
-            }
-
-            instance.transform.SetParent(_parentContainer);
-        }
-
-        private void PerformErase(Vector3 center)
-        {
-            if (EditorApplication.timeSinceStartup - _lastEraseTime < 0.1f) return;
-            _lastEraseTime = EditorApplication.timeSinceStartup;
-
-            Collider[] colliders = Physics.OverlapSphere(center, _brushRadius);
-
-            foreach (Collider col in colliders)
-            {
-                if (col.transform.parent == _parentContainer || IsInPrefabList(col.gameObject))
-                {
-                    Undo.DestroyObjectImmediate(col.gameObject);
-                }
-            }
-        }
-
-        private bool IsInPrefabList(GameObject obj)
-        {
-            if (PrefabUtility.IsPartOfAnyPrefab(obj))
-            {
-                GameObject source = PrefabUtility.GetCorrespondingObjectFromSource(obj);
-                return _prefabs.Contains(source);
-            }
-            return false;
+            instance.transform.SetParent(container);
         }
     }
 }

@@ -8,7 +8,7 @@ Shader "CleanCode/InteractiveGrass_Indirect"
         [HDR] _BottomColor("Bottom Color", Color) = (0.1, 0.3, 0.1, 1)
         _Cutoff("Alpha Cutoff", Range(0.0, 1.0)) = 0.5
         _GroundBlend("Ground Blend Height", Range(0.001, 1.0)) = 0.2
-        _SSAONormalFlatten("SSAO/Outline Normal Flatten", Range(0.0, 1.0)) = 0.5
+        _SSAONormalFlatten("SSAO Normal Flatten", Range(0.0, 1.0)) = 0.5
 
         [Header(Translucency)]
         [HDR] _TranslucencyColor("Translucency Color", Color) = (0.8, 1.0, 0.2, 1)
@@ -39,20 +39,194 @@ Shader "CleanCode/InteractiveGrass_Indirect"
         LOD 100
         Cull Off
         ZWrite On
+        ZTest LEqual
 
+        // 1. Depth Only Pass - Crucial for Occlusion & Post Processing
         Pass
         {
-            Name "FoliageForward"
-            Tags
-            {
-                "LightMode" = "UniversalForward"
-            }
+            Name "DepthOnly"
+            Tags { "LightMode" = "DepthOnly" }
+            
+            ColorMask 0
+            ZWrite On
 
             HLSLPROGRAM
             #pragma vertex Vertex
             #pragma fragment Fragment
             #pragma multi_compile_instancing
-            #pragma instancing_options procedural : SetupIndirect
+            #pragma instancing_options procedural:SetupIndirect
+            
+            #include "IndirectIncludes.hlsl"
+            #include "FoliageInput.hlsl"
+
+            struct Attributes
+            {
+                float4 positionOS : POSITION;
+                float2 uv : TEXCOORD0;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
+            };
+
+            struct Varyings
+            {
+                float4 positionCS : SV_POSITION;
+                float2 uv : TEXCOORD0;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
+            };
+
+            Varyings Vertex(Attributes input)
+            {
+                Varyings output;
+                UNITY_SETUP_INSTANCE_ID(input);
+                UNITY_TRANSFER_INSTANCE_ID(input, output);
+                float3 positionWS = TransformObjectToWorld(input.positionOS.xyz);
+                positionWS = ApplyWindAndInteraction(positionWS, input.uv);
+                output.positionCS = TransformWorldToHClip(positionWS);
+                output.uv = TRANSFORM_TEX(input.uv, _BaseMap);
+                return output;
+            }
+
+            half4 Fragment(Varyings input) : SV_Target
+            {
+                UNITY_SETUP_INSTANCE_ID(input);
+                half alpha = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.uv).a;
+                half mask = SAMPLE_TEXTURE2D(_AlphaMask, sampler_BaseMap, input.uv).r;
+                half blend = smoothstep(0.0, _GroundBlend, input.uv.y);
+                clip((alpha * mask * blend) - _Cutoff);
+                return 0;
+            }
+            ENDHLSL
+        }
+
+        // 2. Depth Normals Pass - For SSAO and Outline Normals
+        Pass
+        {
+            Name "DepthNormals"
+            Tags { "LightMode" = "DepthNormals" }
+
+            ZWrite On
+
+            HLSLPROGRAM
+            #pragma vertex Vertex
+            #pragma fragment Fragment
+            #pragma multi_compile_instancing
+            #pragma instancing_options procedural:SetupIndirect
+            
+            #include "IndirectIncludes.hlsl"
+            #include "FoliageInput.hlsl"
+
+            struct Attributes
+            {
+                float4 positionOS : POSITION;
+                float3 normalOS : NORMAL;
+                float2 uv : TEXCOORD0;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
+            };
+
+            struct Varyings
+            {
+                float4 positionCS : SV_POSITION;
+                float3 normalWS : TEXCOORD1;
+                float2 uv : TEXCOORD0;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
+            };
+
+            Varyings Vertex(Attributes input)
+            {
+                Varyings output;
+                UNITY_SETUP_INSTANCE_ID(input);
+                UNITY_TRANSFER_INSTANCE_ID(input, output);
+                float3 positionWS = TransformObjectToWorld(input.positionOS.xyz);
+                positionWS = ApplyWindAndInteraction(positionWS, input.uv);
+                output.positionCS = TransformWorldToHClip(positionWS);
+                output.normalWS = TransformObjectToWorldNormal(input.normalOS);
+                output.uv = TRANSFORM_TEX(input.uv, _BaseMap);
+                return output;
+            }
+
+            float4 Fragment(Varyings input) : SV_Target
+            {
+                UNITY_SETUP_INSTANCE_ID(input);
+                half alpha = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.uv).a;
+                half mask = SAMPLE_TEXTURE2D(_AlphaMask, sampler_BaseMap, input.uv).r;
+                half blend = smoothstep(0.0, _GroundBlend, input.uv.y);
+                clip((alpha * mask * blend) - _Cutoff);
+
+                float3 normal = normalize(input.normalWS);
+                normal = normalize(lerp(normal, float3(0, 1, 0), _SSAONormalFlatten));
+                return float4(NormalizeNormalPerPixel(normal), 0.0);
+            }
+            ENDHLSL
+        }
+
+        // 3. Shadow Caster Pass
+        Pass
+        {
+            Name "ShadowCaster"
+            Tags { "LightMode" = "ShadowCaster" }
+
+            ColorMask 0
+            ZWrite On
+
+            HLSLPROGRAM
+            #pragma vertex Vertex
+            #pragma fragment Fragment
+            #pragma multi_compile_instancing
+            #pragma instancing_options procedural:SetupIndirect
+            
+            #include "IndirectIncludes.hlsl"
+            #include "FoliageInput.hlsl"
+
+            struct Attributes
+            {
+                float4 positionOS : POSITION;
+                float3 normalOS : NORMAL;
+                float2 uv : TEXCOORD0;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
+            };
+
+            struct Varyings
+            {
+                float4 positionCS : SV_POSITION;
+                float2 uv : TEXCOORD0;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
+            };
+
+            Varyings Vertex(Attributes input)
+            {
+                Varyings output;
+                UNITY_SETUP_INSTANCE_ID(input);
+                UNITY_TRANSFER_INSTANCE_ID(input, output);
+                float3 positionWS = TransformObjectToWorld(input.positionOS.xyz);
+                positionWS = ApplyWindAndInteraction(positionWS, input.uv);
+                float3 normalWS = TransformObjectToWorldNormal(input.normalOS);
+                output.positionCS = TransformWorldToHClip(ApplyShadowBias(positionWS, normalWS, _MainLightPosition.xyz));
+                output.uv = TRANSFORM_TEX(input.uv, _BaseMap);
+                return output;
+            }
+
+            half4 Fragment(Varyings input) : SV_Target
+            {
+                UNITY_SETUP_INSTANCE_ID(input);
+                half alpha = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.uv).a;
+                half mask = SAMPLE_TEXTURE2D(_AlphaMask, sampler_BaseMap, input.uv).r;
+                half blend = smoothstep(0.0, _GroundBlend, input.uv.y);
+                clip((alpha * mask * blend) - _Cutoff);
+                return 0;
+            }
+            ENDHLSL
+        }
+
+        // 4. Forward Lit Pass
+        Pass
+        {
+            Name "UniversalForward"
+            Tags { "LightMode" = "UniversalForward" }
+
+            HLSLPROGRAM
+            #pragma vertex Vertex
+            #pragma fragment Fragment
+            #pragma multi_compile_instancing
+            #pragma instancing_options procedural:SetupIndirect
             #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE
             #pragma multi_compile _ _SHADOWS_SOFT
 
@@ -117,21 +291,16 @@ Shader "CleanCode/InteractiveGrass_Indirect"
             }
             ENDHLSL
         }
-
         Pass
         {
-            Name "ShadowCaster"
-            Tags
-            {
-                "LightMode" = "ShadowCaster"
-            }
+            Name "SelectionMask"
+            Tags { "LightMode" = "SelectionMask" }
 
             HLSLPROGRAM
             #pragma vertex Vertex
             #pragma fragment Fragment
             #pragma multi_compile_instancing
             #pragma instancing_options procedural : SetupIndirect
-
             #include "IndirectIncludes.hlsl"
             #include "FoliageInput.hlsl"
 
@@ -142,149 +311,28 @@ Shader "CleanCode/InteractiveGrass_Indirect"
                 float2 uv : TEXCOORD0;
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
-
             struct Varyings
             {
                 float4 positionCS : SV_POSITION;
                 float2 uv : TEXCOORD0;
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
-
             Varyings Vertex(Attributes input)
             {
                 Varyings output;
                 UNITY_SETUP_INSTANCE_ID(input);
                 UNITY_TRANSFER_INSTANCE_ID(input, output);
-
                 float3 positionWS = TransformObjectToWorld(input.positionOS.xyz);
                 positionWS = ApplyWindAndInteraction(positionWS, input.uv);
-
-                output.positionCS = TransformWorldToHClip(ApplyShadowBias(positionWS, TransformObjectToWorldNormal(input.normalOS), _MainLightPosition.xyz));
-                output.uv = TRANSFORM_TEX(input.uv, _BaseMap);
-                return output;
-            }
-
-            half4 Fragment(Varyings input) : SV_Target
-            {
-                UNITY_SETUP_INSTANCE_ID(input);
-                clip((SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.uv).a * smoothstep(0, _GroundBlend, input.uv.y)) - _Cutoff);
-                return 0;
-            }
-            ENDHLSL
-        }
-
-        Pass
-        {
-            Name "DepthNormals"
-            Tags
-            {
-                "LightMode" = "DepthNormals"
-            }
-
-            HLSLPROGRAM
-            #pragma vertex Vertex
-            #pragma fragment Fragment
-            #pragma multi_compile_instancing
-            #pragma instancing_options procedural : SetupIndirect
-
-            #include "IndirectIncludes.hlsl"
-            #include "FoliageInput.hlsl"
-
-            struct Attributes
-            {
-                float4 positionOS : POSITION;
-                float3 normalOS : NORMAL;
-                float2 uv : TEXCOORD0;
-                UNITY_VERTEX_INPUT_INSTANCE_ID
-            };
-
-            struct Varyings
-            {
-                float4 positionCS : SV_POSITION;
-                float3 normalWS : TEXCOORD1;
-                float2 uv : TEXCOORD0;
-                UNITY_VERTEX_INPUT_INSTANCE_ID
-            };
-
-            Varyings Vertex(Attributes input)
-            {
-                Varyings output;
-                UNITY_SETUP_INSTANCE_ID(input);
-                UNITY_TRANSFER_INSTANCE_ID(input, output);
-
-                float3 positionWS = TransformObjectToWorld(input.positionOS.xyz);
-                positionWS = ApplyWindAndInteraction(positionWS, input.uv);
-
-                output.positionCS = TransformWorldToHClip(positionWS);
-                output.normalWS = TransformObjectToWorldNormal(input.normalOS);
-                output.uv = TRANSFORM_TEX(input.uv, _BaseMap);
-                return output;
-            }
-
-            float4 Fragment(Varyings input) : SV_Target
-            {
-                UNITY_SETUP_INSTANCE_ID(input);
-                clip((SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.uv).a * smoothstep(0, _GroundBlend, input.uv.y)) - _Cutoff);
-
-                float3 normal = normalize(input.normalWS);
-                    // Flatten normal towards world up based on slider
-                normal = normalize(lerp(normal, float3(0, 1, 0), _SSAONormalFlatten));
-
-                return float4(NormalizeNormalPerPixel(normal), 0.0);
-            }
-            ENDHLSL
-        }
-
-        Pass
-        {
-            Name "DepthOnly"
-            Tags
-            {
-                "LightMode" = "DepthOnly"
-            }
-
-            HLSLPROGRAM
-            #pragma vertex Vertex
-            #pragma fragment Fragment
-            #pragma multi_compile_instancing
-            #pragma instancing_options procedural : SetupIndirect
-
-            #include "IndirectIncludes.hlsl"
-            #include "FoliageInput.hlsl"
-
-            struct Attributes
-            {
-                float4 positionOS : POSITION;
-                float2 uv : TEXCOORD0;
-                UNITY_VERTEX_INPUT_INSTANCE_ID
-            };
-
-            struct Varyings
-            {
-                float4 positionCS : SV_POSITION;
-                float2 uv : TEXCOORD0;
-                UNITY_VERTEX_INPUT_INSTANCE_ID
-            };
-
-            Varyings Vertex(Attributes input)
-            {
-                Varyings output;
-                UNITY_SETUP_INSTANCE_ID(input);
-                UNITY_TRANSFER_INSTANCE_ID(input, output);
-
-                float3 positionWS = TransformObjectToWorld(input.positionOS.xyz);
-                positionWS = ApplyWindAndInteraction(positionWS, input.uv);
-
                 output.positionCS = TransformWorldToHClip(positionWS);
                 output.uv = TRANSFORM_TEX(input.uv, _BaseMap);
                 return output;
             }
-
             half4 Fragment(Varyings input) : SV_Target
             {
                 UNITY_SETUP_INSTANCE_ID(input);
                 clip((SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.uv).a * smoothstep(0, _GroundBlend, input.uv.y)) - _Cutoff);
-                return 0;
+                return half4(1, 0, 0, 1);
             }
             ENDHLSL
         }

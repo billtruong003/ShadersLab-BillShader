@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 38ff8a6a4fb344f190dd7688680e31a3, type: 3}
   m_Name: AmbientOcclusionMasterComponent
   m_EditorClassIdentifier: ShadowShardAmbientOcclusionMaster.Runtime::ShadowShard.AmbientOcclusionMaster.Runtime.Volume.AmbientOcclusionMasterComponent
-  active: 0
+  active: 1
   Mode:
     m_OverrideState: 1
     m_Value: 1
@@ -1060,7 +1060,7 @@ MonoBehaviour:
     m_Value: 10
   normalThreshold:
     m_OverrideState: 1
-    m_Value: 0.75
+    m_Value: 0.5
   colorThreshold:
     m_OverrideState: 0
     m_Value: 1
@@ -1104,6 +1104,7 @@ MonoBehaviour:
   m_Name: Global Volume Profile
   m_EditorClassIdentifier: Unity.RenderPipelines.Core.Runtime::UnityEngine.Rendering.VolumeProfile
   components:
+  - {fileID: 5147407585758493240}
   - {fileID: -2944669442205708579}
   - {fileID: 2106335345859867972}
   - {fileID: -7863106640153662145}
@@ -1112,7 +1113,6 @@ MonoBehaviour:
   - {fileID: -2570517598059345513}
   - {fileID: 5294656138735375511}
   - {fileID: -4637321031007912281}
-  - {fileID: 5147407585758493240}
   - {fileID: -7965287822995402773}
 --- !u!114 &2106335345859867972
 MonoBehaviour:
@@ -1221,7 +1221,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 899c54efeace73346a0a16faa3afe726, type: 3}
   m_Name: Vignette
   m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.Vignette
-  active: 1
+  active: 0
   color:
     m_OverrideState: 1
     m_Value: {r: 0, g: 0, b: 0, a: 1}
@@ -1230,7 +1230,7 @@ MonoBehaviour:
     m_Value: {x: 0.5, y: 0.5}
   intensity:
     m_OverrideState: 1
-    m_Value: 0
+    m_Value: 0.15
   smoothness:
     m_OverrideState: 1
     m_Value: 1

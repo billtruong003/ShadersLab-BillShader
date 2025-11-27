@@ -2,7 +2,7 @@ Shader "Custom/Outline/InvisibleOccluder"
 {
     Properties
     {
-        [MainTexture] _BaseMap("Alpha Map (Optional)", 2D) = "white"{}
+        [MainTexture] _BaseMap("Alpha Map", 2D) = "white"{}
         _Cutoff("Alpha Cutoff", Range(0.0, 1.0)) = 0.5
         [Toggle(_ALPHATEST_ON)] _AlphaClip("Enable Alpha Clip", Float) = 0.0
     }
@@ -19,10 +19,7 @@ Shader "Custom/Outline/InvisibleOccluder"
         Pass
         {
             Name "UniversalForward"
-            Tags
-            {
-                "LightMode" = "UniversalForward"
-            }
+            Tags { "LightMode" = "UniversalForward" }
 
             ColorMask 0
             ZWrite On
@@ -32,6 +29,7 @@ Shader "Custom/Outline/InvisibleOccluder"
             #pragma vertex Vert
             #pragma fragment Frag
             #pragma shader_feature_local_fragment _ALPHATEST_ON
+            #pragma multi_compile_instancing
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
@@ -39,12 +37,14 @@ Shader "Custom/Outline/InvisibleOccluder"
             {
                 float4 positionOS : POSITION;
                 float2 uv : TEXCOORD0;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
             struct Varyings
             {
                 float4 positionCS : SV_POSITION;
                 float2 uv : TEXCOORD0;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
             TEXTURE2D(_BaseMap);
@@ -55,6 +55,8 @@ Shader "Custom/Outline/InvisibleOccluder"
             Varyings Vert(Attributes input)
             {
                 Varyings output;
+                UNITY_SETUP_INSTANCE_ID(input);
+                UNITY_TRANSFER_INSTANCE_ID(input, output);
                 output.positionCS = TransformObjectToHClip(input.positionOS.xyz);
                 output.uv = TRANSFORM_TEX(input.uv, _BaseMap);
                 return output;
@@ -62,6 +64,7 @@ Shader "Custom/Outline/InvisibleOccluder"
 
             half4 Frag(Varyings input) : SV_Target
             {
+                UNITY_SETUP_INSTANCE_ID(input);
                 #if defined(_ALPHATEST_ON)
                     half alpha = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.uv).a;
                     clip(alpha - _Cutoff);
@@ -74,10 +77,7 @@ Shader "Custom/Outline/InvisibleOccluder"
         Pass
         {
             Name "ShadowCaster"
-            Tags
-            {
-                "LightMode" = "ShadowCaster"
-            }
+            Tags { "LightMode" = "ShadowCaster" }
 
             ZWrite On
             ZTest LEqual
@@ -87,24 +87,26 @@ Shader "Custom/Outline/InvisibleOccluder"
             #pragma vertex ShadowPassVertex
             #pragma fragment ShadowPassFragment
             #pragma shader_feature_local_fragment _ALPHATEST_ON
+            #pragma multi_compile_instancing
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Shadows.hlsl"
 
             float3 _LightDirection;
-            float3 _Position;
 
             struct Attributes
             {
                 float4 positionOS : POSITION;
                 float3 normalOS : NORMAL;
                 float2 uv : TEXCOORD0;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
             struct Varyings
             {
                 float4 positionCS : SV_POSITION;
                 float2 uv : TEXCOORD0;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
             TEXTURE2D(_BaseMap);
@@ -115,20 +117,26 @@ Shader "Custom/Outline/InvisibleOccluder"
             Varyings ShadowPassVertex(Attributes input)
             {
                 Varyings output;
+                UNITY_SETUP_INSTANCE_ID(input);
+                UNITY_TRANSFER_INSTANCE_ID(input, output);
+                
                 float3 positionWS = TransformObjectToWorld(input.positionOS.xyz);
                 float3 normalWS = TransformObjectToWorldNormal(input.normalOS);
                 output.positionCS = TransformWorldToHClip(ApplyShadowBias(positionWS, normalWS, _LightDirection));
+                
                 #if UNITY_REVERSED_Z
                     output.positionCS.z = min(output.positionCS.z, output.positionCS.w * UNITY_NEAR_CLIP_VALUE);
                 #else
-                        output.positionCS.z = max(output.positionCS.z, output.positionCS.w * UNITY_NEAR_CLIP_VALUE);
+                    output.positionCS.z = max(output.positionCS.z, output.positionCS.w * UNITY_NEAR_CLIP_VALUE);
                 #endif
+                
                 output.uv = TRANSFORM_TEX(input.uv, _BaseMap);
                 return output;
             }
 
             half4 ShadowPassFragment(Varyings input) : SV_Target
             {
+                UNITY_SETUP_INSTANCE_ID(input);
                 #if defined(_ALPHATEST_ON)
                     half alpha = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.uv).a;
                     clip(alpha - _Cutoff);
@@ -141,10 +149,7 @@ Shader "Custom/Outline/InvisibleOccluder"
         Pass
         {
             Name "DepthOnly"
-            Tags
-            {
-                "LightMode" = "DepthOnly"
-            }
+            Tags { "LightMode" = "DepthOnly" }
 
             ZWrite On
             ColorMask 0
@@ -153,6 +158,7 @@ Shader "Custom/Outline/InvisibleOccluder"
             #pragma vertex Vert
             #pragma fragment Frag
             #pragma shader_feature_local_fragment _ALPHATEST_ON
+            #pragma multi_compile_instancing
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
@@ -160,12 +166,14 @@ Shader "Custom/Outline/InvisibleOccluder"
             {
                 float4 positionOS : POSITION;
                 float2 uv : TEXCOORD0;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
             struct Varyings
             {
                 float4 positionCS : SV_POSITION;
                 float2 uv : TEXCOORD0;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
             TEXTURE2D(_BaseMap);
@@ -176,6 +184,8 @@ Shader "Custom/Outline/InvisibleOccluder"
             Varyings Vert(Attributes input)
             {
                 Varyings output;
+                UNITY_SETUP_INSTANCE_ID(input);
+                UNITY_TRANSFER_INSTANCE_ID(input, output);
                 output.positionCS = TransformObjectToHClip(input.positionOS.xyz);
                 output.uv = TRANSFORM_TEX(input.uv, _BaseMap);
                 return output;
@@ -183,6 +193,7 @@ Shader "Custom/Outline/InvisibleOccluder"
 
             half4 Frag(Varyings input) : SV_Target
             {
+                UNITY_SETUP_INSTANCE_ID(input);
                 #if defined(_ALPHATEST_ON)
                     half alpha = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.uv).a;
                     clip(alpha - _Cutoff);
@@ -195,10 +206,7 @@ Shader "Custom/Outline/InvisibleOccluder"
         Pass
         {
             Name "DepthNormals"
-            Tags
-            {
-                "LightMode" = "DepthNormals"
-            }
+            Tags { "LightMode" = "DepthNormals" }
 
             ZWrite On
 
@@ -206,6 +214,7 @@ Shader "Custom/Outline/InvisibleOccluder"
             #pragma vertex Vert
             #pragma fragment Frag
             #pragma shader_feature_local_fragment _ALPHATEST_ON
+            #pragma multi_compile_instancing
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
@@ -214,6 +223,7 @@ Shader "Custom/Outline/InvisibleOccluder"
                 float4 positionOS : POSITION;
                 float3 normalOS : NORMAL;
                 float2 uv : TEXCOORD0;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
             struct Varyings
@@ -221,6 +231,7 @@ Shader "Custom/Outline/InvisibleOccluder"
                 float4 positionCS : SV_POSITION;
                 float3 normalWS : TEXCOORD1;
                 float2 uv : TEXCOORD0;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
             TEXTURE2D(_BaseMap);
@@ -231,6 +242,8 @@ Shader "Custom/Outline/InvisibleOccluder"
             Varyings Vert(Attributes input)
             {
                 Varyings output;
+                UNITY_SETUP_INSTANCE_ID(input);
+                UNITY_TRANSFER_INSTANCE_ID(input, output);
                 output.positionCS = TransformObjectToHClip(input.positionOS.xyz);
                 output.normalWS = TransformObjectToWorldNormal(input.normalOS);
                 output.uv = TRANSFORM_TEX(input.uv, _BaseMap);
@@ -239,6 +252,7 @@ Shader "Custom/Outline/InvisibleOccluder"
 
             float4 Frag(Varyings input) : SV_Target
             {
+                UNITY_SETUP_INSTANCE_ID(input);
                 #if defined(_ALPHATEST_ON)
                     half alpha = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.uv).a;
                     clip(alpha - _Cutoff);

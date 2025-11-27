@@ -15,7 +15,7 @@ public class OutlineVolume : VolumeComponent, IPostProcessComponent
 
     [Header("Masking")]
     public LayerMaskParameter selectionLayer = new LayerMaskParameter(-1);
-    public LayerMaskParameter occlusionLayer = new LayerMaskParameter(0); // Objects that hide outline
+    public LayerMaskParameter occlusionLayer = new LayerMaskParameter(0);
 
     [Header("Settings")]
     public EnumParameter<DebugMode> debugMode = new EnumParameter<DebugMode>(DebugMode.None);

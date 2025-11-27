@@ -8,7 +8,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: Grass_1 3
-  m_Shader: {fileID: 4800000, guid: ec3f7fbfe5f954c4c93d73db24a74584, type: 3}
+  m_Shader: {fileID: 4800000, guid: bbcd94d234ed0b8488ee135d9c90f406, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -21,7 +21,7 @@ Material:
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 1
   m_DoubleSidedGI: 0
-  m_CustomRenderQueue: -1
+  m_CustomRenderQueue: 2000
   stringTagMap: {}
   disabledShaderPasses: []
   m_LockedProperties: 
@@ -172,22 +172,23 @@ Material:
     - _UseBaseMapAlpha: 0
     - _WindFlowDensity: 0.5
     - _WindForce: 0.25
+    - _WindFreq: 0.5
     - _WindSpeed: 1
-    - _WindStrength: 0.05
+    - _WindStrength: 0.02
     - _WindWavesScale: 0.5
     - _WorldNoiseScale: 0.05
     - _WorldScale: 0.08
     - _ZWrite: 1
     - __dirty: 1
     m_Colors:
-    - _BottomColor: {r: 0.4575472, g: 1, b: 0.4575472, a: 1}
+    - _BottomColor: {r: 0, g: 0.16981131, b: 0, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0.29803923, b: 0.2901961, a: 1}
     - _MainColor: {r: 0.1893768, g: 0.5058824, b: 0.15294117, a: 0}
     - _SecondColor: {r: 0.41085273, g: 0.62352943, b: 0.12470588, a: 0}
     - _SpecColor: {r: 1, g: 1, b: 1, a: 1}
     - _SpecularColor: {r: 0.39215687, g: 0.39215687, b: 0.39215687, a: 1}
-    - _TopColor: {r: 0.07035947, g: 1, b: 0, a: 1}
+    - _TopColor: {r: 0.07058811, g: 1, b: 0, a: 1}
     - _TranslucencyColor: {r: 0.06568074, g: 1, b: 0, a: 1}
     - _Vector1: {r: 1, g: 1, b: 1, a: 0}
   m_BuildTextureStacks: []

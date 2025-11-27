@@ -8,10 +8,7 @@ Shader "Hidden/Outline/SelectionMask"
 
     SubShader
     {
-        Tags
-        {
-            "RenderType" = "Opaque" "RenderPipeline" = "UniversalPipeline"
-        }
+        Tags { "RenderType" = "Opaque" "RenderPipeline" = "UniversalPipeline" }
         LOD 100
         ColorMask R
         ZWrite Off
@@ -24,6 +21,7 @@ Shader "Hidden/Outline/SelectionMask"
             #pragma vertex Vert
             #pragma fragment Frag
             #pragma shader_feature_local_fragment _ALPHATEST_ON
+            #pragma multi_compile_instancing
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
@@ -31,12 +29,14 @@ Shader "Hidden/Outline/SelectionMask"
             {
                 float4 positionOS : POSITION;
                 float2 uv : TEXCOORD0;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
             struct Varyings
             {
                 float4 positionCS : SV_POSITION;
                 float2 uv : TEXCOORD0;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
             TEXTURE2D(_BaseMap);
@@ -47,6 +47,8 @@ Shader "Hidden/Outline/SelectionMask"
             Varyings Vert(Attributes input)
             {
                 Varyings output;
+                UNITY_SETUP_INSTANCE_ID(input);
+                UNITY_TRANSFER_INSTANCE_ID(input, output);
                 output.positionCS = TransformObjectToHClip(input.positionOS.xyz);
                 output.uv = TRANSFORM_TEX(input.uv, _BaseMap);
                 return output;
@@ -54,6 +56,7 @@ Shader "Hidden/Outline/SelectionMask"
 
             half4 Frag(Varyings input) : SV_Target
             {
+                UNITY_SETUP_INSTANCE_ID(input);
                 #if defined(_ALPHATEST_ON)
                     half alpha = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.uv).a;
                     clip(alpha - _Cutoff);

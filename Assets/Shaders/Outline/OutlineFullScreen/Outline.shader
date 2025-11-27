@@ -7,19 +7,18 @@ Shader "Hidden/FullScreen/Outline"
         _OcclusionMaskTexture("Occlusion Mask", 2D) = "black"{}
         _Thickness("Thickness", Float) = 1
         _OutlineColor("Outline Color", Color) = (0, 1, 0, 1)
-        _DepthThreshold("Depth Threshold", Float) = 1.5
-        _NormalThreshold("Normal Threshold", Float) = 0.4
-        _ColorThreshold("Color Threshold", Float) = 0.2
+        
+        _DepthThresholdSq("Depth Threshold Squared", Float) = 2.25
+        _NormalThresholdSq("Normal Threshold Squared", Float) = 0.16
+        _ColorThresholdSq("Color Threshold Squared", Float) = 0.04
+        
         _DebugMode("Debug Mode", Int) = 0
-        _FadeParams("Fade Params", Vector) = (0, 50, 0, 10)
+        _FadeParams("Fade Params", Vector) = (0, 0, 0, 0)
     }
 
     SubShader
     {
-        Tags
-        {
-            "RenderType" = "Opaque" "RenderPipeline" = "UniversalPipeline"
-        }
+        Tags { "RenderType" = "Opaque" "RenderPipeline" = "UniversalPipeline" }
         LOD 100
         ZWrite Off
         Cull Off
@@ -45,17 +44,16 @@ Shader "Hidden/FullScreen/Outline"
             #include "Packages/com.unity.render-pipelines.core/Runtime/Utilities/Blit.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareNormalsTexture.hlsl"
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareOpaqueTexture.hlsl"
 
             TEXTURE2D(_SelectionMaskTexture);
             SAMPLER(sampler_SelectionMaskTexture);
-            TEXTURE2D(_OcclusionMaskTexture); // Reuse sampler from Selection or LinearClamp
+            TEXTURE2D(_OcclusionMaskTexture);
 
             float _Thickness;
             float4 _OutlineColor;
-            float _DepthThreshold;
-            float _NormalThreshold;
-            float _ColorThreshold;
+            float _DepthThresholdSq;
+            float _NormalThresholdSq;
+            float _ColorThresholdSq;
             int _DebugMode;
             float4 _FadeParams;
 
@@ -95,7 +93,7 @@ Shader "Hidden/FullScreen/Outline"
                     float3 gy = s6 + s8 + 2 * s7 - s0 - s2 - 2 * s1;
                     float3 sq = gx * gx + gy * gy;
                 #else
-                        float3 s1 = GetSample(uv + float2(-delta.x, -delta.y));
+                    float3 s1 = GetSample(uv + float2(-delta.x, -delta.y));
                     float3 s2 = GetSample(uv + float2(delta.x, delta.y));
                     float3 s3 = GetSample(uv + float2(-delta.x, delta.y));
                     float3 s4 = GetSample(uv + float2(delta.x, -delta.y));
@@ -106,47 +104,48 @@ Shader "Hidden/FullScreen/Outline"
 
                 float e = 0;
                 #if defined(USE_DEPTH)
-                    e = max(e, step(_DepthThreshold * 0.01, sqrt(sq.x)));
+                    e = max(e, step(_DepthThresholdSq * 0.0001, sq.x));
                 #endif
                 #if defined(USE_NORMALS)
-                    e = max(e, step(_NormalThreshold, sqrt(sq.y)));
+                    e = max(e, step(_NormalThresholdSq, sq.y));
                 #endif
                 #if defined(USE_COLOR)
-                    e = max(e, step(_ColorThreshold, sqrt(sq.z)));
+                    e = max(e, step(_ColorThresholdSq, sq.z));
                 #endif
                 return e;
             }
 
             float CalculateSelectionEdge(float2 uv, float2 delta, float centerMask)
             {
-                float s1 = SAMPLE_TEXTURE2D(_SelectionMaskTexture, sampler_LinearClamp, uv + float2(delta.x, 0)).r;
-                float s2 = SAMPLE_TEXTURE2D(_SelectionMaskTexture, sampler_LinearClamp, uv + float2(-delta.x, 0)).r;
-                float s3 = SAMPLE_TEXTURE2D(_SelectionMaskTexture, sampler_LinearClamp, uv + float2(0, delta.y)).r;
-                float s4 = SAMPLE_TEXTURE2D(_SelectionMaskTexture, sampler_LinearClamp, uv + float2(0, -delta.y)).r;
-                float diff = abs(centerMask - s1) + abs(centerMask - s2) + abs(centerMask - s3) + abs(centerMask - s4);
-                return step(0.1, diff);
+                float4 s;
+                s.x = SAMPLE_TEXTURE2D(_SelectionMaskTexture, sampler_LinearClamp, uv + float2(delta.x, 0)).r;
+                s.y = SAMPLE_TEXTURE2D(_SelectionMaskTexture, sampler_LinearClamp, uv + float2(-delta.x, 0)).r;
+                s.z = SAMPLE_TEXTURE2D(_SelectionMaskTexture, sampler_LinearClamp, uv + float2(0, delta.y)).r;
+                s.w = SAMPLE_TEXTURE2D(_SelectionMaskTexture, sampler_LinearClamp, uv + float2(0, -delta.y)).r;
+                
+                float4 diff = abs(centerMask.xxxx - s);
+                return step(0.1, dot(diff, 1.0));
             }
 
             half4 Frag(Varyings input) : SV_Target
             {
                 float2 uv = input.texcoord;
 
-                if (_DebugMode == 1) return float4(Linear01Depth(SampleSceneDepth(uv), _ZBufferParams).xxx, 1);
+                if (_DebugMode != 0)
+                {
+                    if (_DebugMode == 1) return float4(Linear01Depth(SampleSceneDepth(uv), _ZBufferParams).xxx, 1);
                     if (_DebugMode == 2) return float4(SampleSceneNormals(uv) * 0.5 + 0.5, 1);
                     if (_DebugMode == 3) return SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp, uv);
                     if (_DebugMode == 5) return SAMPLE_TEXTURE2D(_SelectionMaskTexture, sampler_LinearClamp, uv);
                     if (_DebugMode == 6) return SAMPLE_TEXTURE2D(_OcclusionMaskTexture, sampler_LinearClamp, uv);
+                }
+
+                float occlusion = SAMPLE_TEXTURE2D(_OcclusionMaskTexture, sampler_LinearClamp, uv).r;
+                if (occlusion > 0.5) return SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp, uv);
 
                 float2 delta = _BlitTexture_TexelSize.xy * _Thickness;
                 float edge = 0;
                 float centerMask = 0;
-                float occlusion = SAMPLE_TEXTURE2D(_OcclusionMaskTexture, sampler_LinearClamp, uv).r;
-
-                    // Optimization: Early exit if fully occluded (water covers this pixel)
-                if (occlusion > 0.5)
-                {
-                    return SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp, uv);
-                }
 
                 #if defined(OUTLINE_SELECTION) || defined(OUTLINE_MIXED)
                     centerMask = SAMPLE_TEXTURE2D(_SelectionMaskTexture, sampler_LinearClamp, uv).r;
@@ -168,13 +167,13 @@ Shader "Hidden/FullScreen/Outline"
 
                 #if defined(USE_DISTANCE_FADE)
                     float linearDist = LinearEyeDepth(rawDepth, _ZBufferParams);
-                    float distFactor = 1.0 - saturate((linearDist - _FadeParams.x) / (_FadeParams.y - _FadeParams.x));
+                    float distFactor = 1.0 - saturate((linearDist - _FadeParams.x) * _FadeParams.y);
                     edge *= distFactor;
                 #endif
 
                 #if defined(USE_HEIGHT_FADE)
                     float3 worldPos = ComputeWorldSpacePosition(uv, rawDepth, UNITY_MATRIX_I_VP);
-                    float heightFactor = saturate((worldPos.y - _FadeParams.z) / (_FadeParams.w - _FadeParams.z));
+                    float heightFactor = saturate((worldPos.y - _FadeParams.z) * _FadeParams.w);
                     edge *= heightFactor;
                 #endif
 

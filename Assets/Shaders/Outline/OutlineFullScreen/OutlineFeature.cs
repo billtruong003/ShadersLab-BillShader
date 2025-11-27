@@ -6,7 +6,6 @@ using UnityEngine.Rendering.Universal;
 
 public class OutlineFeature : ScriptableRendererFeature
 {
-    // Static Event để các hệ thống render thủ công (như Foliage) đăng ký vẽ vào Mask
     public static event Action<RasterCommandBuffer, LayerMask> OnRenderFoliageMask;
 
     class LayerMaskPass : ScriptableRenderPass
@@ -25,7 +24,6 @@ public class OutlineFeature : ScriptableRendererFeature
             profilerTag = tag;
             textureName = texName;
             renderPassEvent = RenderPassEvent.AfterRenderingOpaques;
-
             shaderTags = new ShaderTagId[]
             {
                 new ShaderTagId("UniversalForward"),
@@ -47,12 +45,12 @@ public class OutlineFeature : ScriptableRendererFeature
         {
             public RendererListHandle rendererList;
             public TextureHandle maskDest;
+            public LayerMask layerMask;
         }
 
         public override void RecordRenderGraph(RenderGraph renderGraph, ContextContainer frameData)
         {
             MaskTexture = TextureHandle.nullHandle;
-
             if (maskMaterial == null || layerMask == 0) return;
 
             UniversalCameraData cameraData = frameData.Get<UniversalCameraData>();
@@ -63,13 +61,14 @@ public class OutlineFeature : ScriptableRendererFeature
             desc.depthBufferBits = 0;
             desc.msaaSamples = 1;
 
-            TextureDesc texDesc = new TextureDesc(desc);
-            texDesc.name = textureName;
-            texDesc.clearBuffer = true;
-            texDesc.clearColor = Color.black;
+            TextureDesc texDesc = new TextureDesc(desc)
+            {
+                name = textureName,
+                clearBuffer = true,
+                clearColor = Color.black
+            };
 
             MaskTexture = renderGraph.CreateTexture(texDesc);
-
             UniversalResourceData resourceData = frameData.Get<UniversalResourceData>();
             TextureHandle depthTexture = resourceData.activeDepthTexture;
 
@@ -78,7 +77,8 @@ public class OutlineFeature : ScriptableRendererFeature
                 new DrawingSettings(shaderTags[0], new SortingSettings(cameraData.camera))
                 {
                     overrideMaterial = maskMaterial,
-                    overrideMaterialPassIndex = 0
+                    overrideMaterialPassIndex = 0,
+                    enableInstancing = true
                 },
                 filteringSettings
             );
@@ -92,21 +92,16 @@ public class OutlineFeature : ScriptableRendererFeature
             {
                 passData.rendererList = rendererList;
                 passData.maskDest = MaskTexture;
+                passData.layerMask = this.layerMask;
 
                 builder.UseRendererList(passData.rendererList);
                 builder.SetRenderAttachment(passData.maskDest, 0, AccessFlags.Write);
-
                 if (depthTexture.IsValid()) builder.SetRenderAttachmentDepth(depthTexture, AccessFlags.Read);
-
-                // Copy LayerMask to local variable to avoid closure capture issues
-                LayerMask currentMask = layerMask;
 
                 builder.SetRenderFunc((MaskData data, RasterGraphContext context) =>
                 {
                     context.cmd.DrawRendererList(data.rendererList);
-
-                    // Trigger Foliage Rendering
-                    OnRenderFoliageMask?.Invoke(context.cmd, currentMask);
+                    OnRenderFoliageMask?.Invoke(context.cmd, data.layerMask);
                 });
             }
         }
@@ -121,9 +116,9 @@ public class OutlineFeature : ScriptableRendererFeature
 
         private static readonly int ThicknessID = Shader.PropertyToID("_Thickness");
         private static readonly int ColorID = Shader.PropertyToID("_OutlineColor");
-        private static readonly int DepthThresholdID = Shader.PropertyToID("_DepthThreshold");
-        private static readonly int NormalThresholdID = Shader.PropertyToID("_NormalThreshold");
-        private static readonly int ColorThresholdID = Shader.PropertyToID("_ColorThreshold");
+        private static readonly int DepthThresholdSqID = Shader.PropertyToID("_DepthThresholdSq");
+        private static readonly int NormalThresholdSqID = Shader.PropertyToID("_NormalThresholdSq");
+        private static readonly int ColorThresholdSqID = Shader.PropertyToID("_ColorThresholdSq");
         private static readonly int DebugModeID = Shader.PropertyToID("_DebugMode");
         private static readonly int SelectionMaskID = Shader.PropertyToID("_SelectionMaskTexture");
         private static readonly int OcclusionMaskID = Shader.PropertyToID("_OcclusionMaskTexture");
@@ -159,16 +154,24 @@ public class OutlineFeature : ScriptableRendererFeature
 
             material.SetFloat(ThicknessID, volumeSettings.thickness.value);
             material.SetColor(ColorID, volumeSettings.outlineColor.value);
-            material.SetFloat(DepthThresholdID, volumeSettings.depthThreshold.value);
-            material.SetFloat(NormalThresholdID, volumeSettings.normalThreshold.value);
-            material.SetFloat(ColorThresholdID, volumeSettings.colorThreshold.value);
+
+            float dT = volumeSettings.depthThreshold.value;
+            float nT = volumeSettings.normalThreshold.value;
+            float cT = volumeSettings.colorThreshold.value;
+
+            material.SetFloat(DepthThresholdSqID, dT * dT);
+            material.SetFloat(NormalThresholdSqID, nT * nT);
+            material.SetFloat(ColorThresholdSqID, cT * cT);
             material.SetInt(DebugModeID, (int)volumeSettings.debugMode.value);
+
+            float fadeDistRange = Mathf.Max(0.001f, volumeSettings.fadeDistanceEnd.value - volumeSettings.fadeDistanceStart.value);
+            float fadeHeightRange = Mathf.Max(0.001f, volumeSettings.fadeHeightMax.value - volumeSettings.fadeHeightMin.value);
 
             material.SetVector(FadeParamsID, new Vector4(
                 volumeSettings.fadeDistanceStart.value,
-                volumeSettings.fadeDistanceEnd.value,
+                1.0f / fadeDistRange,
                 volumeSettings.fadeHeightMin.value,
-                volumeSettings.fadeHeightMax.value
+                1.0f / fadeHeightRange
             ));
 
             SetKeyword("USE_DEPTH", volumeSettings.useDepth.value);
@@ -176,7 +179,6 @@ public class OutlineFeature : ScriptableRendererFeature
             SetKeyword("USE_COLOR", volumeSettings.useColor.value);
             SetKeyword("ALGO_SOBEL", volumeSettings.algorithm.value == OutlineVolume.OutlineAlgorithm.Sobel);
             SetKeyword("ALGO_ROBERTS", volumeSettings.algorithm.value == OutlineVolume.OutlineAlgorithm.RobertsCross);
-
             SetKeyword("USE_DISTANCE_FADE", volumeSettings.useDistanceFade.value);
             SetKeyword("USE_HEIGHT_FADE", volumeSettings.useHeightFade.value);
 
@@ -199,16 +201,16 @@ public class OutlineFeature : ScriptableRendererFeature
             if (cameraData.cameraType == CameraType.Preview) return;
 
             TextureHandle source = resourceData.activeColorTexture;
-
             RenderTextureDescriptor desc = cameraData.cameraTargetDescriptor;
             desc.depthBufferBits = 0;
-            TextureDesc texDesc = new TextureDesc(desc);
-            texDesc.name = "OutlineTemp";
-            texDesc.clearBuffer = true;
-            texDesc.clearColor = Color.black;
+            TextureDesc texDesc = new TextureDesc(desc)
+            {
+                name = "OutlineTemp",
+                clearBuffer = true,
+                clearColor = Color.black
+            };
 
             TextureHandle tempTexture = renderGraph.CreateTexture(texDesc);
-
             TextureHandle maskHandle = (selectionMaskPass != null) ? selectionMaskPass.MaskTexture : TextureHandle.nullHandle;
             TextureHandle occlusionHandle = (occlusionMaskPass != null) ? occlusionMaskPass.MaskTexture : TextureHandle.nullHandle;
 
@@ -271,7 +273,6 @@ public class OutlineFeature : ScriptableRendererFeature
         if (settings != null && settings.IsActive())
         {
             outlinePass.SetupReference(selectionPass, occlusionPass);
-
             if (settings.selectionLayer.value != 0)
             {
                 selectionPass.Setup(settings.selectionLayer.value);
@@ -282,7 +283,6 @@ public class OutlineFeature : ScriptableRendererFeature
                 occlusionPass.Setup(settings.occlusionLayer.value);
                 renderer.EnqueuePass(occlusionPass);
             }
-
             renderer.EnqueuePass(outlinePass);
         }
     }

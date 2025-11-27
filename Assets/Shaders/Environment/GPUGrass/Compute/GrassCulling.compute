@@ -1,0 +1,44 @@
+#pragma kernel CSMain
+
+struct IndirectData
+{
+    float4x4 objectToWorld;
+};
+
+StructuredBuffer<IndirectData> _AllInstances;
+AppendStructuredBuffer<IndirectData> _VisibleInstances;
+
+float4 _CameraPlanes[6];
+float3 _CameraPosition;
+float _MaxDistance;
+uint _InstanceCount;
+float _BoundRadius;
+
+bool IsInFrustum(float3 position, float radius)
+{
+    [unroll]
+    for (int i = 0; i < 6; i++)
+    {
+        if (dot(_CameraPlanes[i].xyz, position) + _CameraPlanes[i].w + radius < 0)
+            return false;
+    }
+    return true;
+}
+
+[numthreads(64, 1, 1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= _InstanceCount) return;
+
+    IndirectData instance = _AllInstances[id.x];
+    
+    // Extract position from matrix (Column 3)
+    float3 position = float3(instance.objectToWorld[0][3], instance.objectToWorld[1][3], instance.objectToWorld[2][3]);
+
+    float distSq = dot(position - _CameraPosition, position - _CameraPosition);
+    if (distSq > _MaxDistance * _MaxDistance) return;
+
+    if (!IsInFrustum(position, _BoundRadius)) return;
+
+    _VisibleInstances.Append(instance);
+}

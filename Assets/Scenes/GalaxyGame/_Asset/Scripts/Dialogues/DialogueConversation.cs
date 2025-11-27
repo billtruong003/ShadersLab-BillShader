@@ -6,6 +6,13 @@ using System;
 [CreateAssetMenu(menuName = "Data/Conversation")]
 public class DialogueConversation : ScriptableObject
 {
+    [BoxGroup("Settings")]
+    [EnumToggleButtons]
+    public DialogueViewMode ViewMode = DialogueViewMode.ScreenSpace;
+
+    [BoxGroup("Settings")]
+    public bool OverrideGlobalMode = false;
+
     [SerializeReference, ListDrawerSettings(ShowIndexLabels = true, ListElementLabelName = "GetLabel")]
     public List<IDialogueNode> Nodes = new List<IDialogueNode>();
 

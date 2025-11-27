@@ -12,10 +12,12 @@ Material:
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
+  - _DISSOLVETYPE_LINEAR
   - _FAKELIGHT_ON
   - _OUTLINE_SCALE_WITH_DISTANCE
   - _SURFACETYPE_OPAQUE
   m_InvalidKeywords:
+  - _USETIMEANIMATION_ON
   - _ZWRITE_ON
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
@@ -81,7 +83,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _NoiseTex:
-        m_Texture: {fileID: 0}
+        m_Texture: {fileID: 2800000, guid: e36f69f8ecb0f67419d426142dccab88, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _OcclusionMap:
@@ -125,8 +127,8 @@ Material:
     - _Cutoff: 0.5
     - _DetailNormalMapScale: 1
     - _DissolveEdgeWidth: 0.05
-    - _DissolveThreshold: -0.5
-    - _DissolveType: 0
+    - _DissolveThreshold: 1.3
+    - _DissolveType: 1
     - _DistanceFadeEnd: 25
     - _DistanceFadeStart: -45
     - _DstBlend: 0
@@ -166,7 +168,7 @@ Material:
     - _MidtoneThreshold: 0.8
     - _Mode: 0
     - _NoiseScale: 1
-    - _NoiseStrength: 0.1
+    - _NoiseStrength: 0.33
     - _OcclusionStrength: 1
     - _Offset: 0.311
     - _OutlineMode: 2
@@ -205,7 +207,7 @@ Material:
     - _UVSec: 0
     - _UseLocalSpace: 0
     - _UseSaturateDisplacement: 0
-    - _UseTimeAnimation: 0
+    - _UseTimeAnimation: 1
     - _VertexDisplacement: 0.1
     - _WindAmplitude: 0.1
     - _WindFrequency: 2
@@ -222,7 +224,7 @@ Material:
     - _CosmicColor1: {r: 0.2, g: 0.5, b: 1, a: 1}
     - _CosmicColor2: {r: 1, g: 0.3, b: 0.8, a: 1}
     - _DissolveDirection: {r: 0, g: 1, b: 0, a: 0}
-    - _DissolveEdgeColor: {r: 1, g: 0.5, b: 0, a: 1}
+    - _DissolveEdgeColor: {r: 11.984313, g: 5.9921565, b: 0, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _EpicColor1: {r: 1, g: 0.5, b: 0, a: 1}
     - _EpicColor2: {r: 1, g: 1, b: 0, a: 1}

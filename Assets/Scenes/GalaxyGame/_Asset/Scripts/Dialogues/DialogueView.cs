@@ -8,106 +8,147 @@ using Sirenix.OdinInspector;
 
 public class DialogueView : MonoBehaviour
 {
-    [Title("Layout Containers")]
-    [SerializeField] private GameObject mainContainer;
+    [Title("World Space Components")]
+    [SerializeField] private Canvas worldCanvas;
+    [SerializeField] private RectTransform mainPanel;
+    [SerializeField] private CanvasGroup canvasGroup;
 
-    [Title("Portraits")]
-    [SerializeField] private Image playerPortrait; // Ảnh bên Trái (Player)
-    [SerializeField] private Image npcPortrait;    // Ảnh bên Phải (NPC)
-
-    [Title("Visual Settings")]
-    [SerializeField] private Color activeColor = Color.white;
-    [SerializeField] private Color inactiveColor = new Color(0.4f, 0.4f, 0.4f, 1f); // Màu xám tối
-    [SerializeField] private float fadeDuration = 0.3f;
-
-    [Title("Text Elements")]
+    [Title("Content")]
     [SerializeField] private TextMeshProUGUI nameText;
     [SerializeField] private TextMeshProUGUI dialogueText;
+    [SerializeField] private Image portraitImage;
 
     [Title("Choices")]
     [SerializeField] private Transform choiceContainer;
     [SerializeField] private Button choiceButtonPrefab;
 
+    [Title("Animation Settings")]
+    [SerializeField] private float moveSmoothTime = 0.15f;
+    [SerializeField] private float popupDuration = 0.3f;
+    [SerializeField] private Vector3 offsetFromTarget = new Vector3(0, 0.5f, 0);
+
     private List<Button> activeChoices = new List<Button>();
     private Tween typeWriterTween;
-    private Tween playerColorTween;
-    private Tween npcColorTween;
+    private Transform currentTarget;
+    private Vector3 currentVelocity;
+    private Camera mainCam;
+
+    private void Awake()
+    {
+        mainCam = Camera.main;
+        if (worldCanvas != null) worldCanvas.worldCamera = mainCam;
+        SetActive(false);
+    }
+
+    private void LateUpdate()
+    {
+        if (!mainPanel.gameObject.activeSelf) return;
+
+        HandleBillboard();
+        FollowTarget();
+    }
 
     public void SetActive(bool active)
     {
-        mainContainer.SetActive(active);
-        if (!active) ClearChoices();
+        if (active)
+        {
+            mainPanel.gameObject.SetActive(true);
+            canvasGroup.alpha = 0f;
+            canvasGroup.DOFade(1f, popupDuration);
+            mainPanel.localScale = Vector3.zero;
+            mainPanel.DOScale(Vector3.one, popupDuration).SetEase(Ease.OutBack);
+        }
+        else
+        {
+            canvasGroup.DOFade(0f, 0.2f).OnComplete(() =>
+            {
+                mainPanel.gameObject.SetActive(false);
+                ClearChoices();
+            });
+        }
     }
 
     public void ShowLine(CharacterProfile speaker, string text, float typeSpeed, Action onComplete)
     {
         ClearChoices();
+        UpdateTargetPosition(speaker);
 
-        // 1. Setup Data hiển thị
         nameText.text = speaker.CharacterName;
         nameText.color = speaker.NameColor;
 
-        // 2. Cập nhật ảnh và hiệu ứng sáng/tối
-        UpdatePortraitVisuals(speaker);
+        if (portraitImage != null)
+        {
+            portraitImage.sprite = speaker.Portrait;
+            portraitImage.enabled = speaker.Portrait != null;
+        }
 
-        // 3. Chạy Typewriter
         dialogueText.text = string.Empty;
         typeWriterTween?.Kill();
+
+        // Hiệu ứng "Punch" nhẹ khi bắt đầu câu thoại mới
+        mainPanel.DOPunchScale(Vector3.one * 0.1f, 0.2f, 10, 1);
+
         typeWriterTween = DOTween.To(() => string.Empty, x => dialogueText.text = x, text, text.Length * typeSpeed)
             .SetEase(Ease.Linear)
             .OnComplete(() => onComplete?.Invoke());
     }
 
-    private void UpdatePortraitVisuals(CharacterProfile speaker)
+    private void UpdateTargetPosition(CharacterProfile speaker)
     {
-        // Xác định ai đang nói dựa trên CharacterType
-        bool isPlayerSpeaking = speaker.Type == CharacterType.Player;
+        Transform speechPoint = DialogueActorRegistry.GetSpeechPoint(speaker);
 
-        // Cập nhật Sprite (Chỉ cập nhật sprite cho bên đang nói để tránh đổi ảnh bên kia nếu không cần thiết)
-        // Hoặc bạn có thể set cứng ảnh Player lúc Init nếu Player không thay đổi biểu cảm
-        if (isPlayerSpeaking)
-            playerPortrait.sprite = speaker.Portrait;
+        // Nếu không tìm thấy actor trong scene, fallback về vị trí trước camera
+        if (speechPoint == null)
+        {
+            currentTarget = null;
+            transform.position = mainCam.transform.position + mainCam.transform.forward * 3f;
+        }
         else
-            npcPortrait.sprite = speaker.Portrait;
-
-        // Đảm bảo ảnh luôn hiển thị (phòng trường hợp bị tắt)
-        playerPortrait.enabled = playerPortrait.sprite != null;
-        npcPortrait.enabled = npcPortrait.sprite != null;
-
-        // Xử lý Tween màu (Highlight người nói, Dim người nghe)
-        HighlightSpeaker(isPlayerSpeaking);
+        {
+            // Nếu đổi người nói, tween vị trí sang người mới
+            if (currentTarget != speechPoint)
+            {
+                currentTarget = speechPoint;
+                transform.DOMove(currentTarget.position + offsetFromTarget, 0.3f).SetEase(Ease.OutCubic);
+            }
+        }
     }
 
-    private void HighlightSpeaker(bool isPlayer)
+    private void HandleBillboard()
     {
-        // Kill tween cũ để tránh conflict nếu spam nút
-        playerColorTween?.Kill();
-        npcColorTween?.Kill();
+        // Luôn xoay UI về phía Camera nhưng giữ trục thẳng đứng (nếu muốn UI đứng thẳng)
+        // Hoặc look rotation trực tiếp để UI nghiêng theo cam
+        transform.rotation = mainCam.transform.rotation;
+    }
 
-        // Player: Nếu là Player nói -> Màu sáng, ngược lại -> Màu tối
-        Color targetPlayerColor = isPlayer ? activeColor : inactiveColor;
-        // NPC: Nếu KHÔNG phải Player nói -> Màu sáng, ngược lại -> Màu tối
-        Color targetNpcColor = !isPlayer ? activeColor : inactiveColor;
+    private void FollowTarget()
+    {
+        if (currentTarget == null) return;
 
-        // Thực hiện Tween
-        playerColorTween = playerPortrait.DOColor(targetPlayerColor, fadeDuration);
-        npcColorTween = npcPortrait.DOColor(targetNpcColor, fadeDuration);
-
-        // Optional: Scale nhẹ lên để tạo điểm nhấn
-        playerPortrait.transform.DOScale(isPlayer ? 1.1f : 1.0f, fadeDuration);
-        npcPortrait.transform.DOScale(!isPlayer ? 1.1f : 1.0f, fadeDuration);
+        // Smooth follow để UI không bị rung khi nhân vật thở/idle
+        Vector3 targetPos = currentTarget.position + offsetFromTarget;
+        transform.position = Vector3.SmoothDamp(transform.position, targetPos, ref currentVelocity, moveSmoothTime);
     }
 
     public void ShowChoices(List<DialogueChoiceNode.ChoiceOption> options, Action<int> onSelected)
     {
         ClearChoices();
+        // Mở rộng panel hoặc hiển thị container choice
+        choiceContainer.gameObject.SetActive(true);
+
         for (int i = 0; i < options.Count; i++)
         {
             int index = i;
             var btn = Instantiate(choiceButtonPrefab, choiceContainer);
             var tmp = btn.GetComponentInChildren<TextMeshProUGUI>();
             if (tmp != null) tmp.text = options[i].Text;
+
             btn.onClick.AddListener(() => onSelected?.Invoke(index));
+
+            // Animation xuất hiện cho nút
+            btn.transform.localScale = Vector3.zero;
+            btn.transform.DOScale(Vector3.one, 0.2f).SetDelay(i * 0.1f).SetEase(Ease.OutBack);
+
             activeChoices.Add(btn);
         }
     }
@@ -120,14 +161,18 @@ public class DialogueView : MonoBehaviour
 
     private void ClearChoices()
     {
-        foreach (var btn in activeChoices) if (btn != null) Destroy(btn.gameObject);
+        foreach (var btn in activeChoices)
+        {
+            if (btn != null)
+            {
+                btn.transform.DOScale(0f, 0.1f).OnComplete(() => Destroy(btn.gameObject));
+            }
+        }
         activeChoices.Clear();
     }
 
     private void OnDisable()
     {
         typeWriterTween?.Kill();
-        playerColorTween?.Kill();
-        npcColorTween?.Kill();
     }
 }

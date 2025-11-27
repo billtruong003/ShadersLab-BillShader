@@ -42,6 +42,7 @@ namespace Nebulanook.Player
         private float dashTimer;
         private float stunTimer;
         private DashTier currentTier;
+        private bool isControlLocked;
 
         private void Awake()
         {
@@ -49,6 +50,28 @@ namespace Nebulanook.Player
             if (playerInput == null) playerInput = GetComponent<PlayerInputHandler>();
             if (playerStamina == null) playerStamina = GetComponentInChildren<PlayerStamina>();
             if (camTransform == null) camTransform = Camera.main.transform;
+        }
+
+        private void OnEnable()
+        {
+            GameEvents.OnGameStateChanged += OnGameStateChanged;
+        }
+
+        private void OnDisable()
+        {
+            GameEvents.OnGameStateChanged -= OnGameStateChanged;
+        }
+
+        private void OnGameStateChanged(bool isLocked)
+        {
+            isControlLocked = isLocked;
+            playerInput.SetInputActive(!isLocked);
+
+            if (isLocked)
+            {
+                TransitionToState(MovementState.Idle);
+                playerRigidbody.linearVelocity = Vector3.zero;
+            }
         }
 
         private void FixedUpdate()
@@ -59,6 +82,7 @@ namespace Nebulanook.Player
 
         private void Update()
         {
+            if (isControlLocked) return;
             HandleInput();
         }
 
@@ -144,6 +168,8 @@ namespace Nebulanook.Player
 
         private void HandleStateUpdate()
         {
+            if (isControlLocked) return;
+
             switch (CurrentState)
             {
                 case MovementState.Idle:
@@ -297,7 +323,7 @@ namespace Nebulanook.Player
             }
         }
     }
-    // Enums and Structs remain the same
+
     public enum MovementState { Idle, Walking, Sprinting, Charging, Dashing, Knockback }
 
     [System.Serializable]

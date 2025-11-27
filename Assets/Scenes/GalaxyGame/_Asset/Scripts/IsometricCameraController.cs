@@ -1,6 +1,5 @@
 using UnityEngine;
 using Sirenix.OdinInspector;
-using System.Collections;
 
 namespace Nebulanook.Core
 {
@@ -29,7 +28,12 @@ namespace Nebulanook.Core
         [SerializeField] private float maxZoom = 20f;
         [SerializeField] private float rotationSpeed = 120f;
 
+        [Title("Dialogue Settings")]
+        [SerializeField] private float dialogueZoom = 7f;
+        [SerializeField] private float dialogueZoomSpeed = 10f;
+
         private float currentZoom;
+        private float targetZoomValue;
         private float currentYaw = 45f;
         private Vector3 currentVelocity;
         private float targetDistance;
@@ -39,14 +43,41 @@ namespace Nebulanook.Core
         private float shakePower;
         private Vector3 shakeOffset;
 
+        private bool isControlLocked;
+        private float storedUserZoom;
+
         private void Awake()
         {
             Instance = this;
             if (target == null) return;
 
             currentZoom = offset.magnitude;
+            targetZoomValue = currentZoom;
             targetDistance = currentZoom;
             UpdateCameraPosition(true);
+        }
+
+        private void OnEnable()
+        {
+            GameEvents.OnGameStateChanged += OnGameStateChanged;
+        }
+
+        private void OnDisable()
+        {
+            GameEvents.OnGameStateChanged -= OnGameStateChanged;
+        }
+
+        private void OnGameStateChanged(bool isLocked)
+        {
+            isControlLocked = isLocked;
+            if (isLocked)
+            {
+                storedUserZoom = targetZoomValue;
+            }
+            else
+            {
+                targetZoomValue = storedUserZoom;
+            }
         }
 
         private void LateUpdate()
@@ -54,6 +85,7 @@ namespace Nebulanook.Core
             if (target == null) return;
 
             HandleInput();
+            HandleZoomLogic();
             CalculateOcclusion();
             UpdateCameraPosition(false);
             UpdateShake();
@@ -61,17 +93,26 @@ namespace Nebulanook.Core
 
         private void HandleInput()
         {
+            if (isControlLocked) return;
+
             float scroll = Input.GetAxis("Mouse ScrollWheel");
             if (Mathf.Abs(scroll) > 0.001f)
             {
-                currentZoom -= scroll * zoomSpeed;
-                currentZoom = Mathf.Clamp(currentZoom, minZoom, maxZoom);
+                targetZoomValue -= scroll * zoomSpeed;
+                targetZoomValue = Mathf.Clamp(targetZoomValue, minZoom, maxZoom);
             }
 
             if (Input.GetMouseButton(1))
             {
                 currentYaw += Input.GetAxis("Mouse X") * rotationSpeed * Time.deltaTime;
             }
+        }
+
+        private void HandleZoomLogic()
+        {
+            float targetZ = isControlLocked ? dialogueZoom : targetZoomValue;
+            float speed = isControlLocked ? dialogueZoomSpeed : zoomSpeed;
+            currentZoom = Mathf.MoveTowards(currentZoom, targetZ, speed * Time.deltaTime);
         }
 
         private void CalculateOcclusion()

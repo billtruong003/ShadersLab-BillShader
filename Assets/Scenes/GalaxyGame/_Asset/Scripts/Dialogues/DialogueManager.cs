@@ -5,10 +5,17 @@ public class DialogueManager : MonoBehaviour
 {
     public static DialogueManager Instance { get; private set; }
 
-    [SerializeField] private DialogueView view;
+    [Title("Settings")]
+    [EnumToggleButtons]
+    [SerializeField] private DialogueViewMode defaultMode = DialogueViewMode.ScreenSpace;
     [SerializeField] private float textSpeed = 0.03f;
 
+    [Title("Views")]
+    [SerializeField] private DialogueViewScreen screenView;
+    [SerializeField] private DialogueViewWorld worldView;
+
     private DialogueConversation currentConversation;
+    private DialogueViewBase activeView;
     private int currentIndex;
     private bool isTyping;
     private string currentFullText;
@@ -17,7 +24,9 @@ public class DialogueManager : MonoBehaviour
     {
         if (Instance == null) Instance = this;
         else Destroy(gameObject);
-        view.SetActive(false);
+
+        if (screenView != null) screenView.Initialize();
+        if (worldView != null) worldView.Initialize();
     }
 
     public void StartDialogue(DialogueConversation conversation)
@@ -27,24 +36,39 @@ public class DialogueManager : MonoBehaviour
         currentConversation = conversation;
         currentIndex = 0;
 
+        // Quyết định dùng View nào
+        DialogueViewMode targetMode = conversation.OverrideGlobalMode ? conversation.ViewMode : defaultMode;
+        SwitchView(targetMode);
+
         GameEvents.SetGameControlLock(true);
-        view.SetActive(true);
+        activeView.SetActive(true);
         ProcessNode(currentConversation.GetNode(currentIndex));
+    }
+
+    private void SwitchView(DialogueViewMode mode)
+    {
+        // Tắt view cũ nếu đang bật
+        if (activeView != null) activeView.SetActive(false);
+
+        activeView = mode == DialogueViewMode.ScreenSpace ? screenView : worldView;
+
+        // Đảm bảo view kia tắt hoàn toàn
+        if (mode == DialogueViewMode.ScreenSpace) worldView.SetActive(false);
+        else screenView.SetActive(false);
     }
 
     public void HandleInput()
     {
-        if (!view.gameObject.activeSelf) return;
+        if (activeView == null || !activeView.gameObject.activeInHierarchy) return;
 
         if (isTyping)
         {
             isTyping = false;
-            view.DisplayFullText(currentFullText);
+            activeView.DisplayFullText(currentFullText);
         }
         else
         {
             var currentNode = currentConversation.GetNode(currentIndex);
-            // Chỉ cần check LineNode hoặc EventNode để đi tiếp
             if (currentNode is DialogueLineNode || currentNode is DialogueEventNode)
             {
                 AdvanceNode();
@@ -54,7 +78,8 @@ public class DialogueManager : MonoBehaviour
 
     private void Update()
     {
-        if (view.gameObject.activeSelf && (Input.GetKeyDown(KeyCode.Space) || Input.GetMouseButtonDown(0)))
+        bool inputActive = activeView != null && activeView.gameObject.activeInHierarchy;
+        if (inputActive && (Input.GetKeyDown(KeyCode.Space) || Input.GetMouseButtonDown(0)))
         {
             HandleInput();
         }
@@ -80,20 +105,16 @@ public class DialogueManager : MonoBehaviour
             case DialogueLineNode line:
                 currentFullText = line.Text;
                 isTyping = true;
-                view.ShowLine(line.Speaker, line.Text, textSpeed, () => isTyping = false);
+                activeView.ShowLine(line.Speaker, line.Text, textSpeed, () => isTyping = false);
                 break;
 
             case DialogueChoiceNode choice:
-                view.ShowChoices(choice.Options, OnChoiceSelected);
+                activeView.ShowChoices(choice.Options, OnChoiceSelected);
                 break;
 
             case DialogueEventNode evt:
-                // Fix lỗi CS1061: Gọi đúng biến Actions đã định nghĩa lại trong DialogueConversation
-                if (evt.Actions != null)
-                {
-                    foreach (var action in evt.Actions) action.Execute();
-                }
-                AdvanceNode(); // Event chạy xong thì tự next
+                if (evt.Actions != null) foreach (var action in evt.Actions) action.Execute();
+                AdvanceNode();
                 break;
         }
     }
@@ -105,13 +126,9 @@ public class DialogueManager : MonoBehaviour
 
         var selectedOption = choiceNode.Options[index];
 
-        // Thực thi Actions của Choice
         if (selectedOption.OnSelectActions != null)
         {
-            foreach (var action in selectedOption.OnSelectActions)
-            {
-                action.Execute();
-            }
+            foreach (var action in selectedOption.OnSelectActions) action.Execute();
         }
 
         if (selectedOption.BranchToConversation != null)
@@ -126,8 +143,9 @@ public class DialogueManager : MonoBehaviour
 
     private void EndDialogue()
     {
-        view.SetActive(false);
+        if (activeView != null) activeView.SetActive(false);
         currentConversation = null;
+        activeView = null;
         GameEvents.SetGameControlLock(false);
     }
 }

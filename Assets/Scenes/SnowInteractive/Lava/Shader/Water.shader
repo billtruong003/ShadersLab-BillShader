@@ -1,5 +1,5 @@
 
-Shader "BillWater/URPWaterBlingSparkle"
+Shader "BillWater/BillStylizeWater"
 {
     Properties
     {
@@ -30,7 +30,7 @@ Shader "BillWater/URPWaterBlingSparkle"
         _BlingIntensity("Bling Intensity", Range(0, 50)) = 10.0
         _BlingScale("Bling Scale", Float) = 5.0
         _BlingSpeed("Bling Speed", Range(0, 5)) = 0.5
-        _BlingGloss("Bling Gloss (Spec Size)", Range(10, 500)) = 128.0
+        _BlingGloss("Bling Gloss", Range(10, 500)) = 128.0
         _BlingThreshold("Bling Threshold", Range(0.0, 1.0)) = 0.85
 
         [Header(Intersection Foam)]
@@ -54,6 +54,43 @@ Shader "BillWater/URPWaterBlingSparkle"
             "IgnoreProjector" = "True"
         }
 
+        HLSLINCLUDE
+        #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+
+        CBUFFER_START(UnityPerMaterial)
+        float4 _ShallowColor;
+        float4 _DeepColor;
+        float4 _FoamColor;
+        float4 _BlingColor;
+        float4 _NormalScrollA;
+        float4 _NormalScrollB;
+        float4 _SurfaceFoamScroll;
+        float _DepthMaxDistance;
+        float _NormalTilingA;
+        float _NormalTilingB;
+        float _RefractionStrength;
+        float _SurfaceFoamTiling;
+        float _SurfaceFoamCutoff;
+        float _SurfaceFoamDistortionStrength;
+        float _BlingScale;
+        float _BlingSpeed;
+        float _BlingGloss;
+        float _BlingThreshold;
+        float _BlingIntensity;
+        float _FoamIntersectionDepth;
+        float _FoamIntersectionSoftness;
+        float _WaveAmplitude;
+        float _WaveFrequency;
+        float _WaveSpeed;
+        CBUFFER_END
+
+        float GetWaveHeight(float3 positionOS)
+        {
+            float wavePhase = _Time.y * _WaveSpeed;
+            return sin(wavePhase + (positionOS.x + positionOS.z) * _WaveFrequency) * _WaveAmplitude;
+        }
+        ENDHLSL
+
         Pass
         {
             Name "ForwardLit"
@@ -76,7 +113,6 @@ Shader "BillWater/URPWaterBlingSparkle"
             #pragma multi_compile_fragment _ _SHADOWS_SOFT
             #pragma multi_compile_fragment _ _SCREEN_SPACE_OCCLUSION
 
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareOpaqueTexture.hlsl"
@@ -96,26 +132,11 @@ Shader "BillWater/URPWaterBlingSparkle"
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
-            CBUFFER_START(UnityPerMaterial)
-            float4 _ShallowColor, _DeepColor, _FoamColor, _BlingColor;
-            float4 _NormalScrollA, _NormalScrollB, _SurfaceFoamScroll;
-            float _DepthMaxDistance, _NormalTilingA, _NormalTilingB, _RefractionStrength;
-            float _SurfaceFoamTiling, _SurfaceFoamCutoff, _SurfaceFoamDistortionStrength;
-            float _BlingScale, _BlingSpeed, _BlingGloss, _BlingThreshold, _BlingIntensity;
-            float _FoamIntersectionDepth, _FoamIntersectionSoftness;
-            float _WaveAmplitude, _WaveFrequency, _WaveSpeed;
-            CBUFFER_END
-
-            TEXTURE2D(_NormalMapA);
-            SAMPLER(sampler_NormalMapA);
-            TEXTURE2D(_NormalMapB);
-            SAMPLER(sampler_NormalMapB);
-            TEXTURE2D(_SurfaceFoamTexture);
-            SAMPLER(sampler_SurfaceFoamTexture);
-            TEXTURE2D(_SurfaceFoamDistortionMap);
-            SAMPLER(sampler_SurfaceFoamDistortionMap);
-            TEXTURE2D(_BlingNoiseMap);
-            SAMPLER(sampler_BlingNoiseMap);
+            TEXTURE2D(_NormalMapA); SAMPLER(sampler_NormalMapA);
+            TEXTURE2D(_NormalMapB); SAMPLER(sampler_NormalMapB);
+            TEXTURE2D(_SurfaceFoamTexture); SAMPLER(sampler_SurfaceFoamTexture);
+            TEXTURE2D(_SurfaceFoamDistortionMap); SAMPLER(sampler_SurfaceFoamDistortionMap);
+            TEXTURE2D(_BlingNoiseMap); SAMPLER(sampler_BlingNoiseMap);
 
             Varyings vert(Attributes input)
             {
@@ -123,10 +144,8 @@ Shader "BillWater/URPWaterBlingSparkle"
                 UNITY_SETUP_INSTANCE_ID(input);
                 UNITY_TRANSFER_INSTANCE_ID(input, output);
 
-                float wavePhase = _Time.y * _WaveSpeed;
-                float wave = sin(wavePhase + (input.positionOS.x + input.positionOS.z) * _WaveFrequency) * _WaveAmplitude;
                 float3 posOS = input.positionOS.xyz;
-                posOS.y += wave;
+                posOS.y += GetWaveHeight(posOS);
 
                 output.positionWS = TransformObjectToWorld(posOS);
                 output.positionCS = TransformWorldToHClip(output.positionWS);
@@ -211,8 +230,6 @@ Shader "BillWater/URPWaterBlingSparkle"
             #pragma fragment frag
             #pragma multi_compile_instancing
 
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
-
             struct Attributes
             {
                 float4 positionOS : POSITION;
@@ -225,20 +242,14 @@ Shader "BillWater/URPWaterBlingSparkle"
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
-            CBUFFER_START(UnityPerMaterial)
-            float _WaveAmplitude, _WaveFrequency, _WaveSpeed;
-            CBUFFER_END
-
             Varyings vert(Attributes input)
             {
                 Varyings output;
                 UNITY_SETUP_INSTANCE_ID(input);
                 UNITY_TRANSFER_INSTANCE_ID(input, output);
 
-                float wavePhase = _Time.y * _WaveSpeed;
-                float wave = sin(wavePhase + (input.positionOS.x + input.positionOS.z) * _WaveFrequency) * _WaveAmplitude;
                 float3 posOS = input.positionOS.xyz;
-                posOS.y += wave;
+                posOS.y += GetWaveHeight(posOS);
 
                 output.positionCS = TransformObjectToHClip(posOS);
                 return output;
@@ -269,8 +280,10 @@ Shader "BillWater/URPWaterBlingSparkle"
             #pragma multi_compile_instancing
             #pragma multi_compile _ _CASTING_PUNCTUAL_LIGHT_SHADOW
 
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Shadows.hlsl"
+
+            float3 _LightDirection;
+            float3 _LightPosition;
 
             struct Attributes
             {
@@ -285,30 +298,25 @@ Shader "BillWater/URPWaterBlingSparkle"
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
-            CBUFFER_START(UnityPerMaterial)
-            float _WaveAmplitude, _WaveFrequency, _WaveSpeed;
-            CBUFFER_END
-
             Varyings vert(Attributes input)
             {
                 Varyings output;
                 UNITY_SETUP_INSTANCE_ID(input);
                 UNITY_TRANSFER_INSTANCE_ID(input, output);
 
-                float wavePhase = _Time.y * _WaveSpeed;
-                float wave = sin(wavePhase + (input.positionOS.x + input.positionOS.z) * _WaveFrequency) * _WaveAmplitude;
                 float3 posOS = input.positionOS.xyz;
-                posOS.y += wave;
+                posOS.y += GetWaveHeight(posOS);
 
                 float3 positionWS = TransformObjectToWorld(posOS);
                 float3 normalWS = TransformObjectToWorldNormal(input.normalOS);
 
-                output.positionCS = TransformWorldToHClip(ApplyShadowBias(positionWS, normalWS, _LightDirection));
+                float3 lightDirection = _LightDirection;
+                output.positionCS = TransformWorldToHClip(ApplyShadowBias(positionWS, normalWS, lightDirection));
 
                 #if UNITY_REVERSED_Z
                     output.positionCS.z = min(output.positionCS.z, output.positionCS.w * UNITY_NEAR_CLIP_VALUE);
                 #else
-                        output.positionCS.z = max(output.positionCS.z, output.positionCS.w * UNITY_NEAR_CLIP_VALUE);
+                    output.positionCS.z = max(output.positionCS.z, output.positionCS.w * UNITY_NEAR_CLIP_VALUE);
                 #endif
 
                 return output;

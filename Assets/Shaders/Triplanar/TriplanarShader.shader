@@ -1,3 +1,4 @@
+
 Shader "Custom/OptimizedToonTriplanar"
 {
     Properties
@@ -6,7 +7,6 @@ Shader "Custom/OptimizedToonTriplanar"
         [MainColor] _Color("Main Color", Color) = (1, 1, 1, 1)
         _Tint("Tint Color", Color) = (1, 1, 1, 1)
         _AmbientColor("Ambient Color", Color) = (0.1, 0.1, 0.1, 1)
-
         [Header(Triplanar Textures)]
         [NoScaleOffset] _MainTex("Top Texture", 2D) = "white"{}
         [NoScaleOffset] _NormalT("Top Normal", 2D) = "bump"{}
@@ -60,23 +60,16 @@ Shader "Custom/OptimizedToonTriplanar"
         float4 _MainTex_ST;
         CBUFFER_END
 
-        Texture2D _MainTex;
-        SamplerState sampler_MainTex;
-        Texture2D _NormalT;
-        SamplerState sampler_NormalT;
-        Texture2D _MainTexSide;
-        SamplerState sampler_MainTexSide;
-        Texture2D _Normal;
-        SamplerState sampler_Normal;
-        Texture2D _Ramp;
-        SamplerState sampler_Ramp;
-        Texture2D _Noise;
-        SamplerState sampler_Noise;
+        Texture2D _MainTex; SamplerState sampler_MainTex;
+        Texture2D _NormalT; SamplerState sampler_NormalT;
+        Texture2D _MainTexSide; SamplerState sampler_MainTexSide;
+        Texture2D _Normal; SamplerState sampler_Normal;
+        Texture2D _Ramp; SamplerState sampler_Ramp;
+        Texture2D _Noise; SamplerState sampler_Noise;
 
-            // Helper to fix missing EncodeViewNormal in newer URP versions
         half2 CustomEncodeViewNormal(half3 n)
         {
-            return n.xy * 0.5 + 0.5;    // Simple packing fallback
+            return n.xy * 0.5 + 0.5;
         }
 
         struct Attributes
@@ -113,36 +106,7 @@ Shader "Custom/OptimizedToonTriplanar"
             tnormalY.z += 0.00001;
             tnormalZ.z += 0.00001;
 
-            half3 worldNormal = normalize(
-            tnormalX.zyx * blendWeights.x +
-            tnormalY.xzy * blendWeights.y +
-            tnormalZ.xyz * blendWeights.z
-            );
-
-            return worldNormal;
-        }
-
-        Varyings vert(Attributes input)
-        {
-            Varyings output = (Varyings)0;
-            UNITY_SETUP_INSTANCE_ID(input);
-            UNITY_TRANSFER_INSTANCE_ID(input, output);
-            UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(output);
-
-            VertexPositionInputs vertexInput = GetVertexPositionInputs(input.positionOS.xyz);
-            VertexNormalInputs normalInput = GetVertexNormalInputs(input.normalOS);
-
-            output.positionWS = vertexInput.positionWS;
-            output.positionCS = vertexInput.positionCS;
-            output.normalWS = normalInput.normalWS;
-
-            OUTPUT_LIGHTMAP_UV(input.lightmapUV, unity_LightmapST, output.lightmapUV);
-            OUTPUT_SH(output.normalWS, output.vertexSH);
-
-            output.shadowCoord = GetShadowCoord(vertexInput);
-            output.fogFactor = ComputeFogFactor(output.positionCS.z);
-
-            return output;
+            return normalize(tnormalX.zyx * blendWeights.x + tnormalY.xzy * blendWeights.y + tnormalZ.xyz * blendWeights.z);
         }
 
         void GetSurfaceData(float3 positionWS, float3 normalWS, out half3 albedo, out half3 finalNormal, out half blendFactor)
@@ -186,11 +150,7 @@ Shader "Custom/OptimizedToonTriplanar"
         Pass
         {
             Name "ForwardLit"
-            Tags
-            {
-                "LightMode" = "UniversalForward"
-            }
-
+            Tags { "LightMode" = "UniversalForward" }
             ZWrite On
             ZTest LEqual
             Cull Back
@@ -207,6 +167,29 @@ Shader "Custom/OptimizedToonTriplanar"
             #pragma multi_compile _ LIGHTMAP_SHADOW_MIXING
             #pragma multi_compile _ SHADOWS_SHADOWMASK
             #pragma multi_compile_fog
+
+            Varyings vert(Attributes input)
+            {
+                Varyings output = (Varyings)0;
+                UNITY_SETUP_INSTANCE_ID(input);
+                UNITY_TRANSFER_INSTANCE_ID(input, output);
+                UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(output);
+
+                VertexPositionInputs vertexInput = GetVertexPositionInputs(input.positionOS.xyz);
+                VertexNormalInputs normalInput = GetVertexNormalInputs(input.normalOS);
+
+                output.positionWS = vertexInput.positionWS;
+                output.positionCS = vertexInput.positionCS;
+                output.normalWS = normalInput.normalWS;
+
+                OUTPUT_LIGHTMAP_UV(input.lightmapUV, unity_LightmapST, output.lightmapUV);
+                OUTPUT_SH(output.normalWS, output.vertexSH);
+
+                output.shadowCoord = GetShadowCoord(vertexInput);
+                output.fogFactor = ComputeFogFactor(output.positionCS.z);
+
+                return output;
+            }
 
             half4 frag(Varyings input) : SV_Target
             {
@@ -237,9 +220,7 @@ Shader "Custom/OptimizedToonTriplanar"
 
                 #ifdef _ADDITIONAL_LIGHTS
                     uint pixelLightCount = GetAdditionalLightsCount();
-                    for (uint i = 0;
-                    i < pixelLightCount;
-                    ++i)
+                    for (uint i = 0; i < pixelLightCount; ++i)
                     {
                         Light light = GetAdditionalLight(i, inputData.positionWS, inputData.shadowMask);
                         half addNdotL = dot(pixelNormal, light.direction) * 0.5 + 0.5;
@@ -255,7 +236,6 @@ Shader "Custom/OptimizedToonTriplanar"
                 half3 emission = pow(rimDot, _RimPower) * rimColor;
 
                 half3 finalColor = (directLighting + indirectLighting) * _Tint.rgb + emission;
-
                 return half4(MixFog(finalColor, inputData.fogCoord), 1.0);
             }
             ENDHLSL
@@ -264,10 +244,7 @@ Shader "Custom/OptimizedToonTriplanar"
         Pass
         {
             Name "ShadowCaster"
-            Tags
-            {
-                "LightMode" = "ShadowCaster"
-            }
+            Tags { "LightMode" = "ShadowCaster" }
             ZWrite On
             ZTest LEqual
             Cull Back
@@ -280,9 +257,8 @@ Shader "Custom/OptimizedToonTriplanar"
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Shadows.hlsl"
 
-                // Fix for Older URP versions where _LightDirection is not declared in Shadows.hlsl
             float3 _LightDirection;
-            float3 _ShadowBias;   // Sometimes needed for compatibility
+            float3 _LightPosition;
 
             struct ShadowAttributes
             {
@@ -305,15 +281,12 @@ Shader "Custom/OptimizedToonTriplanar"
                 float3 positionWS = TransformObjectToWorld(input.positionOS.xyz);
                 float3 normalWS = TransformObjectToWorldNormal(input.normalOS);
 
-                    // Compatibility Fix: Use ApplyShadowBias (Legacy) instead of GetShadowPositionHClip (New)
-                    // to support older URP versions that might be causing the error.
-                float3 biasedPositionWS = ApplyShadowBias(positionWS, normalWS, _LightDirection);
-                output.positionCS = TransformWorldToHClip(biasedPositionWS);
+                output.positionCS = TransformWorldToHClip(ApplyShadowBias(positionWS, normalWS, _LightDirection));
 
                 #if UNITY_REVERSED_Z
                     output.positionCS.z = min(output.positionCS.z, output.positionCS.w * UNITY_NEAR_CLIP_VALUE);
                 #else
-                        output.positionCS.z = max(output.positionCS.z, output.positionCS.w * UNITY_NEAR_CLIP_VALUE);
+                    output.positionCS.z = max(output.positionCS.z, output.positionCS.w * UNITY_NEAR_CLIP_VALUE);
                 #endif
 
                 return output;
@@ -329,10 +302,7 @@ Shader "Custom/OptimizedToonTriplanar"
         Pass
         {
             Name "DepthOnly"
-            Tags
-            {
-                "LightMode" = "DepthOnly"
-            }
+            Tags { "LightMode" = "DepthOnly" }
             ZWrite On
             ZTest LEqual
             Cull Back
@@ -373,10 +343,7 @@ Shader "Custom/OptimizedToonTriplanar"
         Pass
         {
             Name "DepthNormals"
-            Tags
-            {
-                "LightMode" = "DepthNormals"
-            }
+            Tags { "LightMode" = "DepthNormals" }
             ZWrite On
             ZTest LEqual
             Cull Back
@@ -385,16 +352,28 @@ Shader "Custom/OptimizedToonTriplanar"
             #pragma vertex vert
             #pragma fragment frag
 
+            Varyings vert(Attributes input)
+            {
+                Varyings output = (Varyings)0;
+                UNITY_SETUP_INSTANCE_ID(input);
+                UNITY_TRANSFER_INSTANCE_ID(input, output);
+
+                VertexPositionInputs vertexInput = GetVertexPositionInputs(input.positionOS.xyz);
+                VertexNormalInputs normalInput = GetVertexNormalInputs(input.normalOS);
+
+                output.positionWS = vertexInput.positionWS;
+                output.positionCS = vertexInput.positionCS;
+                output.normalWS = normalInput.normalWS;
+                return output;
+            }
+
             half4 frag(Varyings input) : SV_Target
             {
                 float3 normalWS = normalize(input.normalWS);
                 half3 albedo, pixelNormal;
                 half blendFactor;
                 GetSurfaceData(input.positionWS, normalWS, albedo, pixelNormal, blendFactor);
-
                 float3 normalVS = TransformWorldToViewNormal(pixelNormal, true);
-
-                    // Use CustomEncodeViewNormal to avoid "undeclared identifier" error
                 return half4(CustomEncodeViewNormal(normalVS), 0.0, 0.0);
             }
             ENDHLSL
@@ -403,10 +382,7 @@ Shader "Custom/OptimizedToonTriplanar"
         Pass
         {
             Name "Meta"
-            Tags
-            {
-                "LightMode" = "Meta"
-            }
+            Tags { "LightMode" = "Meta" }
             Cull Off
 
             HLSLPROGRAM
@@ -437,11 +413,7 @@ Shader "Custom/OptimizedToonTriplanar"
                 UNITY_SETUP_INSTANCE_ID(input);
                 output.positionWS = TransformObjectToWorld(input.positionOS.xyz);
                 output.normalWS = TransformObjectToWorldNormal(input.normalOS);
-
-                    // FIX: Explicitly cast normalOS to float4 to match Metal strictness for MetaVertexPosition signature
-                    // Also ensure positionOS is passed as float4.
                 output.positionCS = MetaVertexPosition(input.positionOS, input.lightmapUV, input.uv, unity_LightmapST, float4(input.normalOS, 0.0));
-
                 return output;
             }
 
@@ -450,7 +422,6 @@ Shader "Custom/OptimizedToonTriplanar"
                 half3 albedo, pixelNormal;
                 half blendFactor;
                 GetSurfaceData(input.positionWS, normalize(input.normalWS), albedo, pixelNormal, blendFactor);
-
                 UnityMetaInput metaInput;
                 metaInput.Albedo = albedo;
                 metaInput.Emission = half3(0, 0, 0);
@@ -459,6 +430,5 @@ Shader "Custom/OptimizedToonTriplanar"
             ENDHLSL
         }
     }
-    CustomEditor "UnityEditor.ShaderGraph.PBRMasterGUI"
     FallBack "Universal Render Pipeline/Lit"
 }

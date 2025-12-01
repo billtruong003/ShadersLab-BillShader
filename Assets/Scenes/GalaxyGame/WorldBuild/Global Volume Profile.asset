@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 38ff8a6a4fb344f190dd7688680e31a3, type: 3}
   m_Name: AmbientOcclusionMasterComponent
   m_EditorClassIdentifier: ShadowShardAmbientOcclusionMaster.Runtime::ShadowShard.AmbientOcclusionMaster.Runtime.Volume.AmbientOcclusionMasterComponent
-  active: 1
+  active: 0
   Mode:
     m_OverrideState: 1
     m_Value: 1
@@ -21,7 +21,7 @@ MonoBehaviour:
     m_Value: 0.15
   SsaoRadius:
     m_OverrideState: 1
-    m_Value: 0.25
+    m_Value: 0.1
   SsaoFalloff:
     m_OverrideState: 1
     m_Value: 100
@@ -1060,7 +1060,7 @@ MonoBehaviour:
     m_Value: 10
   normalThreshold:
     m_OverrideState: 1
-    m_Value: 0.269
+    m_Value: 0.5
   colorThreshold:
     m_OverrideState: 0
     m_Value: 1
@@ -1081,7 +1081,7 @@ MonoBehaviour:
     m_Value: 0
   fadeDistanceEnd:
     m_OverrideState: 1
-    m_Value: 200
+    m_Value: 50
   useHeightFade:
     m_OverrideState: 0
     m_Value: 1

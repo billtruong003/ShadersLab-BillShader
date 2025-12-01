@@ -38,38 +38,46 @@ Material:
     - _BandCount: 3
     - _BandSmoothness: 0
     - _Cull: 2
-    - _Cutoff: 1
+    - _Cutoff: 0
     - _EnableSpecular: 1
     - _GridResolution: 2
     - _IndirectIntensity: 0.35
     - _LightBias: 0.5
     - _MinBrightness: 0.25
+    - _PaletteSmoothness: 0
     - _RampBands: 2
-    - _RampOffset: 0.21
+    - _RampOffset: 0.5
     - _RampSmoothness: 0.5
-    - _RimIntensity: 2
-    - _RimPower: 0.8
+    - _RampSoftness: 0.001
+    - _RampThreshold: -0.5
+    - _RimIntensity: 0.75
+    - _RimPower: 0.1
     - _RimSmoothness: 1
-    - _RimThreshold: 0.4
-    - _ShadowReceiveSmoothness: 1
-    - _ShadowReceiveThreshold: 0.213
+    - _RimThreshold: 0.5
+    - _ShadowIntensity: 1
+    - _ShadowReceiveSmoothness: 0.001
+    - _ShadowReceiveThreshold: 0.5
+    - _ShadowSmoothness: 0.5
+    - _ShadowThreshold: 0.436
     - _SpecSmoothness: 0
     - _SpecThreshold: 0.975
-    - _SpecularSize: 0.11
+    - _SpecularFalloff: 0.001
+    - _SpecularSize: 0.2
     - _SpecularSmoothness: 0.5
     - _Surface: 0
+    - _UsePaletteTexture: 0
     - _ZoneBlend: 0
     m_Colors:
-    - _AmbientColor: {r: 0, g: 0, b: 0, a: 0}
-    - _BaseColor: {r: 0.3301887, g: 0.3301887, b: 0.3301887, a: 1}
+    - _AmbientColor: {r: 0, g: 0, b: 0, a: 1}
+    - _BaseColor: {r: 0, g: 0, b: 0, a: 1}
     - _RimColor: {r: 1, g: 1, b: 1, a: 1}
     - _ShadowColor: {r: 0, g: 0, b: 0, a: 1}
     - _ShadowTint: {r: 0, g: 0, b: 0, a: 1}
     - _SpecColor: {r: 1, g: 1, b: 1, a: 1}
     - _SpecularColor: {r: 1, g: 1, b: 1, a: 1}
-    - _ZoneColor0: {r: 0.4056604, g: 0.4056604, b: 0.4056604, a: 1}
-    - _ZoneColor1: {r: 0.40392157, g: 0.40392157, b: 0.40392157, a: 1}
+    - _ZoneColor0: {r: 0.19607843, g: 0.19607843, b: 0.19607843, a: 1}
+    - _ZoneColor1: {r: 0.19607843, g: 0.19607843, b: 0.19607843, a: 1}
     - _ZoneColor2: {r: 0, g: 1, b: 0.5325444, a: 1}
-    - _ZoneColor3: {r: 0.40392157, g: 0.40392157, b: 0.40392157, a: 1}
+    - _ZoneColor3: {r: 0.19607843, g: 0.19607843, b: 0.19607843, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

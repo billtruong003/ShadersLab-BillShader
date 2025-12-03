@@ -1,260 +1,520 @@
 #if UNITY_EDITOR
 using UnityEngine;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using Sirenix.OdinInspector;
 using Sirenix.OdinInspector.Editor;
 using Sirenix.Utilities.Editor;
 using Sirenix.Utilities;
+using System.Collections.Generic;
+using System.Linq;
+using System.IO;
 using BillsGenesis.Data;
 using BillsGenesis.Services;
 using BillsGenesis.Core;
-using System.Collections.Generic;
 
 namespace BillsGenesis.EditorTools
 {
     public class GenesisDashboard : OdinMenuEditorWindow
     {
-        [MenuItem("Tools/BillsGenesis/Dashboard")]
+        private static readonly Color DarkBackground = new Color(0.12f, 0.12f, 0.14f);
+        private static readonly Color SidebarColor = new Color(0.16f, 0.16f, 0.18f);
+        private static readonly Color AccentColor = new Color(0.3f, 0.85f, 0.6f);
+        private static readonly Color MutedText = new Color(0.6f, 0.6f, 0.65f);
+        private static readonly Color LineColor = new Color(0.25f, 0.25f, 0.28f);
+
+        private GUIStyle _headerStyle;
+        private GUIStyle _subHeaderStyle;
+        private Language _currentLanguage;
+
+        private enum Language { EN, VI }
+
+        [MenuItem("Tools/BillsGenesis/Dashboard %g")]
         private static void OpenWindow()
         {
-            var window = GetWindow<GenesisDashboard>();
-            window.titleContent = new GUIContent("Genesis Hub");
-            var main = GUIHelper.GetEditorWindowRect();
-            var w = 1000;
-            var h = 700;
-            window.position = new Rect(main.x + (main.width - w) / 2, main.y + (main.height - h) / 2, w, h);
-            window.Show();
+            var w = GetWindow<GenesisDashboard>();
+            w.titleContent = new GUIContent("Genesis Hub", EditorGUIUtility.FindTexture("d_UnityEditor.ConsoleWindow"));
+            w.position = GUIHelper.GetEditorWindowRect().AlignCenter(1050, 680);
+            w.Show();
+        }
+
+        protected override void OnEnable()
+        {
+            base.OnEnable();
+            _currentLanguage = (Language)EditorPrefs.GetInt("Genesis_Lang", (int)Language.EN);
+        }
+
+        protected override void OnBeginDrawEditors()
+        {
+            if (_headerStyle == null)
+            {
+                _headerStyle = new GUIStyle(EditorStyles.boldLabel)
+                {
+                    fontSize = 22,
+                    alignment = TextAnchor.MiddleLeft,
+                    normal = { textColor = AccentColor }
+                };
+                _subHeaderStyle = new GUIStyle(EditorStyles.label)
+                {
+                    fontSize = 11,
+                    alignment = TextAnchor.MiddleLeft,
+                    normal = { textColor = MutedText }
+                };
+            }
+
+            SirenixEditorGUI.DrawSolidRect(new Rect(0, 0, position.width, 60), SidebarColor);
+
+            GUILayout.BeginHorizontal(GUILayout.Height(60));
+            GUILayout.Space(20);
+
+            GUILayout.BeginVertical();
+            GUILayout.FlexibleSpace();
+            GUILayout.Label("BILLS GENESIS", _headerStyle);
+            GUILayout.Label("Framework Version 2.5.1", _subHeaderStyle);
+            GUILayout.FlexibleSpace();
+            GUILayout.EndVertical();
+
+            GUILayout.FlexibleSpace();
+
+            DrawLanguageToggle();
+
+            GUILayout.Space(10);
+
+            if (Application.isPlaying)
+            {
+                GUIHelper.PushColor(AccentColor);
+                if (GUILayout.Button(new GUIContent(" RUNTIME ACTIVE", EditorGUIUtility.FindTexture("PlayButton On")), GUILayout.Height(30), GUILayout.Width(140))) { }
+                GUIHelper.PopColor();
+            }
+            else
+            {
+                GUIHelper.PushColor(MutedText);
+                if (GUILayout.Button(new GUIContent(" RELOAD", EditorGUIUtility.FindTexture("Refresh")), EditorStyles.miniButton, GUILayout.Height(24), GUILayout.Width(80)))
+                {
+                    ForceMenuTreeRebuild();
+                }
+                GUIHelper.PopColor();
+            }
+
+            GUILayout.Space(20);
+            GUILayout.EndHorizontal();
+
+            SirenixEditorGUI.DrawSolidRect(new Rect(0, 59, position.width, 1), LineColor);
+        }
+
+        private void DrawLanguageToggle()
+        {
+            GUILayout.BeginHorizontal(EditorStyles.helpBox, GUILayout.Height(24));
+
+            GUIHelper.PushColor(_currentLanguage == Language.EN ? AccentColor : Color.gray);
+            if (GUILayout.Button("EN", EditorStyles.label, GUILayout.Width(25)))
+            {
+                SetLanguage(Language.EN);
+            }
+            GUIHelper.PopColor();
+
+            GUILayout.Label("|", GUILayout.Width(10));
+
+            GUIHelper.PushColor(_currentLanguage == Language.VI ? AccentColor : Color.gray);
+            if (GUILayout.Button("VI", EditorStyles.label, GUILayout.Width(25)))
+            {
+                SetLanguage(Language.VI);
+            }
+            GUIHelper.PopColor();
+
+            GUILayout.EndHorizontal();
+        }
+
+        private void SetLanguage(Language lang)
+        {
+            if (_currentLanguage == lang) return;
+            _currentLanguage = lang;
+            EditorPrefs.SetInt("Genesis_Lang", (int)lang);
+            ForceMenuTreeRebuild();
         }
 
         protected override OdinMenuTree BuildMenuTree()
         {
-            var tree = new OdinMenuTree();
-            tree.Selection.SupportsMultiSelect = false;
+            var tree = new OdinMenuTree(false);
             tree.Config.DrawSearchToolbar = true;
-            tree.DefaultMenuStyle.IconSize = 24.00f;
-            tree.Config.DefaultMenuStyle.Height = 32;
+            tree.DefaultMenuStyle.IconSize = 20;
+            tree.DefaultMenuStyle.Height = 35;
+            tree.DefaultMenuStyle.IndentAmount = 15;
+            tree.Config.DefaultMenuStyle.BorderPadding = 0;
 
-            tree.Add("Home", new GenesisHomeInfo());
+            var customStyle = new OdinMenuStyle
+            {
+                Height = 35,
+                IconSize = 20,
+                SelectedColorDarkSkin = new Color(0.3f, 0.85f, 0.6f, 0.15f),
+                AlignTriangleLeft = false,
+                TriangleSize = 12f,
+                Borders = false
+            };
+
+            tree.DefaultMenuStyle = customStyle;
+
+            tree.Add("Dashboard", new HomeView(), SdfIconType.Speedometer);
 
             if (Application.isPlaying)
             {
-                tree.Add("Runtime Monitor", new RuntimeMonitorPage(), SdfIconType.Activity);
+                tree.Add("Live Monitor", new RuntimeMonitorView(), SdfIconType.Activity);
             }
 
-            tree.Add("Documentation", new GenesisDocs(), SdfIconType.Book);
-            tree.Add("Documentation/Cheat Sheet", new GenesisCheatSheet(), SdfIconType.CodeSlash);
+            var manifest = AssetDatabase.LoadAssetAtPath<GenesisManifest>("Assets/BillsGenesis/Resources/GenesisManifest.asset");
+            if (manifest) tree.Add("Configuration", manifest, SdfIconType.Sliders);
+            else tree.Add("Configuration", new CreateManifestView(this), SdfIconType.ExclamationTriangleFill);
 
-            var manifestGUIDs = AssetDatabase.FindAssets("t:GenesisManifest");
-            if (manifestGUIDs.Length > 0)
+            var fullDocs = GenesisDocLoader.LoadDocs();
+            if (fullDocs != null)
             {
-                var path = AssetDatabase.GUIDToAssetPath(manifestGUIDs[0]);
-                var manifest = AssetDatabase.LoadAssetAtPath<GenesisManifest>(path);
-                tree.Add("Configuration", manifest, SdfIconType.Sliders);
+                var content = _currentLanguage == Language.EN ? fullDocs.en : fullDocs.vi;
+
+                tree.Add("Documentation", new DocMetaDataView(fullDocs.metadata), SdfIconType.InfoCircle);
+
+                if (content.architecture != null)
+                {
+                    tree.Add("Documentation/Architecture", new DocArchView(content.architecture), SdfIconType.Diagram3);
+                }
+
+                if (content.modules != null)
+                {
+                    foreach (var mod in content.modules)
+                    {
+                        tree.Add($"Documentation/{mod.name}", new DocModuleView(mod), GetIcon(mod.icon));
+                    }
+                }
             }
             else
             {
-                tree.Add("Configuration", new CreateManifestPage(this), SdfIconType.GearFill);
+                tree.Add("Documentation", new ErrorView("Documentation missing. Ensure 'genesis_docs.json' is in Resources."), SdfIconType.QuestionCircle);
             }
 
             return tree;
         }
 
-        protected override void OnBeginDrawEditors()
+        private SdfIconType GetIcon(string name)
         {
-            SirenixEditorGUI.BeginHorizontalToolbar();
-            GUILayout.Label("BillsGenesis Ecosystem V2.1", EditorStyles.boldLabel);
-            GUILayout.FlexibleSpace();
-            if (GUILayout.Button("Force Refresh", EditorStyles.toolbarButton)) ForceMenuTreeRebuild();
-            SirenixEditorGUI.EndHorizontalToolbar();
+            if (System.Enum.TryParse(name, true, out SdfIconType icon)) return icon;
+            return SdfIconType.Box;
         }
 
-        // =================================================================================================
-        // PAGE: RUNTIME MONITOR
-        // =================================================================================================
-        public class RuntimeMonitorPage
+        public void Refresh() => ForceMenuTreeRebuild();
+
+        public class HomeView
         {
-            [Title("System Resources")]
-            [HorizontalGroup("Stats", 0.5f)]
-            [VerticalGroup("Stats/Left")]
-            [ShowInInspector, ProgressBar(0, 120, r: 0, g: 1, b: 0), HideLabel]
-            public float FPS => 1.0f / Time.smoothDeltaTime;
-
-            [VerticalGroup("Stats/Right")]
-            [ShowInInspector, DisplayAsString, LabelText("Memory Used")]
-            public string TotalMemory => $"{UnityEngine.Profiling.Profiler.GetTotalAllocatedMemoryLong() / 1048576} MB";
-
-            [Title("Service Status")]
-
-            [BoxGroup("Timer Manager"), ShowInInspector, HideLabel, DisplayAsString]
-            public string TimerStatus
-            {
-                get
-                {
-                    var tm = Genesis.Get<TimerManager>();
-                    return tm ? $"Active Timers: {tm.ActiveTimersCount}" : "Service Not Found";
-                }
-            }
-
-            [BoxGroup("Audio Manager"), ShowInInspector, HideLabel, DisplayAsString]
-            public string AudioStatus
-            {
-                get
-                {
-                    var am = Genesis.Get<AudioManager>();
-                    if (!am) return "Service Not Found";
-                    return $"Volume (M/B/S): {am.MasterVolume:0.0}/{am.MusicVolume:0.0}/{am.SfxVolume:0.0} | Active SFX: {am.ActiveSfxCount}";
-                }
-            }
-
-            [BoxGroup("Pool Manager")]
-            [ShowInInspector, HideLabel]
-            [DictionaryDrawerSettings(IsReadOnly = true, DisplayMode = DictionaryDisplayOptions.ExpandedFoldout, KeyLabel = "Prefab", ValueLabel = "Status")]
-            public Dictionary<string, string> PoolInfo
-            {
-                get
-                {
-                    var pm = Genesis.Get<PoolManager>();
-                    return pm ? pm.GetDebugInfo() : new Dictionary<string, string> { { "Status", "Offline" } };
-                }
-            }
-
-            [Button(ButtonSizes.Large, Icon = SdfIconType.Trash), PropertySpace(20)]
-            public void ForceGC()
-            {
-                System.GC.Collect();
-                Resources.UnloadUnusedAssets();
-            }
-        }
-
-        // =================================================================================================
-        // PAGE: CHEAT SHEET (CODE SNIPPETS)
-        // =================================================================================================
-        public class GenesisCheatSheet
-        {
-            [Title("Quick Copy & Paste")]
-
-            [TabGroup("Storage")]
-            [HideLabel, TextArea(3, 10), ReadOnly]
-            public string StorageCode =
-@"// Save Data
-Genesis.Get<StorageManager>().SetInt(""Highscore"", 100);
-Genesis.Get<StorageManager>().SaveJson(""player_data"", myObject, encrypt: true);
-Genesis.Get<StorageManager>().SaveList(""inventory"", myList);
-
-// Load Data
-int score = Genesis.Get<StorageManager>().GetInt(""Highscore"", 0);
-var data = Genesis.Get<StorageManager>().LoadJson<PlayerData>(""player_data"");
-";
-
-            [TabGroup("Pool & VFX")]
-            [HideLabel, TextArea(3, 10), ReadOnly]
-            public string PoolCode =
-@"// Spawning
-GameObject enemy = Genesis.Get<PoolManager>().Spawn(enemyPrefab, position, rotation);
-Genesis.Get<VFXManager>().Play(explosionVfx, position);
-Genesis.Get<VFXManager>().PlayAttached(auraVfx, playerTransform, offset: Vector3.up);
-
-// Despawning
-Genesis.Get<PoolManager>().Despawn(enemy); // Returns to pool
-Genesis.Get<PoolManager>().Despawn(enemy, 2.5f); // Delayed
-";
-
-            [TabGroup("Timer")]
-            [HideLabel, TextArea(3, 10), ReadOnly]
-            public string TimerCode =
-@"// Simple Delay
-Genesis.Get<TimerManager>().DoAfter(2f, () => Debug.Log(""Done""));
-
-// Loop
-Genesis.Get<TimerManager>().DoEvery(1f, () => CheckStatus(), boundObject: this.gameObject);
-
-// Advanced
-Genesis.Get<TimerManager>().Register(5f, OnComplete)
-    .SetUpdateCallback(p => progressBar.fillAmount = p)
-    .SetUnscaled(true);
-";
-
-            [TabGroup("Audio")]
-            [HideLabel, TextArea(3, 10), ReadOnly]
-            public string AudioCode =
-@"// Play
-Genesis.Get<AudioManager>().PlayMusic(bgmClip, fadeDuration: 1.5f);
-Genesis.Get<AudioManager>().PlaySfx(jumpClip, pitchRandom: 0.1f);
-
-// Control
-Genesis.Get<AudioManager>().SetMasterVolume(0.5f);
-Genesis.Get<AudioManager>().ToggleMute(true);
-";
-        }
-
-        // =================================================================================================
-        // PAGE: DOCUMENTATION
-        // =================================================================================================
-        public class GenesisDocs
-        {
-            [Title("Architecture")]
-            [InfoBox("Genesis sử dụng Singleton Service Pattern. Mọi Manager đều kế thừa GenesisSingletonService<T>.", InfoMessageType.Info)]
-
-            [ListDrawerSettings(IsReadOnly = true, ShowFoldout = true, DefaultExpandedState = true)]
-            [LabelText("Core Principles")]
-            public string[] Principles = new string[]
-            {
-                "Clean Code: Không comment rác, đặt tên biến chuẩn.",
-                "Zero Garbage: PoolManager và TimerManager được tối ưu để không sinh GC runtime.",
-                "Dependency Injection: Dùng Genesis.Get<T>() hoặc [Inject] field.",
-                "Async First: Các tác vụ nặng (Load Scene, IO) đều dùng Task/Async."
-            };
-        }
-
-        // =================================================================================================
-        // PAGE: HOME
-        // =================================================================================================
-        public class GenesisHomeInfo
-        {
-            [Title("Control Center", TitleAlignment = TitleAlignments.Centered)]
-            [HorizontalGroup("H1", 0.7f), VerticalGroup("H1/Left")]
-            [InfoBox("BillsGenesis Ready", InfoMessageType.Info, Icon = SdfIconType.CheckCircleFill)]
-            [DisplayAsString] public string CurrentMode => Application.isPlaying ? "RUNTIME" : "EDITOR";
-
-            [VerticalGroup("H1/Right")]
-            [Button(ButtonSizes.Large, Name = "Play Bootstrap", Icon = SdfIconType.PlayFill), GUIColor(0.4f, 0.8f, 0.4f)]
+            [Title("Quick Actions")]
+            [HorizontalGroup("Actions", 0.5f, PaddingRight = 10)]
+            [VerticalGroup("Actions/Left")]
+            [Button(ButtonSizes.Large, Icon = SdfIconType.PlayFill, Name = "Boot Game"), GUIColor(0.3f, 0.85f, 0.6f)]
             public void PlayBootstrap()
             {
                 if (EditorApplication.isPlaying) { EditorApplication.isPlaying = false; return; }
-                var scenes = EditorBuildSettings.scenes;
-                if (scenes.Length > 0 && scenes[0].path.Contains("_Bootstrap"))
+                var s = EditorBuildSettings.scenes.FirstOrDefault(x => x.path.Contains("_Bootstrap"));
+                if (s != null && EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
                 {
-                    UnityEditor.SceneManagement.EditorSceneManager.OpenScene(scenes[0].path);
+                    EditorSceneManager.OpenScene(s.path);
                     EditorApplication.isPlaying = true;
                 }
             }
 
-            [Title("Maintenance")]
-            [HorizontalGroup("Actions")]
-            [Button(ButtonSizes.Medium, Icon = SdfIconType.Trash)]
-            public void ClearPlayerPrefs() => PlayerPrefs.DeleteAll();
+            [VerticalGroup("Actions/Left")]
+            [InfoBox("Starts from '_Bootstrap' scene.", InfoMessageType.None), ShowInInspector, HideLabel, DisplayAsString]
+            public string BootInfo => "";
 
-            [Button(ButtonSizes.Medium, Icon = SdfIconType.FileCode)]
-            public void OpenBuildSettings() => GetWindow(System.Type.GetType("UnityEditor.BuildPlayerWindow,UnityEditor"));
+            [VerticalGroup("Actions/Right")]
+            [Button(ButtonSizes.Large, Icon = SdfIconType.TrashFill, Name = "Wipe Data"), GUIColor(0.9f, 0.4f, 0.4f)]
+            public void WipeData()
+            {
+                PlayerPrefs.DeleteAll();
+                if (Directory.Exists(Application.persistentDataPath))
+                {
+                    var di = new DirectoryInfo(Application.persistentDataPath);
+                    foreach (FileInfo file in di.GetFiles()) file.Delete();
+                }
+                Debug.Log("[Genesis] User Data Wiped.");
+            }
+
+            [VerticalGroup("Actions/Right")]
+            [InfoBox("Clears PlayerPrefs & Persistent Files.", InfoMessageType.None), ShowInInspector, HideLabel, DisplayAsString]
+            public string WipeInfo => "";
+
+            [Title("System Status")]
+            [HorizontalGroup("Status")]
+            [BoxGroup("Status/Info"), ShowInInspector, HideLabel, DisplayAsString]
+            public string ManifestState => AssetDatabase.LoadAssetAtPath<GenesisManifest>("Assets/BillsGenesis/Resources/GenesisManifest.asset") ? "✔ Manifest Linked" : "✘ Manifest Missing";
+
+            [BoxGroup("Status/Info"), ShowInInspector, HideLabel, DisplayAsString]
+            public string UnityVer => $"Unity {Application.unityVersion}";
         }
 
-        public class CreateManifestPage
+        public class RuntimeMonitorView
+        {
+            [Title("Performance")]
+            [HorizontalGroup("Perf")]
+            [BoxGroup("Perf/FPS"), ProgressBar(0, 144, 0.3f, 0.85f, 0.6f), ShowInInspector, HideLabel]
+            public float FPS => 1.0f / Time.smoothDeltaTime;
+
+            [BoxGroup("Perf/RAM"), ProgressBar(0, 2048, 0.3f, 0.5f, 0.9f, Segmented = true), ShowInInspector, HideLabel]
+            public float MemoryMB => UnityEngine.Profiling.Profiler.GetTotalAllocatedMemoryLong() / 1048576f;
+
+            [Title("Active Services")]
+            [TableList(IsReadOnly = true, AlwaysExpanded = true), ShowInInspector, HideLabel]
+            public List<ServiceStatus> Services
+            {
+                get
+                {
+                    var list = new List<ServiceStatus>();
+                    Add(list, "Audio", Genesis.Get<AudioManager>());
+                    Add(list, "Pool", Genesis.Get<PoolManager>());
+                    Add(list, "Signals", Genesis.Get<SignalHub>());
+                    Add(list, "Storage", Genesis.Get<StorageManager>());
+                    Add(list, "Scenes", Genesis.Get<SceneManagerService>());
+                    Add(list, "Timers", Genesis.Get<TimerManager>());
+                    Add(list, "VFX", Genesis.Get<VFXManager>());
+                    return list;
+                }
+            }
+
+            private void Add<T>(List<ServiceStatus> list, string name, T service) where T : class
+            {
+                list.Add(new ServiceStatus { Name = name, Status = service != null ? "Active" : "Offline" });
+            }
+
+            public struct ServiceStatus
+            {
+                [TableColumnWidth(150)] public string Name;
+                [TableColumnWidth(100)][GUIColor("@Status == \"Active\" ? new Color(0.3f, 0.85f, 0.6f) : new Color(0.9f, 0.4f, 0.4f)")] public string Status;
+            }
+        }
+
+        public class CreateManifestView
         {
             private GenesisDashboard _win;
-            public CreateManifestPage(GenesisDashboard w) => _win = w;
-            [Button(ButtonSizes.Gigantic, Icon = SdfIconType.CloudUpload)]
+            public CreateManifestView(GenesisDashboard win) => _win = win;
+
+            [InfoBox("GenesisManifest is missing from Resources.", InfoMessageType.Error)]
+            [Button(ButtonSizes.Gigantic, Icon = SdfIconType.CloudUploadFill), GUIColor(0.3f, 0.85f, 0.6f)]
             public void CreateManifest()
             {
-                var asset = ScriptableObject.CreateInstance<GenesisManifest>();
                 if (!AssetDatabase.IsValidFolder("Assets/BillsGenesis/Resources"))
                 {
                     if (!AssetDatabase.IsValidFolder("Assets/BillsGenesis")) AssetDatabase.CreateFolder("Assets", "BillsGenesis");
                     AssetDatabase.CreateFolder("Assets/BillsGenesis", "Resources");
                 }
+                var asset = ScriptableObject.CreateInstance<GenesisManifest>();
                 AssetDatabase.CreateAsset(asset, "Assets/BillsGenesis/Resources/GenesisManifest.asset");
                 AssetDatabase.SaveAssets();
-                _win.ForceMenuTreeRebuild();
+                _win.Refresh();
             }
+        }
+
+        public class DocMetaDataView
+        {
+            [Title("Framework Information", null, TitleAlignments.Centered)]
+            [PropertySpace(20)]
+
+            [BoxGroup("General Info", CenterLabel = true)]
+            [LabelWidth(100)]
+            [DisplayAsString, ShowInInspector, GUIColor(0.6f, 1f, 0.8f)]
+            public string Framework;
+
+            [BoxGroup("General Info")]
+            [LabelWidth(100)]
+            [DisplayAsString, ShowInInspector]
+            public string Version;
+
+            [BoxGroup("General Info")]
+            [LabelWidth(100)]
+            [DisplayAsString, ShowInInspector]
+            public string Author;
+
+            [BoxGroup("Build Details", CenterLabel = true)]
+            [LabelWidth(100)]
+            [DisplayAsString, ShowInInspector]
+            public string BuildDate;
+
+            [BoxGroup("Build Details")]
+            [LabelWidth(100)]
+            [DisplayAsString, ShowInInspector]
+            public string Theme;
+
+            public DocMetaDataView(DocMetadata m)
+            {
+                Framework = m.framework;
+                Version = m.version;
+                Author = m.author;
+                BuildDate = m.build_date;
+                Theme = m.theme;
+            }
+        }
+
+        public class DocArchView
+        {
+            [Title("System Overview")]
+            [HideLabel, DisplayAsString, ShowInInspector] public string Summary;
+
+            [Title("Core Principles")]
+            [ListDrawerSettings(IsReadOnly = true, ShowPaging = false)]
+            [ShowInInspector] public List<string> Principles;
+
+            [Title("Boot Lifecycle")]
+            [ListDrawerSettings(IsReadOnly = true, ShowPaging = false, ShowIndexLabels = false)]
+            [ShowInInspector] public List<string> BootSequence;
+
+            public DocArchView(DocArchitecture arch)
+            {
+                if (arch?.overview != null)
+                {
+                    Summary = arch.overview.summary;
+                    Principles = arch.overview.core_principles;
+                }
+                if (arch?.lifecycle != null)
+                {
+                    BootSequence = arch.lifecycle.boot_sequence;
+                }
+            }
+        }
+
+        public class DocModuleView
+        {
+            [Title("$Name", "$Desc", TitleAlignments.Split)]
+            [HideLabel, DisplayAsString, ShowInInspector, HideInEditorMode] public string Name;
+            [HideInInspector] public string Desc;
+
+            [Space(10)]
+            [LabelText("Best Practices"), ListDrawerSettings(IsReadOnly = true, ShowPaging = false, ShowFoldout = true)]
+            [ShowInInspector, HideIf("@Practices == null || Practices.Count == 0")]
+            public List<string> Practices;
+
+            [Space(10)]
+            [LabelText("Troubleshooting"), ListDrawerSettings(IsReadOnly = true, ShowPaging = false, ShowFoldout = true)]
+            [ShowInInspector, HideIf("@Troubleshooting == null || Troubleshooting.Count == 0")]
+            [GUIColor(1f, 0.6f, 0.6f)]
+            public List<string> Troubleshooting;
+
+            [Space(10)]
+            [Title("API Reference")]
+            [ListDrawerSettings(IsReadOnly = true, ShowPaging = false, DraggableItems = false)]
+            [ShowInInspector] public List<DocApiMethod> Api;
+
+            public DocModuleView(DocModule m)
+            {
+                Name = m.name;
+                Desc = m.description;
+                Practices = m.best_practices ?? new List<string>();
+                Troubleshooting = m.troubleshooting ?? new List<string>();
+                Api = m.api != null ? m.api.Select(x => new DocApiMethod(x)).ToList() : new List<DocApiMethod>();
+            }
+        }
+
+        [HideReferenceObjectPicker]
+        public class DocApiMethod
+        {
+            [DisplayAsString, HideLabel, GUIColor(0.5f, 0.8f, 1f), PropertyOrder(0)]
+            [ShowInInspector] public string Signature;
+
+            [DisplayAsString, HideLabel, PropertyOrder(1)]
+            [ShowInInspector] public string Description;
+
+            [TextArea(2, 6), HideLabel, ReadOnly, PropertyOrder(2)]
+            [GUIColor(0.8f, 0.8f, 0.8f)]
+            [ShowInInspector] public string Example;
+
+            [HorizontalGroup("Btns")]
+            [Button("Copy Code", ButtonSizes.Small), PropertyOrder(3)]
+            public void Copy()
+            {
+                GUIUtility.systemCopyBuffer = Example;
+                Debug.Log("[Genesis] Copied to clipboard.");
+            }
+
+            public DocApiMethod(DocApi api)
+            {
+                Signature = api.signature;
+                Description = api.description;
+                Example = api.example;
+            }
+        }
+
+        public class ErrorView
+        {
+            [InfoBox("$Msg", InfoMessageType.Error)] public string Msg;
+            public ErrorView(string m) => Msg = m;
+        }
+
+        public static class GenesisDocLoader
+        {
+            public static DocRoot LoadDocs()
+            {
+                var asset = Resources.Load<TextAsset>("genesis_docs");
+                return asset ? JsonUtility.FromJson<DocRoot>(asset.text) : null;
+            }
+        }
+
+        [System.Serializable]
+        public class DocRoot
+        {
+            public DocMetadata metadata;
+            public DocContent en;
+            public DocContent vi;
+        }
+
+        [System.Serializable]
+        public class DocContent
+        {
+            public DocArchitecture architecture;
+            public List<DocModule> modules;
+        }
+
+        [System.Serializable]
+        public class DocMetadata
+        {
+            public string framework;
+            public string version;
+            public string build_date;
+            public string author;
+            public string theme;
+        }
+
+        [System.Serializable]
+        public class DocArchitecture
+        {
+            public DocOverview overview;
+            public DocLifecycle lifecycle;
+        }
+
+        [System.Serializable]
+        public class DocOverview
+        {
+            public string summary;
+            public List<string> core_principles;
+        }
+
+        [System.Serializable]
+        public class DocLifecycle
+        {
+            public List<string> boot_sequence;
+        }
+
+        [System.Serializable]
+        public class DocModule
+        {
+            public string id;
+            public string name;
+            public string icon;
+            public string description;
+            public List<string> best_practices;
+            public List<string> troubleshooting;
+            public List<DocApi> api;
+        }
+
+        [System.Serializable]
+        public class DocApi
+        {
+            public string signature;
+            public string description;
+            public string example;
         }
     }
 }

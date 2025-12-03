@@ -42,7 +42,7 @@ public class DialogueViewWorld : DialogueViewBase
     private void LateUpdate()
     {
         if (!gameObject.activeSelf) return;
-        HandleBillboard();
+        // HandleBillboard();
         FollowTarget();
     }
 
@@ -79,10 +79,10 @@ public class DialogueViewWorld : DialogueViewBase
         }
     }
 
-    private void HandleBillboard()
-    {
-        transform.rotation = mainCam.transform.rotation;
-    }
+    // private void HandleBillboard()
+    // {
+    //     transform.rotation = mainCam.transform.rotation;
+    // }
 
     private void FollowTarget()
     {

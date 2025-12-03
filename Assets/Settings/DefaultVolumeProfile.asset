@@ -1854,6 +1854,11 @@ MonoBehaviour:
     m_Value:
       serializedVersion: 2
       m_Bits: 4294967295
+  occlusionLayer:
+    m_OverrideState: 1
+    m_Value:
+      serializedVersion: 2
+      m_Bits: 0
   debugMode:
     m_OverrideState: 1
     m_Value: 0
@@ -1884,6 +1889,24 @@ MonoBehaviour:
   useColor:
     m_OverrideState: 1
     m_Value: 0
+  useDistanceFade:
+    m_OverrideState: 1
+    m_Value: 0
+  fadeDistanceStart:
+    m_OverrideState: 1
+    m_Value: 0
+  fadeDistanceEnd:
+    m_OverrideState: 1
+    m_Value: 50
+  useHeightFade:
+    m_OverrideState: 1
+    m_Value: 0
+  fadeHeightMin:
+    m_OverrideState: 1
+    m_Value: 0
+  fadeHeightMax:
+    m_OverrideState: 1
+    m_Value: 10
 --- !u!114 &9001657382290151224
 MonoBehaviour:
   m_ObjectHideFlags: 3

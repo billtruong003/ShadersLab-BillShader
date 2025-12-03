@@ -14,4 +14,9 @@ namespace Nebulanook.Core
         public Vector3 direction;
         public Vector3 contactPoint;
     }
+
+    public interface IInteractable
+    {
+        void Interact();
+    }
 }

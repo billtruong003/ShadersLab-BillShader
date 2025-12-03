@@ -1,5 +1,4 @@
 using UnityEngine;
-using System.Runtime.InteropServices;
 using BillsGenesis.Core;
 
 namespace BillsGenesis.Services
@@ -10,53 +9,17 @@ namespace BillsGenesis.Services
 
         public override void OnAppReady()
         {
-            // Auto set optimal frame rate
             Application.targetFrameRate = 60;
             Screen.sleepTimeout = SleepTimeout.NeverSleep;
         }
-
-        public void SetFrameRate(int fps) => Application.targetFrameRate = fps;
-
-        public void CopyToClipboard(string text)
-        {
-            GUIUtility.systemCopyBuffer = text;
-            ShowToast("Copied to clipboard");
-        }
-
-        public string GetFromClipboard() => GUIUtility.systemCopyBuffer;
 
         public void Vibrate(HapticType type)
         {
 #if UNITY_ANDROID && !UNITY_EDITOR
             VibrateAndroid(GetDuration(type));
 #elif UNITY_IOS && !UNITY_EDITOR
-            // iOS implementation requires native plugin usually, 
-            // using Handheld as fallback for basic vibration
             Handheld.Vibrate(); 
-#else
-            Debug.Log($"[Native] Vibrate: {type}");
 #endif
-        }
-
-        public void ShowToast(string message)
-        {
-#if UNITY_ANDROID && !UNITY_EDITOR
-            AndroidJavaClass unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
-            AndroidJavaObject currentActivity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity");
-            AndroidJavaClass toastClass = new AndroidJavaClass("android.widget.Toast");
-            currentActivity.Call("runOnUiThread", new AndroidJavaRunnable(() =>
-            {
-                AndroidJavaObject toast = toastClass.CallStatic<AndroidJavaObject>("makeText", currentActivity, message, 0);
-                toast.Call("show");
-            }));
-#else
-            Debug.Log($"[Toast] {message}");
-#endif
-        }
-
-        public string GetDeviceInfo()
-        {
-            return $"Model: {SystemInfo.deviceModel} | RAM: {SystemInfo.systemMemorySize}MB | OS: {SystemInfo.operatingSystem}";
         }
 
         private long GetDuration(HapticType type)
@@ -80,10 +43,7 @@ namespace BillsGenesis.Services
                 using (var currentActivity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity"))
                 using (var vibrator = currentActivity.Call<AndroidJavaObject>("getSystemService", "vibrator"))
                 {
-                    if (vibrator.Call<bool>("hasVibrator"))
-                    {
-                        vibrator.Call("vibrate", milliseconds);
-                    }
+                    if (vibrator.Call<bool>("hasVibrator")) vibrator.Call("vibrate", milliseconds);
                 }
             }
             catch { }

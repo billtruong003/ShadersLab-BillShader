@@ -1,10 +1,9 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using UnityEngine;
 using BillsGenesis.Core;
-using Sirenix.OdinInspector;
 
 namespace BillsGenesis.Services
 {
@@ -19,24 +18,15 @@ namespace BillsGenesis.Services
         [Serializable]
         public class PoolConfig
         {
-            [Required, AssetsOnly] public GameObject Prefab;
-            [MinValue(1)] public int InitialSize = 10;
-            [MinValue(10)] public int MaxSize = 100;
-            public bool AutoExpand = true;
-            public bool AutoTrim = true;
-            [ShowIf("AutoTrim"), MinValue(5f)] public float TrimDelay = 60f;
+            public GameObject Prefab;
+            public int InitialSize = 10;
         }
 
-        [Title("Settings")]
-        [SerializeField, LabelText("Global Trim Interval")] private float _trimInterval = 30f;
-
-        [Title("Prewarm Configuration")]
-        [SerializeField, TableList] private List<PoolConfig> _prewarmConfigs = new List<PoolConfig>();
+        [SerializeField] private List<PoolConfig> _prewarmConfigs = new List<PoolConfig>();
 
         private readonly Dictionary<int, Pool> _pools = new Dictionary<int, Pool>();
         private readonly Dictionary<int, int> _instanceIdToPrefabId = new Dictionary<int, int>();
         private Transform _root;
-        private float _lastTrimTime;
 
         public override Task InitializeAsync()
         {
@@ -44,117 +34,108 @@ namespace BillsGenesis.Services
             DontDestroyOnLoad(_root);
             _root.SetParent(transform);
 
-            foreach (var config in _prewarmConfigs)
+            for (int i = 0; i < _prewarmConfigs.Count; i++)
             {
-                if (config.Prefab == null) continue;
-                CreatePool(config);
+                if (_prewarmConfigs[i].Prefab)
+                {
+                    CreatePool(_prewarmConfigs[i]);
+                }
             }
-
             return Task.CompletedTask;
         }
 
-        public override void OnUpdate()
-        {
-            if (Time.unscaledTime - _lastTrimTime >= _trimInterval)
-            {
-                TrimAllPools();
-                _lastTrimTime = Time.unscaledTime;
-            }
-        }
-
+        public T Spawn<T>(T prefab) where T : Component => Spawn(prefab.gameObject, Vector3.zero, Quaternion.identity, null).GetComponent<T>();
+        public T Spawn<T>(T prefab, Vector3 position, Quaternion rotation) where T : Component => Spawn(prefab.gameObject, position, rotation, null).GetComponent<T>();
+        public T Spawn<T>(T prefab, Transform parent) where T : Component => Spawn(prefab.gameObject, Vector3.zero, Quaternion.identity, parent).GetComponent<T>();
+        public T Spawn<T>(T prefab, Vector3 position, Quaternion rotation, Transform parent) where T : Component => Spawn(prefab.gameObject, position, rotation, parent).GetComponent<T>();
         public GameObject Spawn(GameObject prefab) => Spawn(prefab, Vector3.zero, Quaternion.identity, null);
         public GameObject Spawn(GameObject prefab, Transform parent) => Spawn(prefab, Vector3.zero, Quaternion.identity, parent);
         public GameObject Spawn(GameObject prefab, Vector3 position, Quaternion rotation) => Spawn(prefab, position, rotation, null);
 
         public GameObject Spawn(GameObject prefab, Vector3 position, Quaternion rotation, Transform parent)
         {
-            if (prefab == null) return null;
+            if (!prefab) return null;
 
-            int key = prefab.GetInstanceID();
-            if (!_pools.TryGetValue(key, out var pool))
+            int prefabId = prefab.GetInstanceID();
+            if (!_pools.TryGetValue(prefabId, out var pool))
             {
-                pool = CreatePool(new PoolConfig { Prefab = prefab, InitialSize = 1, AutoExpand = true });
+                pool = CreatePool(new PoolConfig { Prefab = prefab, InitialSize = 1 });
             }
 
-            GameObject obj = pool.Get();
-            if (obj == null) return null;
+            GameObject instance = pool.Get();
+            int instanceId = instance.GetInstanceID();
 
-            var t = obj.transform;
+            _instanceIdToPrefabId[instanceId] = prefabId;
+
+            var t = instance.transform;
             t.SetPositionAndRotation(position, rotation);
-            if (parent != null) t.SetParent(parent);
+            if (parent) t.SetParent(parent);
 
-            obj.SetActive(true);
-            _instanceIdToPrefabId[obj.GetInstanceID()] = key;
+            instance.SetActive(true);
+            pool.TriggerOnSpawn(instanceId);
 
-            var poolables = obj.GetComponents<IPoolable>();
-            for (int i = 0; i < poolables.Length; i++) poolables[i].OnSpawn();
-
-            return obj;
+            return instance;
         }
 
-        public T Spawn<T>(T component) where T : Component
+        public void Despawn(GameObject instance)
         {
-            return Spawn(component.gameObject).GetComponent<T>();
-        }
+            if (!instance) return;
 
-        public T Spawn<T>(T component, Vector3 position, Quaternion rotation) where T : Component
-        {
-            return Spawn(component.gameObject, position, rotation).GetComponent<T>();
-        }
-
-        public void Despawn(GameObject obj)
-        {
-            if (obj == null) return;
-
-            int id = obj.GetInstanceID();
-            if (!_instanceIdToPrefabId.TryGetValue(id, out int key))
+            int instanceId = instance.GetInstanceID();
+            if (_instanceIdToPrefabId.TryGetValue(instanceId, out int prefabId) && _pools.TryGetValue(prefabId, out var pool))
             {
-                Destroy(obj);
-                return;
-            }
-
-            if (_pools.TryGetValue(key, out var pool))
-            {
-                var poolables = obj.GetComponents<IPoolable>();
-                for (int i = 0; i < poolables.Length; i++) poolables[i].OnDespawn();
-
-                _instanceIdToPrefabId.Remove(id);
-                obj.SetActive(false);
-                pool.Release(obj);
+                pool.TriggerOnDespawn(instanceId);
+                instance.SetActive(false);
+                pool.Release(instance);
+                _instanceIdToPrefabId.Remove(instanceId);
             }
             else
             {
-                Destroy(obj);
+                Destroy(instance);
             }
         }
 
-        public void Despawn(GameObject obj, float delay)
+        public void Despawn(Component component)
         {
-            if (delay <= 0)
+            if (component) Despawn(component.gameObject);
+        }
+
+        public void DespawnAll()
+        {
+            var activeIds = _instanceIdToPrefabId.Keys.ToArray();
+            foreach (var id in activeIds)
             {
-                Despawn(obj);
-                return;
+                if (!_instanceIdToPrefabId.TryGetValue(id, out int prefabId)) continue;
+                if (!_pools.TryGetValue(prefabId, out var pool)) continue;
+
+                var instance = pool.FindActiveInstance(id);
+                if (instance)
+                {
+                    pool.TriggerOnDespawn(id);
+                    instance.SetActive(false);
+                    pool.Release(instance);
+                }
             }
-            StartCoroutine(DespawnDelayRoutine(obj, delay));
+            _instanceIdToPrefabId.Clear();
         }
 
         public void Prewarm(GameObject prefab, int count)
         {
-            if (prefab == null) return;
-            int key = prefab.GetInstanceID();
-            if (!_pools.TryGetValue(key, out var pool))
+            if (!prefab) return;
+            int prefabId = prefab.GetInstanceID();
+            if (!_pools.TryGetValue(prefabId, out var pool))
             {
                 CreatePool(new PoolConfig { Prefab = prefab, InitialSize = count });
             }
             else
             {
-                pool.EnsureCapacity(count);
+                pool.Expand(count);
             }
         }
 
         public void ClearPool(GameObject prefab)
         {
-            if (prefab == null) return;
+            if (!prefab) return;
             int key = prefab.GetInstanceID();
             if (_pools.TryGetValue(key, out var pool))
             {
@@ -165,14 +146,12 @@ namespace BillsGenesis.Services
 
         public Dictionary<string, string> GetDebugInfo()
         {
-            var dict = new Dictionary<string, string>();
+            var info = new Dictionary<string, string>();
             foreach (var kvp in _pools)
             {
-                var pool = kvp.Value;
-                string name = pool.Config.Prefab ? pool.Config.Prefab.name : $"ID:{kvp.Key}";
-                dict[name] = $"Active: {pool.ActiveCount} | Cached: {pool.InactiveCount} | Max: {pool.Config.MaxSize}";
+                info.Add(kvp.Value.PrefabName, kvp.Value.GetStatus());
             }
-            return dict;
+            return info;
         }
 
         private Pool CreatePool(PoolConfig config)
@@ -180,109 +159,91 @@ namespace BillsGenesis.Services
             int key = config.Prefab.GetInstanceID();
             if (_pools.ContainsKey(key)) return _pools[key];
 
-            var poolObj = new GameObject($"Pool_{config.Prefab.name}");
-            poolObj.transform.SetParent(_root);
+            var poolGroup = new GameObject($"Pool_{config.Prefab.name}");
+            poolGroup.transform.SetParent(_root);
 
-            var pool = new Pool(config, poolObj.transform);
+            var pool = new Pool(config, poolGroup.transform);
             _pools.Add(key, pool);
             return pool;
         }
 
-        private void TrimAllPools()
-        {
-            foreach (var pool in _pools.Values) pool.Trim();
-        }
-
-        private IEnumerator DespawnDelayRoutine(GameObject obj, float delay)
-        {
-            yield return new WaitForSeconds(delay);
-            if (obj != null && obj.activeSelf) Despawn(obj);
-        }
-
         private class Pool
         {
-            public int ActiveCount { get; private set; }
-            public int InactiveCount => _stack.Count;
-            public PoolConfig Config => _config;
+            public string PrefabName => _config.Prefab.name;
 
-            private readonly Stack<GameObject> _stack = new Stack<GameObject>();
+            private readonly Stack<GameObject> _inactiveStack = new Stack<GameObject>();
+            private readonly HashSet<GameObject> _activeSet = new HashSet<GameObject>();
+            private readonly Dictionary<int, IPoolable> _cachedInterfaces = new Dictionary<int, IPoolable>();
             private readonly PoolConfig _config;
-            private readonly Transform _root;
-            private float _lastReleaseTime;
+            private readonly Transform _poolRoot;
+            private int _totalCreated;
 
-            public Pool(PoolConfig config, Transform root)
+            public Pool(PoolConfig config, Transform poolRoot)
             {
                 _config = config;
-                _root = root;
-                EnsureCapacity(config.InitialSize);
+                _poolRoot = poolRoot;
+                Expand(config.InitialSize);
             }
 
             public GameObject Get()
             {
-                GameObject obj = null;
-                while (_stack.Count > 0)
-                {
-                    obj = _stack.Pop();
-                    if (obj != null) break;
-                }
-
-                if (obj == null)
-                {
-                    if (_config.AutoExpand || ActiveCount < _config.MaxSize)
-                    {
-                        obj = CreateNew();
-                    }
-                }
-
-                if (obj != null) ActiveCount++;
+                if (_inactiveStack.Count == 0) Expand(1);
+                var obj = _inactiveStack.Pop();
+                _activeSet.Add(obj);
                 return obj;
             }
 
             public void Release(GameObject obj)
             {
-                obj.transform.SetParent(_root);
-                _stack.Push(obj);
-                ActiveCount--;
-                _lastReleaseTime = Time.unscaledTime;
+                if (_activeSet.Contains(obj)) _activeSet.Remove(obj);
+                obj.transform.SetParent(_poolRoot);
+                _inactiveStack.Push(obj);
             }
 
-            public void EnsureCapacity(int count)
+            public void Expand(int count)
             {
-                int current = _stack.Count + ActiveCount;
-                int needed = count - current;
-                for (int i = 0; i < needed; i++)
+                for (int i = 0; i < count; i++)
                 {
-                    var obj = CreateNew();
+                    GameObject obj = Instantiate(_config.Prefab, _poolRoot);
                     obj.SetActive(false);
-                    _stack.Push(obj);
+
+                    int id = obj.GetInstanceID();
+                    var poolable = obj.GetComponent<IPoolable>();
+                    if (poolable != null) _cachedInterfaces.Add(id, poolable);
+
+                    _inactiveStack.Push(obj);
+                    _totalCreated++;
                 }
             }
 
-            public void Trim()
+            public void TriggerOnSpawn(int instanceId)
             {
-                if (!_config.AutoTrim || _stack.Count <= _config.InitialSize) return;
-                if (Time.unscaledTime - _lastReleaseTime < _config.TrimDelay) return;
+                if (_cachedInterfaces.TryGetValue(instanceId, out var p)) p?.OnSpawn();
+            }
 
-                while (_stack.Count > _config.InitialSize)
-                {
-                    var obj = _stack.Pop();
-                    if (obj != null) UnityEngine.Object.Destroy(obj);
-                }
+            public void TriggerOnDespawn(int instanceId)
+            {
+                if (_cachedInterfaces.TryGetValue(instanceId, out var p)) p?.OnDespawn();
+            }
+
+            public GameObject FindActiveInstance(int instanceId)
+            {
+                return _activeSet.FirstOrDefault(x => x.GetInstanceID() == instanceId);
             }
 
             public void Clear()
             {
-                while (_stack.Count > 0)
-                {
-                    var obj = _stack.Pop();
-                    if (obj != null) UnityEngine.Object.Destroy(obj);
-                }
-                ActiveCount = 0;
+                foreach (var obj in _inactiveStack) if (obj) Destroy(obj);
+                foreach (var obj in _activeSet) if (obj) Destroy(obj);
+                _inactiveStack.Clear();
+                _activeSet.Clear();
+                _cachedInterfaces.Clear();
+                Destroy(_poolRoot.gameObject);
             }
 
-            private GameObject CreateNew()
+            public string GetStatus()
             {
-                return UnityEngine.Object.Instantiate(_config.Prefab, _root);
+                return $"Available: {_inactiveStack.Count} / Active: {_activeSet.Count} / Total: {_totalCreated}";
             }
         }
     }

@@ -1,0 +1,676 @@
+{
+  "metadata": {
+    "framework": "BillsGenesis",
+    "version": "2.5.1",
+    "build_date": "03 December 2025",
+    "author": "Bill The Dev",
+    "license": "MIT",
+    "theme": "Dark Modern"
+  },
+  "en": {
+    "architecture": {
+      "overview": {
+        "summary": "BillsGenesis is an enterprise-grade, zero-allocation Unity framework focusing on Service Locator pattern, lightweight DI, and extreme devex. Designed to replace legacy frameworks like Zenject or VContainer in production.",
+        "core_principles": [
+          "Zero boilerplate – just use [Inject] or Genesis.Get<T>()",
+          "Performance first – priority queue timer, object pooling, auto cleanup",
+          "Developer happiness – beautiful dashboard, live monitor, auto boot",
+          "Mobile-first – lightweight, encrypted storage, haptic, smooth loading"
+        ]
+      },
+      "lifecycle": {
+        "boot_sequence": [
+          "GenesisBootstrapper.Awake()",
+          "Auto register all services with [ServiceConfig]",
+          "InitializeAsync() by InitPriority",
+          "Genesis.NotifyAppReady()",
+          "UpdateServices() every frame",
+          "Dispose() on quit"
+        ]
+      }
+    },
+    "modules": [
+      {
+        "id": "core",
+        "name": "Genesis Core",
+        "icon": "Cpu",
+        "description": "Kernel of the framework. Manages service registration, DI, and application lifecycle.",
+        "best_practices": [
+          "Use [Inject] instead of calling Genesis.Get<T>() in Update loops.",
+          "Avoid heavy logic in InitializeAsync(), move it to OnAppReady()."
+        ],
+        "troubleshooting": [
+          "'Service not found': Check if class has [ServiceConfig] attribute.",
+          "'Circular Dependency': Two services inject each other in Initialize. Move to OnAppReady."
+        ],
+        "api": [
+          {
+            "signature": "Genesis.Get<T>()",
+            "description": "Get singleton instance of a registered service.",
+            "example": "var audio = Genesis.Get<AudioManager>();"
+          },
+          {
+            "signature": "Genesis.Register<T>(T service)",
+            "description": "Manually register a service at runtime.",
+            "example": "Genesis.Register(new MyCustomNetworkService());"
+          },
+          {
+            "signature": "Genesis.InjectDependencies(object target)",
+            "description": "Trigger manual DI for pure C# objects.",
+            "example": "public class Data { [Inject] StorageManager s; public Data() => Genesis.InjectDependencies(this); }"
+          }
+        ]
+      },
+      {
+        "id": "bootstrap",
+        "name": "Bootstrapper & Auto Boot",
+        "icon": "RocketTakeoff",
+        "description": "System to auto-launch the framework from any scene. No need to manually open _Bootstrap.",
+        "best_practices": [
+          "Remove legacy code like [RuntimeInitializeOnLoadMethod].",
+          "Keep only one _Bootstrap scene in the project.",
+          "Place _Bootstrap at index 0 in Build Settings."
+        ],
+        "troubleshooting": [
+          "Black screen? → Check if _Bootstrap is in Build Settings.",
+          "Service null? → Check if service prefab is in Manifest."
+        ],
+        "api": []
+      },
+      {
+        "id": "manifest",
+        "name": "Genesis Manifest",
+        "icon": "Sliders",
+        "description": "Configuration heart. Manages Global Services and Scene Groups.",
+        "best_practices": [
+          "Always put _Bootstrap in the first Group.",
+          "Use Additive Scenes for UI_Global, Audio, Environment_Common.",
+          "Global Services only accept prefabs with components inheriting GenesisSingletonService."
+        ],
+        "api": []
+      },
+      {
+        "id": "audio",
+        "name": "Audio Manager",
+        "icon": "Headphones",
+        "description": "Audio system supporting BGM cross-fading, SFX pooling, and AudioMixer.",
+        "best_practices": [
+          "Use PlaySfx for UI sounds, PlaySfx3D for gameplay.",
+          "Call PauseAll(true) when showing ads or pausing game."
+        ],
+        "api": [
+          {
+            "signature": "PlayMusic(AudioClip clip, float fade, bool loop)",
+            "description": "Smoothly transition background music with cross-fade.",
+            "example": "Genesis.Get<AudioManager>().PlayMusic(bgmClip, 1.5f);"
+          },
+          {
+            "signature": "PlaySfx(AudioClip clip, float volume, float pitch)",
+            "description": "Play 2D sound (UI) via pool.",
+            "example": "Genesis.Get<AudioManager>().PlaySfx(clickClip);"
+          },
+          {
+            "signature": "ToggleMute(bool mute)",
+            "description": "Toggle all audio (for Settings Mute button).",
+            "example": "audio.ToggleMute(PlayerPrefs.GetInt(\"Mute\") == 1);"
+          },
+          {
+            "signature": "PauseAll(bool isPaused)",
+            "description": "Pause all audio (music + sfx) without losing state.",
+            "example": "Genesis.Get<AudioManager>().PauseAll(true); // Show Ads"
+          },
+          {
+            "signature": "SaveSettings()",
+            "description": "Persist current volume settings to StorageManager.",
+            "example": "audio.SaveSettings();"
+          }
+        ]
+      },
+      {
+        "id": "signals",
+        "name": "Signal Hub",
+        "icon": "Broadcast",
+        "description": "Event Bus using Structs for loose coupling and zero-allocation.",
+        "best_practices": [
+          "Declare Signals as structs to avoid GC.",
+          "Always Dispose subscription when object is destroyed.",
+          "Use Sticky Signal for game states (Pause, GameOver)."
+        ],
+        "api": [
+          {
+            "signature": "Subscribe<T>(Action<T> callback)",
+            "description": "Listen for a signal. Returns IDisposable.",
+            "example": "var sub = Genesis.Get<SignalHub>().Subscribe<PlayerDied>(OnDeath);"
+          },
+          {
+            "signature": "Once<T>(Action<T> callback)",
+            "description": "Listen for a signal exactly once, then auto-unsubscribe.",
+            "example": "Genesis.Get<SignalHub>().Once<LevelLoaded>(OnLevelReady);"
+          },
+          {
+            "signature": "Fire<T>(T signal)",
+            "description": "Dispatch signal immediately to all listeners.",
+            "example": "Genesis.Get<SignalHub>().Fire(new ScoreChanged { Val = 10 });"
+          },
+          {
+            "signature": "GetSticky<T>()",
+            "description": "Get the last sticky signal without subscribing.",
+            "example": "bool isPaused = signal.GetSticky<PauseSignal>()?.Value ?? false;"
+          }
+        ]
+      },
+      {
+        "id": "pool",
+        "name": "Pool Manager",
+        "icon": "BoxSeam",
+        "description": "High-performance Object Pooling system for GameObjects.",
+        "best_practices": [
+          "Always use Despawn() instead of Destroy().",
+          "Implement IPoolable on Prefabs to catch OnSpawn/OnDespawn events.",
+          "Call DespawnAll() when reloading scenes."
+        ],
+        "api": [
+          {
+            "signature": "Spawn(GameObject prefab, Vector3 pos, Quaternion rot)",
+            "description": "Get object from pool.",
+            "example": "var enemy = Genesis.Get<PoolManager>().Spawn(enemyPrefab, pos, rot);"
+          },
+          {
+            "signature": "Despawn(GameObject instance)",
+            "description": "Return object to pool.",
+            "example": "Genesis.Get<PoolManager>().Despawn(gameObject);"
+          },
+          {
+            "signature": "DespawnAll()",
+            "description": "Recall ALL active objects to pool. Use on Restart.",
+            "example": "Genesis.Get<PoolManager>().DespawnAll();"
+          },
+          {
+            "signature": "ClearPool(GameObject prefab)",
+            "description": "Completely clear a pool (use when changing chapters to free memory).",
+            "example": "pool.ClearPool(oldEnemyPrefab);"
+          }
+        ]
+      },
+      {
+        "id": "storage",
+        "name": "Storage Manager",
+        "icon": "Hdd",
+        "description": "Secure storage (AES Encryption) and PlayerPrefs wrapper.",
+        "best_practices": [
+          "Use SaveAsync for large data (Inventory, UserProfile).",
+          "Use const strings for PlayerPrefs keys."
+        ],
+        "api": [
+          {
+            "signature": "SaveAsync<T>(string file, T data, bool encrypt)",
+            "description": "Save file asynchronously.",
+            "example": "await Genesis.Get<StorageManager>().SaveAsync(\"user.dat\", userData);"
+          },
+          {
+            "signature": "LoadAsync<T>(string file, bool encrypt)",
+            "description": "Load file asynchronously.",
+            "example": "var data = await Genesis.Get<StorageManager>().LoadAsync<UserData>(\"user.dat\");"
+          },
+          {
+            "signature": "SetInt(string key, int val) / GetInt(string key)",
+            "description": "Wrapper for PlayerPrefs.",
+            "example": "Genesis.Get<StorageManager>().SetInt(\"Gold\", 100);"
+          }
+        ]
+      },
+      {
+        "id": "scene",
+        "name": "Scene Manager",
+        "icon": "Layers",
+        "description": "Manages transitions, loading screens, and Scene Groups.",
+        "best_practices": [
+          "Use LoadSceneGroup for environment + UI.",
+          "Use ReloadCurrentScene for quick level replay."
+        ],
+        "api": [
+          {
+            "signature": "LoadSceneAsync(string name, float minDuration)",
+            "description": "Load a single scene with loading screen.",
+            "example": "await Genesis.Get<SceneManagerService>().LoadSceneAsync(\"Menu\");"
+          },
+          {
+            "signature": "ReloadCurrentScene(float minDuration)",
+            "description": "Reload current scene (Restart Level).",
+            "example": "await Genesis.Get<SceneManagerService>().ReloadCurrentScene();"
+          },
+          {
+            "signature": "LoadSceneGroup(string groupId)",
+            "description": "Load a scene group defined in Manifest.",
+            "example": "Genesis.Get<SceneManagerService>().LoadSceneGroup(\"Level_1\");"
+          }
+        ]
+      },
+      {
+        "id": "loading",
+        "name": "Loading UI Service",
+        "icon": "HourglassSplit",
+        "description": "Global loading screen system, supports SmartSlice shader, auto fade, and accurate progress.",
+        "best_practices": [
+          "Only one LoadingUIService prefab in Global Services.",
+          "Use SmartSliceLoading shader for smooth fill effects.",
+          "No manual calls needed – SceneManagerService triggers it automatically."
+        ],
+        "api": [
+          {
+            "signature": "Automatic",
+            "description": "No public API. Listens to SceneManager events.",
+            "example": "// Configure Prefab in Manifest"
+          }
+        ]
+      },
+      {
+        "id": "logger",
+        "name": "Logger Service",
+        "icon": "Terminal",
+        "description": "Pro in-game console. Toggle with F1 or 3-finger tap. Auto file logging.",
+        "best_practices": [
+          "Enable console in Build for on-device debugging.",
+          "Replaces ADB Logcat for logic errors."
+        ],
+        "troubleshooting": [
+          "Console not showing? → Check if LoggerService is in Global Services."
+        ],
+        "api": [
+          {
+            "signature": "F1 / 3-Finger Tap",
+            "description": "Shortcut to open Console Overlay.",
+            "example": "// Built-in input handling"
+          }
+        ]
+      },
+      {
+        "id": "timer",
+        "name": "Timer Manager",
+        "icon": "Stopwatch",
+        "description": "Replaces Coroutine for scheduling tasks with Priority Queue.",
+        "api": [
+          {
+            "signature": "Post(float delay, Action callback)",
+            "description": "Execute action after delay.",
+            "example": "Genesis.Get<TimerManager>().Post(2f, () => Debug.Log(\"Done\"));"
+          },
+          {
+            "signature": "Post(...).SetUnscaled(true)",
+            "description": "Timer uses unscaled time (ignores TimeScale = 0).",
+            "example": "timer.Post(3f, ShowAds).SetUnscaled(true);"
+          },
+          {
+            "signature": "Schedule(float interval, Action callback)",
+            "description": "Repeat action every interval.",
+            "example": "var t = Genesis.Get<TimerManager>().Schedule(1f, UpdateUI);"
+          }
+        ]
+      },
+      {
+        "id": "vfx",
+        "name": "VFX Manager",
+        "icon": "Stars",
+        "description": "Auto spawn and despawn VFX based on Particle System duration.",
+        "api": [
+          {
+            "signature": "Play(GameObject prefab, Vector3 pos)",
+            "description": "Spawn VFX and auto despawn when done.",
+            "example": "Genesis.Get<VFXManager>().Play(explosion, transform.position);"
+          },
+          {
+            "signature": "PlayAttached(GameObject prefab, Transform parent)",
+            "description": "Spawn VFX attached to moving parent.",
+            "example": "Genesis.Get<VFXManager>().PlayAttached(aura, playerTransform, Vector3.up);"
+          }
+        ]
+      },
+      {
+        "id": "native",
+        "name": "Native Bridge",
+        "icon": "Phone",
+        "description": "Hardware interface (Haptics).",
+        "api": [
+          {
+            "signature": "Vibrate(HapticType type)",
+            "description": "Vibrate device (Android/iOS).",
+            "example": "Genesis.Get<NativeBridge>().Vibrate(NativeBridge.HapticType.Heavy);"
+          }
+        ]
+      }
+    ]
+  },
+  "vi": {
+    "architecture": {
+      "overview": {
+        "summary": "BillsGenesis là một framework Unity enterprise-grade, zero-allocation, tập trung vào Service Locator, DI nhẹ và devex cực cao. Được thiết kế để thay thế hoàn toàn các framework cũ như Zenject, VContainer trong dự án thực chiến.",
+        "core_principles": [
+          "Zero boilerplate – chỉ cần [Inject] hoặc Genesis.Get<T>()",
+          "Performance first – priority queue timer, object pooling, auto cleanup",
+          "Developer happiness – dashboard đẹp, live monitor, auto boot",
+          "Mobile-first – lightweight, encrypted storage, haptic, loading mượt"
+        ]
+      },
+      "lifecycle": {
+        "boot_sequence": [
+          "GenesisBootstrapper.Awake()",
+          "Auto register all services có [ServiceConfig]",
+          "InitializeAsync() theo InitPriority",
+          "Genesis.NotifyAppReady()",
+          "UpdateServices() mỗi frame",
+          "Dispose() khi quit"
+        ]
+      }
+    },
+    "modules": [
+      {
+        "id": "core",
+        "name": "Genesis Core",
+        "icon": "Cpu",
+        "description": "Kernel của framework. Quản lý việc đăng ký service, DI và vòng đời ứng dụng.",
+        "best_practices": [
+          "Sử dụng [Inject] thay vì gọi Genesis.Get<T>() trong Update loop.",
+          "Tránh logic nặng trong InitializeAsync(), hãy dời sang OnAppReady()."
+        ],
+        "troubleshooting": [
+          "Lỗi 'Service not found': Kiểm tra xem class đã có attribute [ServiceConfig] chưa.",
+          "Lỗi 'Circular Dependency': Hai service inject lẫn nhau trong Initialize. Hãy chuyển sang OnAppReady."
+        ],
+        "api": [
+          {
+            "signature": "Genesis.Get<T>()",
+            "description": "Lấy instance singleton của service đã đăng ký.",
+            "example": "var audio = Genesis.Get<AudioManager>();"
+          },
+          {
+            "signature": "Genesis.Register<T>(T service)",
+            "description": "Đăng ký thủ công một service tại runtime.",
+            "example": "Genesis.Register(new MyCustomNetworkService());"
+          },
+          {
+            "signature": "Genesis.InjectDependencies(object target)",
+            "description": "Kích hoạt DI thủ công cho object thuần C# (không phải MonoBehaviour).",
+            "example": "public class Data { [Inject] StorageManager s; public Data() => Genesis.InjectDependencies(this); }"
+          }
+        ]
+      },
+      {
+        "id": "bootstrap",
+        "name": "Bootstrapper & Auto Boot",
+        "icon": "RocketTakeoff",
+        "description": "Hệ thống tự động khởi chạy framework dù bạn Play ở bất kỳ scene nào. Không cần nhớ mở scene _Bootstrap.",
+        "best_practices": [
+          "Xóa hết code cũ kiểu [RuntimeInitializeOnLoadMethod].",
+          "Chỉ cần duy nhất 1 scene _Bootstrap trong project.",
+          "Để _Bootstrap ở index 0 trong Build Settings."
+        ],
+        "troubleshooting": [
+          "Màn hình đen? → Kiểm tra _Bootstrap đã add vào Build Settings chưa.",
+          "Service null? → Kiểm tra prefab service đã kéo vào Manifest chưa."
+        ],
+        "api": []
+      },
+      {
+        "id": "manifest",
+        "name": "Genesis Manifest",
+        "icon": "Sliders",
+        "description": "Trái tim cấu hình của framework. Quản lý Global Services và Scene Groups.",
+        "best_practices": [
+          "Luôn đặt _Bootstrap ở Group đầu tiên.",
+          "Dùng Additive Scenes cho UI_Global, Audio, Environment_Common.",
+          "Global Services chỉ chấp nhận prefab có component kế thừa GenesisSingletonService."
+        ],
+        "api": []
+      },
+      {
+        "id": "audio",
+        "name": "Audio Manager",
+        "icon": "Headphones",
+        "description": "Hệ thống âm thanh hỗ trợ BGM cross-fading, SFX pooling và AudioMixer.",
+        "best_practices": [
+          "Dùng PlaySfx cho UI sound, PlaySfx3D cho gameplay.",
+          "Gọi PauseAll(true) khi hiện popup quảng cáo hoặc Pause Game."
+        ],
+        "api": [
+          {
+            "signature": "PlayMusic(AudioClip clip, float fade, bool loop)",
+            "description": "Chuyển nhạc nền mượt mà với cross-fade.",
+            "example": "Genesis.Get<AudioManager>().PlayMusic(bgmClip, 1.5f);"
+          },
+          {
+            "signature": "PlaySfx(AudioClip clip, float volume, float pitch)",
+            "description": "Chơi âm thanh 2D (UI) qua pool.",
+            "example": "Genesis.Get<AudioManager>().PlaySfx(clickClip);"
+          },
+          {
+            "signature": "ToggleMute(bool mute)",
+            "description": "Tắt/bật toàn bộ âm thanh (dùng cho nút Mute trong Settings).",
+            "example": "audio.ToggleMute(PlayerPrefs.GetInt(\"Mute\") == 1);"
+          },
+          {
+            "signature": "PauseAll(bool isPaused)",
+            "description": "Tạm dừng toàn bộ âm thanh (nhạc + sfx) mà không làm mất trạng thái.",
+            "example": "Genesis.Get<AudioManager>().PauseAll(true); // Show Ads"
+          },
+          {
+            "signature": "SaveSettings()",
+            "description": "Lưu volume settings hiện tại vào StorageManager.",
+            "example": "audio.SaveSettings();"
+          }
+        ]
+      },
+      {
+        "id": "signals",
+        "name": "Signal Hub",
+        "icon": "Broadcast",
+        "description": "Event Bus sử dụng Struct để giao tiếp lỏng (loose coupling) và zero-allocation.",
+        "best_practices": [
+          "Khai báo Signal là struct để tránh rác bộ nhớ.",
+          "Luôn Dispose subscription khi object bị hủy.",
+          "Dùng Sticky Signal cho trạng thái game (Pause, GameOver)."
+        ],
+        "api": [
+          {
+            "signature": "Subscribe<T>(Action<T> callback)",
+            "description": "Đăng ký nhận signal. Trả về IDisposable để hủy đăng ký.",
+            "example": "var sub = Genesis.Get<SignalHub>().Subscribe<PlayerDied>(OnDeath);"
+          },
+          {
+            "signature": "Once<T>(Action<T> callback)",
+            "description": "Đăng ký nhận signal đúng 1 lần rồi tự hủy.",
+            "example": "Genesis.Get<SignalHub>().Once<LevelLoaded>(OnLevelReady);"
+          },
+          {
+            "signature": "Fire<T>(T signal)",
+            "description": "Bắn signal ngay lập tức tới mọi listener.",
+            "example": "Genesis.Get<SignalHub>().Fire(new ScoreChanged { Val = 10 });"
+          },
+          {
+            "signature": "GetSticky<T>()",
+            "description": "Lấy signal sticky cuối cùng mà không cần subscribe.",
+            "example": "bool isPaused = signal.GetSticky<PauseSignal>()?.Value ?? false;"
+          }
+        ]
+      },
+      {
+        "id": "pool",
+        "name": "Pool Manager",
+        "icon": "BoxSeam",
+        "description": "Hệ thống Object Pooling hiệu năng cao cho GameObject.",
+        "best_practices": [
+          "Luôn dùng Despawn() thay vì Destroy().",
+          "Implement IPoolable trên Prefab để bắt sự kiện OnSpawn/OnDespawn.",
+          "Gọi DespawnAll() khi reload scene để tránh lỗi tham chiếu."
+        ],
+        "api": [
+          {
+            "signature": "Spawn(GameObject prefab, Vector3 pos, Quaternion rot)",
+            "description": "Lấy object từ pool.",
+            "example": "var enemy = Genesis.Get<PoolManager>().Spawn(enemyPrefab, pos, rot);"
+          },
+          {
+            "signature": "Despawn(GameObject instance)",
+            "description": "Trả object về pool.",
+            "example": "Genesis.Get<PoolManager>().Despawn(gameObject);"
+          },
+          {
+            "signature": "DespawnAll()",
+            "description": "Thu hồi TẤT CẢ object đang active về pool. Dùng khi Restart Game.",
+            "example": "Genesis.Get<PoolManager>().DespawnAll();"
+          },
+          {
+            "signature": "ClearPool(GameObject prefab)",
+            "description": "Xóa hoàn toàn một pool (dùng khi đổi chapter lớn, tránh memory leak).",
+            "example": "pool.ClearPool(oldEnemyPrefab);"
+          }
+        ]
+      },
+      {
+        "id": "storage",
+        "name": "Storage Manager",
+        "icon": "Hdd",
+        "description": "Lưu trữ dữ liệu an toàn (AES Encryption) và PlayerPrefs tiện ích.",
+        "best_practices": [
+          "Dùng SaveAsync cho dữ liệu lớn (Inventory, UserProfile).",
+          "Key cho PlayerPrefs nên đặt const string để tránh gõ sai."
+        ],
+        "api": [
+          {
+            "signature": "SaveAsync<T>(string file, T data, bool encrypt)",
+            "description": "Lưu file bất đồng bộ.",
+            "example": "await Genesis.Get<StorageManager>().SaveAsync(\"user.dat\", userData);"
+          },
+          {
+            "signature": "LoadAsync<T>(string file, bool encrypt)",
+            "description": "Đọc file bất đồng bộ.",
+            "example": "var data = await Genesis.Get<StorageManager>().LoadAsync<UserData>(\"user.dat\");"
+          },
+          {
+            "signature": "SetInt(string key, int val) / GetInt(string key)",
+            "description": "Wrapper cho PlayerPrefs.",
+            "example": "Genesis.Get<StorageManager>().SetInt(\"Gold\", 100);"
+          }
+        ]
+      },
+      {
+        "id": "scene",
+        "name": "Scene Manager",
+        "icon": "Layers",
+        "description": "Quản lý chuyển cảnh, màn hình chờ và Scene Groups.",
+        "best_practices": [
+          "Luôn dùng LoadSceneGroup để load environment + UI cùng lúc.",
+          "Dùng ReloadCurrentScene để replay level nhanh."
+        ],
+        "api": [
+          {
+            "signature": "LoadSceneAsync(string name, float minDuration)",
+            "description": "Load một scene đơn lẻ có loading screen.",
+            "example": "await Genesis.Get<SceneManagerService>().LoadSceneAsync(\"Menu\");"
+          },
+          {
+            "signature": "ReloadCurrentScene(float minDuration)",
+            "description": "Load lại scene hiện tại (Restart Level).",
+            "example": "await Genesis.Get<SceneManagerService>().ReloadCurrentScene();"
+          },
+          {
+            "signature": "LoadSceneGroup(string groupId)",
+            "description": "Load một nhóm scene định nghĩa trong Manifest.",
+            "example": "Genesis.Get<SceneManagerService>().LoadSceneGroup(\"Level_1\");"
+          }
+        ]
+      },
+      {
+        "id": "loading",
+        "name": "Loading UI Service",
+        "icon": "HourglassSplit",
+        "description": "Hệ thống loading screen toàn cục, hỗ trợ SmartSlice shader, auto fade và progress chính xác.",
+        "best_practices": [
+          "Chỉ cần 1 prefab LoadingUIService duy nhất trong Global Services.",
+          "Dùng shader SmartSliceLoading để có hiệu ứng fill cực mượt.",
+          "Không cần gọi thủ công – SceneManagerService tự động kích hoạt."
+        ],
+        "api": [
+          {
+            "signature": "Tự động hoạt động",
+            "description": "Không cần API public. Service lắng nghe event từ SceneManager.",
+            "example": "// Chỉ cần cấu hình Prefab trong Manifest"
+          }
+        ]
+      },
+      {
+        "id": "logger",
+        "name": "Logger Service",
+        "icon": "Terminal",
+        "description": "In-game console chuyên nghiệp, bật bằng F1 hoặc chạm 3 ngón. Tự động lưu log ra file.",
+        "best_practices": [
+          "Bật console trong bản Build để debug trên thiết bị thật.",
+          "Thay thế hoàn toàn ADB Logcat cho các lỗi logic nhanh."
+        ],
+        "troubleshooting": [
+          "Không hiện console? → Kiểm tra xem đã add LoggerService vào Global Services chưa."
+        ],
+        "api": [
+          {
+            "signature": "F1 / 3-Finger Tap",
+            "description": "Phím tắt mở Console Overlay.",
+            "example": "// Built-in input handling"
+          }
+        ]
+      },
+      {
+        "id": "timer",
+        "name": "Timer Manager",
+        "icon": "Stopwatch",
+        "description": "Thay thế Coroutine để lập lịch task với Priority Queue.",
+        "api": [
+          {
+            "signature": "Post(float delay, Action callback)",
+            "description": "Thực thi action sau một khoảng thời gian.",
+            "example": "Genesis.Get<TimerManager>().Post(2f, () => Debug.Log(\"Done\"));"
+          },
+          {
+            "signature": "Post(...).SetUnscaled(true)",
+            "description": "Timer chạy theo thời gian thực (không bị ảnh hưởng bởi TimeScale = 0).",
+            "example": "timer.Post(3f, ShowAds).SetUnscaled(true);"
+          },
+          {
+            "signature": "Schedule(float interval, Action callback)",
+            "description": "Lặp lại action mỗi khoảng thời gian.",
+            "example": "var t = Genesis.Get<TimerManager>().Schedule(1f, UpdateUI);"
+          }
+        ]
+      },
+      {
+        "id": "vfx",
+        "name": "VFX Manager",
+        "icon": "Stars",
+        "description": "Tự động spawn và thu hồi VFX based on Particle System duration.",
+        "api": [
+          {
+            "signature": "Play(GameObject prefab, Vector3 pos)",
+            "description": "Spawn VFX và tự động despawn khi hết hiệu ứng.",
+            "example": "Genesis.Get<VFXManager>().Play(explosion, transform.position);"
+          },
+          {
+            "signature": "PlayAttached(GameObject prefab, Transform parent)",
+            "description": "Spawn VFX gắn vào parent di động.",
+            "example": "Genesis.Get<VFXManager>().PlayAttached(aura, playerTransform, Vector3.up);"
+          }
+        ]
+      },
+      {
+        "id": "native",
+        "name": "Native Bridge",
+        "icon": "Phone",
+        "description": "Giao tiếp phần cứng (Rung).",
+        "api": [
+          {
+            "signature": "Vibrate(HapticType type)",
+            "description": "Rung thiết bị (Android/iOS).",
+            "example": "Genesis.Get<NativeBridge>().Vibrate(NativeBridge.HapticType.Heavy);"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -13,7 +13,6 @@ namespace BillsGenesis.Data
     public sealed class GenesisManifest : SerializedScriptableObject
     {
         [Title("System Configuration")]
-        // FIX: Expanded -> DefaultExpandedState
         [ListDrawerSettings(ShowFoldout = true, DefaultExpandedState = true)]
         [LabelText("Global Services")]
         public List<GameObject> SystemPrefabs;

@@ -1,18 +1,40 @@
-using UnityEngine;
+using System.Collections.Generic;
 using System.Threading.Tasks;
+using UnityEngine;
+using Sirenix.OdinInspector;
 using BillsGenesis.Core;
 
 namespace BillsGenesis.Services
 {
     public sealed class VFXManager : GenesisSingletonService<VFXManager>
     {
+        [Title("Dependencies")]
+        [ShowInInspector, ReadOnly]
         [Inject] private PoolManager _pool;
+
+        [ShowInInspector, ReadOnly]
         [Inject] private TimerManager _timer;
 
-        private void EnsureDependencies()
+        [Title("Optimization")]
+        [ShowInInspector, ReadOnly]
+        private readonly Dictionary<int, float> _durationCache = new Dictionary<int, float>();
+
+        [Title("Debug Tools")]
+        [BoxGroup("Debug"), SerializeField, AssetsOnly]
+        private GameObject _debugVfxPrefab;
+
+        [BoxGroup("Debug"), Button(ButtonSizes.Large), GUIColor(0, 1, 0)]
+        [DisableInEditorMode]
+        private void TestPlayVFX()
+        {
+            if (_debugVfxPrefab) Play(_debugVfxPrefab, transform.position + Vector3.up);
+        }
+
+        public override Task InitializeAsync()
         {
             if (_pool == null) _pool = Genesis.Get<PoolManager>();
             if (_timer == null) _timer = Genesis.Get<TimerManager>();
+            return Task.CompletedTask;
         }
 
         public void Play(GameObject prefab, Vector3 position)
@@ -37,58 +59,79 @@ namespace BillsGenesis.Services
 
         public GameObject Play(GameObject prefab, Vector3 position, Quaternion rotation, Transform parent, Vector3 scale)
         {
-            EnsureDependencies();
             if (!prefab) return null;
 
-            GameObject vfx = _pool.Spawn(prefab, position, rotation, parent);
-            vfx.transform.localScale = scale;
+            if (_pool == null) _pool = Genesis.Get<PoolManager>();
+            if (_timer == null) _timer = Genesis.Get<TimerManager>();
 
-            float lifetime = GetDuration(vfx);
+            GameObject vfxInstance = _pool.Spawn(prefab, position, rotation, parent);
+            vfxInstance.transform.localScale = scale;
 
-            var ps = vfx.GetComponent<ParticleSystem>();
-            if (ps != null) ps.Play(true);
+            if (vfxInstance.TryGetComponent<ParticleSystem>(out var ps))
+            {
+                ps.Play(true);
+            }
 
-            _timer.Register(lifetime, () => _pool.Despawn(vfx));
+            float duration = GetOrCalculateDuration(prefab, vfxInstance);
 
-            return vfx;
+            // FIX CS1061: Updated to use Post (or Register alias if preferred, but Post is cleaner)
+            _timer.Post(duration, () => _pool.Despawn(vfxInstance));
+
+            return vfxInstance;
         }
 
         public void PlayAttached(GameObject prefab, Transform target, Vector3 offset, bool followRotation = false)
         {
-            EnsureDependencies();
             if (!prefab || !target) return;
 
-            GameObject vfx = _pool.Spawn(prefab);
-            vfx.transform.SetParent(target);
-            vfx.transform.localPosition = offset;
-            if (!followRotation) vfx.transform.rotation = Quaternion.identity;
-            vfx.transform.localScale = Vector3.one;
-
-            float lifetime = GetDuration(vfx);
-            _timer.Register(lifetime, () => _pool.Despawn(vfx));
+            GameObject vfxInstance = Play(prefab, target.position + offset, followRotation ? target.rotation : Quaternion.identity, target, Vector3.one);
+            vfxInstance.transform.localPosition = offset;
         }
 
-        private float GetDuration(GameObject obj)
+        private float GetOrCalculateDuration(GameObject prefab, GameObject instance)
         {
-            var ps = obj.GetComponent<ParticleSystem>();
-            if (ps != null)
+            int prefabId = prefab.GetInstanceID();
+
+            if (_durationCache.TryGetValue(prefabId, out float cachedDuration))
             {
-                return ps.main.duration + ps.main.startLifetime.constantMax;
+                return cachedDuration;
             }
 
-            var nested = obj.GetComponentsInChildren<ParticleSystem>();
-            if (nested.Length > 0)
+            float duration = CalculateDuration(instance);
+            _durationCache[prefabId] = duration;
+
+            return duration;
+        }
+
+        private float CalculateDuration(GameObject instance)
+        {
+            var particleSystems = instance.GetComponentsInChildren<ParticleSystem>();
+            if (particleSystems.Length == 0) return 2.0f;
+
+            float maxDuration = 0f;
+            for (int i = 0; i < particleSystems.Length; i++)
             {
-                float max = 0;
-                foreach (var p in nested)
+                var ps = particleSystems[i];
+                if (ps.emission.enabled)
                 {
-                    float t = p.main.duration + p.main.startLifetime.constantMax;
-                    if (t > max) max = t;
+                    float time = ps.main.duration;
+                    if (ps.main.loop)
+                    {
+                        return time > 0 ? time : 2.0f;
+                    }
+                    float lifetime = ps.main.startLifetime.constantMax;
+                    float total = time + lifetime;
+                    if (total > maxDuration) maxDuration = total;
                 }
-                return max > 0 ? max : 2f;
             }
 
-            return 2f; // Default fallback
+            return maxDuration > 0 ? maxDuration : 2.0f;
+        }
+
+        [Button("Clear Cache"), BoxGroup("Optimization")]
+        public void ClearDurationCache()
+        {
+            _durationCache.Clear();
         }
     }
 }

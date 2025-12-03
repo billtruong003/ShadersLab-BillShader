@@ -1,0 +1,41 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 508570224ed1c4800a103c84c85b6fd5, type: 3}
+  m_Name: SampleConversation
+  m_EditorClassIdentifier: Assembly-CSharp::DialogueConversation
+  ViewMode: 0
+  OverrideGlobalMode: 0
+  Nodes:
+  - rid: 1847414906044022871
+  - rid: 1847414906044022872
+  - rid: 1847414906044022873
+  references:
+    version: 2
+    RefIds:
+    - rid: 1847414906044022871
+      type: {class: DialogueLineNode, ns: , asm: Assembly-CSharp}
+      data:
+        IconPreview: {fileID: 0}
+        Speaker: {fileID: 11400000, guid: 15802e9ed3e33dd418f4b2551ab7dbf2, type: 2}
+        Text: Bro
+    - rid: 1847414906044022872
+      type: {class: DialogueLineNode, ns: , asm: Assembly-CSharp}
+      data:
+        IconPreview: {fileID: 0}
+        Speaker: {fileID: 11400000, guid: d14031b135fdc89498e538cf3ed67a95, type: 2}
+        Text: VCL BRO
+    - rid: 1847414906044022873
+      type: {class: DialogueLineNode, ns: , asm: Assembly-CSharp}
+      data:
+        IconPreview: {fileID: 0}
+        Speaker: {fileID: 11400000, guid: 15802e9ed3e33dd418f4b2551ab7dbf2, type: 2}
+        Text: BroBroBroBroBroBroBroBroBroBroBroBroBroBroBroBroBroBroBroBroBroBroBroBroBroBroBro

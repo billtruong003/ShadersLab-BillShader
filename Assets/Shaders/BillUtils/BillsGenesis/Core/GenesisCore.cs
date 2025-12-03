@@ -3,12 +3,18 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Threading.Tasks;
 using UnityEngine;
-using UnityEngine.Profiling;
 
 namespace BillsGenesis.Core
 {
     [AttributeUsage(AttributeTargets.Field)]
     public class InjectAttribute : Attribute { }
+
+    [AttributeUsage(AttributeTargets.Class)]
+    public class ServiceConfigAttribute : Attribute
+    {
+        public bool AutoRegister { get; set; } = true;
+        public int InitPriority { get; set; } = 0;
+    }
 
     public interface IGenesisService
     {
@@ -53,42 +59,58 @@ namespace BillsGenesis.Core
     {
         private static readonly Dictionary<Type, IGenesisService> _services = new Dictionary<Type, IGenesisService>();
         private static readonly List<IGenesisService> _updateList = new List<IGenesisService>();
+        private static readonly Dictionary<Type, FieldInfo[]> _cachedInjectables = new Dictionary<Type, FieldInfo[]>();
 
         public static void Register<T>(T service) where T : class, IGenesisService
         {
-            var type = typeof(T);
+            var type = service.GetType();
             if (_services.ContainsKey(type)) _services.Remove(type);
             _services[type] = service;
-            _updateList.Add(service);
+
+            if (service is BaseService && !_updateList.Contains(service))
+                _updateList.Add(service);
         }
 
         public static T Get<T>() where T : class, IGenesisService
         {
-            if (_services.TryGetValue(typeof(T), out var service)) return service as T;
-            return null;
+            return _services.TryGetValue(typeof(T), out var s) ? s as T : null;
+        }
+
+        public static IGenesisService Get(Type type)
+        {
+            return _services.TryGetValue(type, out var s) ? s : null;
         }
 
         public static void InjectDependencies(object target)
         {
-            var fields = target.GetType().GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+            var type = target.GetType();
+            if (!_cachedInjectables.TryGetValue(type, out var fields))
+            {
+                var allFields = type.GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+                var list = new List<FieldInfo>();
+                for (int i = 0; i < allFields.Length; i++)
+                {
+                    if (Attribute.IsDefined(allFields[i], typeof(InjectAttribute))) list.Add(allFields[i]);
+                }
+                fields = list.ToArray();
+                _cachedInjectables[type] = fields;
+            }
+
             for (int i = 0; i < fields.Length; i++)
             {
-                if (Attribute.IsDefined(fields[i], typeof(InjectAttribute)))
-                {
-                    var type = fields[i].FieldType;
-                    if (_services.TryGetValue(type, out var service))
-                    {
-                        fields[i].SetValue(target, service);
-                    }
-                }
+                var fieldType = fields[i].FieldType;
+                if (_services.TryGetValue(fieldType, out var service)) fields[i].SetValue(target, service);
             }
+        }
+
+        public static void NotifyAppReady()
+        {
+            foreach (var s in _services.Values) s.OnAppReady();
         }
 
         public static void UpdateServices()
         {
-            Profiler.BeginSample("Genesis.Update");
             for (int i = 0; i < _updateList.Count; i++) _updateList[i].OnUpdate();
-            Profiler.EndSample();
         }
 
         public static void Clear()
@@ -96,37 +118,7 @@ namespace BillsGenesis.Core
             foreach (var s in _services.Values) s.Dispose();
             _services.Clear();
             _updateList.Clear();
-        }
-    }
-
-    public interface IGenesisEvent { }
-
-    public static class EventBus
-    {
-        private static readonly Dictionary<Type, List<object>> _subscribers = new Dictionary<Type, List<object>>();
-
-        public static void Subscribe<T>(Action<T> callback) where T : struct, IGenesisEvent
-        {
-            var type = typeof(T);
-            if (!_subscribers.TryGetValue(type, out var list))
-            {
-                list = new List<object>();
-                _subscribers[type] = list;
-            }
-            if (!list.Contains(callback)) list.Add(callback);
-        }
-
-        public static void Unsubscribe<T>(Action<T> callback) where T : struct, IGenesisEvent
-        {
-            if (_subscribers.TryGetValue(typeof(T), out var list)) list.Remove(callback);
-        }
-
-        public static void Raise<T>(T eventData) where T : struct, IGenesisEvent
-        {
-            if (_subscribers.TryGetValue(typeof(T), out var list))
-            {
-                for (int i = list.Count - 1; i >= 0; i--) ((Action<T>)list[i]).Invoke(eventData);
-            }
+            _cachedInjectables.Clear();
         }
     }
 }

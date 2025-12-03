@@ -1,3 +1,4 @@
+
 Shader "ShadersLab/Toon Lit"
 {
     Properties
@@ -8,7 +9,6 @@ Shader "ShadersLab/Toon Lit"
         [Enum(UnityEngine.Rendering.BlendMode)] _DstBlend ("Destination Blend", Float) = 0
         [Toggle] _ZWrite ("ZWrite", Float) = 1
         [Enum(Off, 0, Front, 1, Back, 2)] _CullMode ("Culling Mode", Float) = 2
-
         [Header(Base Properties)]
         _BaseMap("Albedo (RGB) Alpha (A)", 2D) = "white"{}
         [HDR] _BaseColor("Base Color", Color) = (1, 1, 1, 1)
@@ -106,7 +106,7 @@ Shader "ShadersLab/Toon Lit"
 
                 #ifdef _NORMALMAP_ON
                     output.tangentWS.xyz = norm.tangentWS;
-                    output.tangentWS.w = norm.bitangentWS.x;    // lưu bitangent sign hoặc dùng cross sau
+                    output.tangentWS.w = norm.bitangentWS.x;
                 #endif
 
                 return output;
@@ -140,7 +140,6 @@ Shader "ShadersLab/Toon Lit"
             ENDHLSL
         }
 
-            // ==================== SHADOWCASTER (fix GetShadowCasterPositionCS) ====================
         Pass
         {
             Name "ShadowCaster"
@@ -160,25 +159,23 @@ Shader "ShadersLab/Toon Lit"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Shadows.hlsl"
             #include "Includes/Toon/ToonLitCore.hlsl"
 
-            struct VaryingsShadow
+            struct VaryingsShadowPass
             {
                 float4 positionCS : SV_POSITION;
                 float2 uv : TEXCOORD0;
             };
 
-            VaryingsShadow ShadowVert(Attributes input)
+            VaryingsShadowPass ShadowVert(Attributes input)
             {
-                VaryingsShadow output;
+                VaryingsShadowPass output;
                 float3 positionWS = TransformObjectToWorld(input.positionOS.xyz);
                 float3 normalWS = TransformObjectToWorldNormal(input.normalOS);
-
-                    // Hàm đúng trong URP mới nhất
-                output.positionCS = TransformWorldToHClipApplyShadowBias(positionWS, normalWS, _ShadowBias);
+                output.positionCS = TransformWorldToHClipApplyShadowBias(positionWS, normalWS, _LightDirection);
                 output.uv = TRANSFORM_TEX(input.uv, _BaseMap);
                 return output;
             }
 
-            half4 ShadowFrag(VaryingsShadow input) : SV_Target
+            half4 ShadowFrag(VaryingsShadowPass input) : SV_Target
             {
                 ApplyAlphaClip(GetAlbedoAndAlpha(input.uv).a);
                 return 0;
@@ -186,7 +183,6 @@ Shader "ShadersLab/Toon Lit"
             ENDHLSL
         }
 
-            // ==================== DEPTH ONLY ====================
         Pass
         {
             Name "DepthOnly"
@@ -215,7 +211,6 @@ Shader "ShadersLab/Toon Lit"
             ENDHLSL
         }
 
-            // ==================== DEPTH NORMALS ====================
         Pass
         {
             Name "DepthNormals"
@@ -271,7 +266,6 @@ Shader "ShadersLab/Toon Lit"
             ENDHLSL
         }
 
-            // ==================== DEFERRED GBUFFER ====================
         Pass
         {
             Name "GBuffer"
@@ -337,70 +331,69 @@ Shader "ShadersLab/Toon Lit"
                 half3 emission = 0;
                 #ifdef _EMISSION_ON
                     emission = SAMPLE_TEXTURE2D(_EmissionMap, sampler_EmissionMap, i.uv).rgb * _EmissionColor.rgb;
-                    #
+                #endif
 
-                    GBuffer0 = half4(albedo.rgb, 0);
-                    GBuffer1 = half4(0, 0, 0, 0);
-                    GBuffer2 = half4(normalWS * 0.5h + 0.5h, 0);
-                    GBuffer3 = half4(emission, 1);
-                }
-                ENDHLSL
+                GBuffer0 = half4(albedo.rgb, 0);
+                GBuffer1 = half4(0, 0, 0, 0);
+                GBuffer2 = half4(normalWS * 0.5h + 0.5h, 0);
+                GBuffer3 = half4(emission, 1);
             }
-
-                // ==================== META ====================
-            Pass
-            {
-                Name "Meta"
-                Tags
-                {
-                    "LightMode" = "Meta"
-                }
-                Cull Off
-
-                HLSLPROGRAM
-                #pragma vertex MetaVert
-                #pragma fragment MetaFrag
-                #pragma shader_feature_local_fragment _EMISSION_ON
-
-                #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
-                #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/MetaInput.hlsl"
-                #include "Includes/Toon/ToonLitCore.hlsl"
-
-                struct MetaInput
-                {
-                    float4 positionOS : POSITION;
-                    float2 uv : TEXCOORD0;
-                    float2 uvLM : TEXCOORD1;
-                };
-
-                struct MetaVaryings
-                {
-                    float4 posCS : SV_POSITION;
-                    float2 uv : TEXCOORD0;
-                };
-
-                MetaVaryings MetaVert(MetaInput input)
-                {
-                    MetaVaryings o;
-                    o.posCS = UnityMetaVertexPosition(input.positionOS.xyz, input.uvLM, input.uv);
-                    o.uv = TRANSFORM_TEX(input.uv, _BaseMap);
-                    return o;
-                }
-
-                half4 MetaFrag(MetaVaryings i) : SV_Target
-                {
-                    UnityMetaInput meta;
-                    ZERO_INITIALIZE(UnityMetaInput, meta);
-
-                    half4 albedo = GetAlbedoAndAlpha(i.uv);
-                    meta.Albedo = albedo.rgb;
-                    meta.Emission = ApplyEmission(0, i.uv);
-
-                    return UnityMetaFragment(meta);
-                }
-                ENDHLSL
-            }
+            ENDHLSL
         }
 
-        CustomEditor "ToonLitShaderGUI"
+        Pass
+        {
+            Name "Meta"
+            Tags
+            {
+                "LightMode" = "Meta"
+            }
+            Cull Off
+
+            HLSLPROGRAM
+            #pragma vertex MetaVert
+            #pragma fragment MetaFrag
+            #pragma shader_feature_local_fragment _EMISSION_ON
+
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/MetaInput.hlsl"
+            #include "Includes/Toon/ToonLitCore.hlsl"
+
+            struct AttributesMeta
+            {
+                float4 positionOS : POSITION;
+                float2 uv : TEXCOORD0;
+                float2 uvLM : TEXCOORD1;
+            };
+
+            struct VaryingsMeta
+            {
+                float4 posCS : SV_POSITION;
+                float2 uv : TEXCOORD0;
+            };
+
+            VaryingsMeta MetaVert(AttributesMeta input)
+            {
+                VaryingsMeta o;
+                o.posCS = UnityMetaVertexPosition(input.positionOS.xyz, input.uvLM, input.uv);
+                o.uv = TRANSFORM_TEX(input.uv, _BaseMap);
+                return o;
+            }
+
+            half4 MetaFrag(VaryingsMeta i) : SV_Target
+            {
+                UnityMetaInput meta;
+                ZERO_INITIALIZE(UnityMetaInput, meta);
+
+                half4 albedo = GetAlbedoAndAlpha(i.uv);
+                meta.Albedo = albedo.rgb;
+                meta.Emission = ApplyEmission(0, i.uv);
+
+                return UnityMetaFragment(meta);
+            }
+            ENDHLSL
+        }
     }
+
+    CustomEditor "ToonLitShaderGUI"
+}

@@ -1,0 +1,39 @@
+#pragma kernel CSMain
+
+struct ObjectInstanceData
+{
+    float4x4 objectToWorld;
+    float4x4 worldToObject;
+    float4 color;
+};
+
+StructuredBuffer<ObjectInstanceData> _SourceBuffer;
+AppendStructuredBuffer<ObjectInstanceData> _VisibleBuffer;
+
+float4 _CameraPlanes[6];
+float3 _CameraPosition;
+float _MaxDistanceSq;
+uint _Count;
+float _BoundRadius;
+
+[numthreads(256, 1, 1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= _Count) return;
+
+    ObjectInstanceData instance = _SourceBuffer[id.x];
+    
+    float3 position = float3(instance.objectToWorld._m03, instance.objectToWorld._m13, instance.objectToWorld._m23);
+    float3 dir = position - _CameraPosition;
+    
+    if (dot(dir, dir) > _MaxDistanceSq) return;
+
+    [unroll]
+    for (int i = 0; i < 6; i++)
+    {
+        if (dot(_CameraPlanes[i].xyz, position) + _CameraPlanes[i].w + _BoundRadius < 0)
+            return;
+    }
+
+    _VisibleBuffer.Append(instance);
+}

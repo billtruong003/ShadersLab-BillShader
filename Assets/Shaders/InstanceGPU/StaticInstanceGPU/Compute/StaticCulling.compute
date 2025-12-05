@@ -1,0 +1,66 @@
+#pragma kernel CSMain
+
+#include "../InstancingHelpers.hlsl"
+
+struct Bounds
+{
+    float3 center;
+    float3 extents;
+};
+
+StructuredBuffer<CompressedInstanceData> _SourceData;
+StructuredBuffer<Bounds> _SourceBounds;
+AppendStructuredBuffer<uint> _VisibleIndices;
+AppendStructuredBuffer<uint> _ShadowIndices;
+
+float4 _CameraPlanes[6];
+float3 _CameraPosition;
+float _MaxDistanceSq;
+float _ShadowDistanceSq;
+uint _Count;
+
+// Kiểm tra nằm trong camera view không
+bool IsVisible(float3 center, float3 extents)
+{
+    for (int i = 0; i < 6; i++)
+    {
+        float3 normal = _CameraPlanes[i].xyz;
+        float dist = _CameraPlanes[i].w;
+        if (dot(normal, center) + dist + dot(abs(normal), extents) < 0)
+            return false;
+    }
+    return true;
+}
+
+[numthreads(64, 1, 1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= _Count) return;
+
+    Bounds b = _SourceBounds[id.x];
+    
+    float3 offset = b.center - _CameraPosition;
+    float distSq = dot(offset, offset);
+    
+    // 1. Check Global Range
+    // Lưu ý: Ta dùng Max giữa Cull và Shadow distance ở C# để truyền vào _MaxDistanceSq
+    // nhưng ở đây ta check riêng để tối ưu.
+    if (distSq > _MaxDistanceSq) return;
+
+    // 2. Check LOD Range (Nếu LOD sai thì cả hình và bóng đều sai)
+    CompressedInstanceData data = _SourceData[id.x];
+    if (distSq < data.lodRange.x || distSq >= data.lodRange.y) return;
+
+    // 3. Xử lý Shadow (Fix: Không check IsVisible, chỉ check khoảng cách)
+    // Object sau lưng camera vẫn phải đổ bóng ra trước mặt
+    if (distSq <= _ShadowDistanceSq)
+    {
+        _ShadowIndices.Append(id.x);
+    }
+
+    // 4. Xử lý Visible (Giữ nguyên check Frustum)
+    if (IsVisible(b.center, b.extents))
+    {
+        _VisibleIndices.Append(id.x);
+    }
+}

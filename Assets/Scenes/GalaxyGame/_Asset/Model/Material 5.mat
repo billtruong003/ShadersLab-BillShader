@@ -20,7 +20,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Material 3
+  m_Name: Material 5
   m_Shader: {fileID: 4800000, guid: 47c585e3e1b6046e6859fa408ce55b21, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
@@ -44,20 +44,20 @@ Material:
     m_Ints: []
     m_Floats:
     - _EmissionPower: 1
-    - _RampSmoothness: 0.25
-    - _RampThreshold: 0.85
-    - _RimSize: 0.753
+    - _RampSmoothness: 0.5
+    - _RampThreshold: 0.15
+    - _RimSize: 1
     - _RimSmooth: 0.5
     m_Colors:
-    - _ColBlue: {r: 0, g: 1, b: 0.46170044, a: 1}
+    - _ColBlue: {r: 1, g: 0.89882076, b: 0.4481132, a: 1}
     - _ColCyan: {r: 0, g: 1, b: 1, a: 1}
     - _ColExtra: {r: 0.5, g: 0.5, b: 0.5, a: 1}
-    - _ColGreen: {r: 0, g: 1, b: 0, a: 1}
+    - _ColGreen: {r: 0, g: 0.7490196, b: 0.047179636, a: 1}
     - _ColMagenta: {r: 1, g: 0, b: 1, a: 1}
-    - _ColRed: {r: 0.7882353, g: 0, b: 0, a: 1}
-    - _ColUntinted: {r: 0, g: 0, b: 0, a: 1}
+    - _ColRed: {r: 0.18867922, g: 0.18867922, b: 0.18867922, a: 1}
+    - _ColUntinted: {r: 0.2, g: 0.2, b: 0.2, a: 1}
     - _ColYellow: {r: 1, g: 1, b: 0, a: 1}
-    - _EmissionColor: {r: 3.4415908, g: 1.9324569, b: 0, a: 1}
-    - _RimColor: {r: 1, g: 0.6744844, b: 0, a: 1}
+    - _EmissionColor: {r: 5.992157, g: 0.40784314, b: 0, a: 1}
+    - _RimColor: {r: 0.6792453, g: 0.6792453, b: 0.6792453, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
